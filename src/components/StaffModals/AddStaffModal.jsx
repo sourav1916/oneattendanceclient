@@ -51,9 +51,9 @@ const normalizeDate = (value) => (value ? String(value).split("T")[0] : "");
 const getMonthYearValue = (value) =>
   value
     ? {
-        month: parseInt(String(value).split("-")[1], 10),
-        year: parseInt(String(value).split("-")[0], 10),
-      }
+      month: parseInt(String(value).split("-")[1], 10),
+      year: parseInt(String(value).split("-")[0], 10),
+    }
     : null;
 
 const monthYearToDate = (value) =>
@@ -103,7 +103,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
   const [isLoadingPackages, setIsLoadingPackages] = useState(false);
   const [isWeekendsOpen, setIsWeekendsOpen] = useState(false);
   const [isSalaryComponentsOpen, setIsSalaryComponentsOpen] = useState(false);
-  
+
   const [isInvitePackageOpen, setIsInvitePackageOpen] = useState(false);
   const [isRoleFieldsOpen, setIsRoleFieldsOpen] = useState(false);
   const [isSalaryDetailsOpen, setIsSalaryDetailsOpen] = useState(false);
@@ -639,9 +639,9 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
 
   const methodBadges = companyAttendanceMethodList.length
     ? companyAttendanceMethodList.map((method) => ({
-        key: method,
-        label: ATTENDANCE_LABELS[method] || formatDisplay(method),
-      }))
+      key: method,
+      label: ATTENDANCE_LABELS[method] || formatDisplay(method),
+    }))
     : [];
 
   const toggleAttendanceMethod = (method) => {
@@ -719,16 +719,16 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
 
   const canCreateInvite = Boolean(
     selectedUser &&
-      designation &&
-      staffType &&
-      employmentType &&
-      selectedAttendanceMethods.length > 0 &&
-      baseAmount &&
-      effectiveFrom &&
-      !isSubmitting &&
-      !isLoadingConstants &&
-      !isSearchingUser &&
-      !submitDisabled
+    designation &&
+    staffType &&
+    employmentType &&
+    selectedAttendanceMethods.length > 0 &&
+    baseAmount &&
+    effectiveFrom &&
+    !isSubmitting &&
+    !isLoadingConstants &&
+    !isSearchingUser &&
+    !submitDisabled
   );
 
   return (
@@ -759,10 +759,10 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
               submitDisabled
                 ? submitTitle
                 : !selectedUser
-                ? "Search and verify a user first"
-                : !designation || !staffType || !employmentType || selectedAttendanceMethods.length === 0
-                ? "Complete all required fields"
-                : ""
+                  ? "Search and verify a user first"
+                  : !designation || !staffType || !employmentType || selectedAttendanceMethods.length === 0
+                    ? "Complete all required fields"
+                    : ""
             }
             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -1015,152 +1015,152 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                       className="overflow-hidden"
                     >
                       <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Effective From</label>
-                    <AdvancedDateFilter
-                      tabOptions={["month"]}
-                      value={getMonthYearValue(effectiveFrom)}
-                      onChange={(value) => setEffectiveFrom(monthYearToDate(value))}
-                      placeholder="Select month"
-                      buttonClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Effective To</label>
-                    <AdvancedDateFilter
-                      tabOptions={["month"]}
-                      value={getMonthYearValue(effectiveTo)}
-                      onChange={(value) => setEffectiveTo(monthYearToDate(value))}
-                      placeholder="Optional"
-                      buttonClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Base Amount</label>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={baseAmount}
-                      onChange={(e) => handleBaseAmountChange(e.target.value)}
-                      placeholder="Enter amount"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-                    />
-                  </div>
-                </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Effective From</label>
+                          <AdvancedDateFilter
+                            tabOptions={["month"]}
+                            value={getMonthYearValue(effectiveFrom)}
+                            onChange={(value) => setEffectiveFrom(monthYearToDate(value))}
+                            placeholder="Select month"
+                            buttonClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Effective To</label>
+                          <AdvancedDateFilter
+                            tabOptions={["month"]}
+                            value={getMonthYearValue(effectiveTo)}
+                            onChange={(value) => setEffectiveTo(monthYearToDate(value))}
+                            placeholder="Optional"
+                            buttonClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Base Amount</label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={baseAmount}
+                            onChange={(e) => handleBaseAmountChange(e.target.value)}
+                            placeholder="Enter amount"
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                          />
+                        </div>
+                      </div>
 
-                {/* Salary Components */}
-                <div className="mt-5 border-t border-slate-100 pt-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Salary Components</label>
-                    <button
-                      type="button"
-                      onClick={handleSalaryComponentsToggle}
-                      className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 transition hover:bg-indigo-100"
-                    >
-                      <FaPlus className="h-2.5 w-2.5" />
-                      Add Component
-                    </button>
-                  </div>
+                      {/* Salary Components */}
+                      <div className="mt-5 border-t border-slate-100 pt-4">
+                        <div className="mb-3 flex items-center justify-between">
+                          <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Salary Components</label>
+                          <button
+                            type="button"
+                            onClick={handleSalaryComponentsToggle}
+                            className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 transition hover:bg-indigo-100"
+                          >
+                            <FaPlus className="h-2.5 w-2.5" />
+                            Add Component
+                          </button>
+                        </div>
 
-                  {isSalaryComponentsOpen && (
-                    <div className="mb-4 rounded-xl border border-dashed border-indigo-200 bg-indigo-50/50 p-3">
-                      <Select
-                        value={null}
-                        onChange={addSalaryComponent}
-                        onMenuOpen={handleSalaryComponentMenuOpen}
-                        onFocus={handleSalaryComponentMenuOpen}
-                        options={salaryComponentOptions}
-                        placeholder={isLoadingSalaryComponents ? "Loading components..." : "Choose a component"}
-                        isLoading={isLoadingSalaryComponents}
-                        noOptionsMessage={() => "No components available"}
-                        menuPlacement="auto"
-                        menuPosition="fixed"
-                        menuPortalTarget={document.body}
-                        styles={{ ...customSelectStyles, menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
-                      />
-                    </div>
-                  )}
-
-                  {salaryComponents.length > 0 ? (
-                    <div className="space-y-3">
-                      {salaryComponents.map((component, index) => {
-                        const componentData = availableSalaryComponents.find(
-                          (item) => String(item.id) === String(component.component_id)
-                        );
-                        return (
-                          <div key={`${component.component_id}-${index}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                            <div className="grid gap-3 md:grid-cols-12">
-                              <div className="md:col-span-4">
-                                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Component</label>
-                                <div className="truncate rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
-                                  {componentData?.name || `Component ${component.component_id}`}
-                                  {componentData?.code && (
-                                    <span className="ml-2 text-[10px] font-normal text-slate-400">({componentData.code})</span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="md:col-span-3">
-                                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Type</label>
-                                <Select
-                                  value={{
-                                    value: component.calc_type,
-                                    label: component.calc_type === "percentage" ? "Percentage (%)" : "Fixed Amount",
-                                  }}
-                                  onChange={(option) => updateSalaryComponent(index, "calc_type", option?.value || "percentage")}
-                                  options={[
-                                    { value: "percentage", label: "Percentage (%)" },
-                                    { value: "fixed", label: "Fixed Amount" },
-                                  ]}
-                                  menuPlacement="auto"
-                                  menuPosition="fixed"
-                                  menuPortalTarget={document.body}
-                                  styles={{ ...customSelectStyles, menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
-                                />
-                              </div>
-                              <div className="md:col-span-3">
-                                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Value</label>
-                                <input
-                                  type="text"
-                                  inputMode="decimal"
-                                  value={component.calc_value}
-                                  onChange={(e) => {
-                                    const value = e.target.value.replace(/[^0-9.]/g, "");
-                                    if (value === "" || /^\d*\.?\d*$/.test(value)) updateSalaryComponent(index, "calc_value", value);
-                                  }}
-                                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-                                />
-                              </div>
-                              <div className="flex items-end justify-end md:col-span-2">
-                                <button
-                                  type="button"
-                                  onClick={() => removeSalaryComponent(index)}
-                                  className="rounded-lg p-2.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
-                                  title="Remove component"
-                                >
-                                  <FaTimes className="h-3.5 w-3.5" />
-                                </button>
-                              </div>
-                              <div className="md:col-span-12">
-                                <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Reason</label>
-                                <input
-                                  type="text"
-                                  value={component.reason || ""}
-                                  onChange={(e) => updateSalaryComponent(index, "reason", e.target.value)}
-                                  placeholder="Reason for this component value"
-                                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm italic text-slate-600 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-                                />
-                              </div>
-                            </div>
+                        {isSalaryComponentsOpen && (
+                          <div className="mb-4 rounded-xl border border-dashed border-indigo-200 bg-indigo-50/50 p-3">
+                            <Select
+                              value={null}
+                              onChange={addSalaryComponent}
+                              onMenuOpen={handleSalaryComponentMenuOpen}
+                              onFocus={handleSalaryComponentMenuOpen}
+                              options={salaryComponentOptions}
+                              placeholder={isLoadingSalaryComponents ? "Loading components..." : "Choose a component"}
+                              isLoading={isLoadingSalaryComponents}
+                              noOptionsMessage={() => "No components available"}
+                              menuPlacement="auto"
+                              menuPosition="fixed"
+                              menuPortalTarget={document.body}
+                              styles={{ ...customSelectStyles, menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+                            />
                           </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
-                      No salary components selected.
-                    </div>
-                  )}
-                </div>
+                        )}
+
+                        {salaryComponents.length > 0 ? (
+                          <div className="space-y-3">
+                            {salaryComponents.map((component, index) => {
+                              const componentData = availableSalaryComponents.find(
+                                (item) => String(item.id) === String(component.component_id)
+                              );
+                              return (
+                                <div key={`${component.component_id}-${index}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                  <div className="grid gap-3 md:grid-cols-12">
+                                    <div className="md:col-span-4">
+                                      <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Component</label>
+                                      <div className="truncate rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+                                        {componentData?.name || `Component ${component.component_id}`}
+                                        {componentData?.code && (
+                                          <span className="ml-2 text-[10px] font-normal text-slate-400">({componentData.code})</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="md:col-span-3">
+                                      <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Type</label>
+                                      <Select
+                                        value={{
+                                          value: component.calc_type,
+                                          label: component.calc_type === "percentage" ? "Percentage (%)" : "Fixed Amount",
+                                        }}
+                                        onChange={(option) => updateSalaryComponent(index, "calc_type", option?.value || "percentage")}
+                                        options={[
+                                          { value: "percentage", label: "Percentage (%)" },
+                                          { value: "fixed", label: "Fixed Amount" },
+                                        ]}
+                                        menuPlacement="auto"
+                                        menuPosition="fixed"
+                                        menuPortalTarget={document.body}
+                                        styles={{ ...customSelectStyles, menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+                                      />
+                                    </div>
+                                    <div className="md:col-span-3">
+                                      <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Value</label>
+                                      <input
+                                        type="text"
+                                        inputMode="decimal"
+                                        value={component.calc_value}
+                                        onChange={(e) => {
+                                          const value = e.target.value.replace(/[^0-9.]/g, "");
+                                          if (value === "" || /^\d*\.?\d*$/.test(value)) updateSalaryComponent(index, "calc_value", value);
+                                        }}
+                                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                                      />
+                                    </div>
+                                    <div className="flex items-end justify-end md:col-span-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => removeSalaryComponent(index)}
+                                        className="rounded-lg p-2.5 text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                                        title="Remove component"
+                                      >
+                                        <FaTimes className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                    <div className="md:col-span-12">
+                                      <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Reason</label>
+                                      <input
+                                        type="text"
+                                        value={component.reason || ""}
+                                        onChange={(e) => updateSalaryComponent(index, "reason", e.target.value)}
+                                        placeholder="Reason for this component value"
+                                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm italic text-slate-600 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-500">
+                            No salary components selected.
+                          </div>
+                        )}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -1194,32 +1194,31 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                       exit={{ height: 0, opacity: 0, marginTop: 0 }}
                       className="overflow-hidden"
                     >
-                {methodBadges.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {methodBadges.map((method) => {
-                      const active = selectedAttendanceMethods.includes(method.key);
-                      return (
-                        <button
-                          key={method.key}
-                          type="button"
-                          onClick={() => toggleAttendanceMethod(method.key)}
-                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                            active
-                              ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
-                              : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
-                          }`}
-                        >
-                          {active && <FaCheck className="h-3 w-3" />}
-                          {method.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-                    No attendance methods available for this company.
-                  </div>
-                )}
+                      {methodBadges.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {methodBadges.map((method) => {
+                            const active = selectedAttendanceMethods.includes(method.key);
+                            return (
+                              <button
+                                key={method.key}
+                                type="button"
+                                onClick={() => toggleAttendanceMethod(method.key)}
+                                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${active
+                                    ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
+                                    : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
+                                  }`}
+                              >
+                                {active && <FaCheck className="h-3 w-3" />}
+                                {method.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                          No attendance methods available for this company.
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -1331,71 +1330,68 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                     )}
                   </AnimatePresence>
                 </div>
-
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsWeekendsOpen(!isWeekendsOpen)}
-                    className="flex w-full items-center justify-between"
-                  >
-                    <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
-                      <FaCalendarAlt className="h-4 w-4 text-indigo-500" />
-                      Weekends
-                      {weekends.length > 0 && (
-                        <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-600">
-                          {weekends.length} Selected
-                        </span>
-                      )}
-                    </label>
-                    {isWeekendsOpen ? (
-                      <FaChevronUp className="h-3 w-3 text-slate-400" />
-                    ) : (
-                      <FaChevronDown className="h-3 w-3 text-slate-400" />
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <button
+                  type="button"
+                  onClick={() => setIsWeekendsOpen(!isWeekendsOpen)}
+                  className="flex w-full items-center justify-between"
+                >
+                  <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                    <FaCalendarAlt className="h-4 w-4 text-indigo-500" />
+                    Weekends
+                    {weekends.length > 0 && (
+                      <span className="ml-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-600">
+                        {weekends.length} Selected
+                      </span>
                     )}
-                  </button>
+                  </label>
+                  {isWeekendsOpen ? (
+                    <FaChevronUp className="h-3 w-3 text-slate-400" />
+                  ) : (
+                    <FaChevronDown className="h-3 w-3 text-slate-400" />
+                  )}
+                </button>
 
-                  <AnimatePresence>
-                    {isWeekendsOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                        animate={{ height: "auto", opacity: 1, marginTop: 12 }}
-                        exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="flex flex-col gap-2 pt-1">
-                          {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) => {
-                            const isSelected = weekends.includes(day);
-                            return (
-                              <div
-                                key={day}
-                                className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-2"
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => toggleWeekend(day)}
-                                  className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                    isSelected
-                                      ? "bg-indigo-600 text-white shadow-md"
-                                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+                <AnimatePresence>
+                  {isWeekendsOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                      animate={{ height: "auto", opacity: 1, marginTop: 12 }}
+                      exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="flex flex-col gap-2 pt-1">
+                        {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) => {
+                          const isSelected = weekends.includes(day);
+                          return (
+                            <div
+                              key={day}
+                              className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-2"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => toggleWeekend(day)}
+                                className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isSelected
+                                    ? "bg-indigo-600 text-white shadow-md"
+                                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
                                   }`}
-                                >
-                                  <div
-                                    className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${
-                                      isSelected ? "bg-white border-white" : "bg-slate-100 border-slate-200"
+                              >
+                                <div
+                                  className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${isSelected ? "bg-white border-white" : "bg-slate-100 border-slate-200"
                                     }`}
-                                  >
-                                    {isSelected && <FaCheck className="w-2.5 h-2.5 text-indigo-600" />}
-                                  </div>
-                                  {day.charAt(0).toUpperCase() + day.slice(1)}
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                                >
+                                  {isSelected && <FaCheck className="w-2.5 h-2.5 text-indigo-600" />}
+                                </div>
+                                {day.charAt(0).toUpperCase() + day.slice(1)}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           ) : (

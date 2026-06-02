@@ -88,6 +88,29 @@ const formatDurationDisplay = (value) => {
   return normalized;
 };
 
+const formatCurrency = (value) => {
+  if (value === null || typeof value === "undefined" || value === "") return "N/A";
+  const amount = Number(value);
+  if (Number.isNaN(amount)) return String(value);
+  return amount.toLocaleString("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 2,
+  });
+};
+
+const formatAttendanceMethod = (method) => {
+  if (typeof method === "string") return formatDisplay(method);
+  if (method && typeof method === "object") return formatDisplay(method.method || method.value || method.label);
+  return "N/A";
+};
+
+const formatWeekendDay = (weekend) => {
+  if (typeof weekend === "string") return formatDisplay(weekend);
+  if (weekend && typeof weekend === "object") return formatDisplay(weekend.day || weekend.value);
+  return "N/A";
+};
+
 const normalizeInviteRecord = (invite) => ({
   ...invite,
   user_id: invite?.user?.id ?? invite?.user_id ?? null,
@@ -777,6 +800,10 @@ export default function CompanyInvites() {
                   <InfoItem icon={<FaBriefcase className="text-blue-500" />} label="Designation" value={formatDisplay(selectedInvite.designation)} />
                   <InfoItem icon={<FaUserTie className="text-purple-500" />} label="Employment Type" value={formatDisplay(selectedInvite.employment_type)} />
                   <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={formatDisplay(selectedInvite.salary_type)} />
+                  <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Base Amount" value={formatCurrency(selectedInvite.base_amount)} />
+                  <InfoItem icon={<FaShieldAlt className="text-indigo-500" />} label="Permission Package" value={selectedInvite.permission_package?.name || selectedInvite.permission_package_name || "N/A"} />
+                  <InfoItem icon={<FaCalendarAlt className="text-cyan-500" />} label="Effective From" value={formatDateSimple(selectedInvite.effective_from)} />
+                  <InfoItem icon={<FaCalendarAlt className="text-cyan-500" />} label="Effective To" value={formatDateSimple(selectedInvite.effective_to)} />
                   <InfoItem icon={<FaCalendarAlt className="text-rose-500" />} label="Sent Date" value={formatDate(selectedInvite.created_at)} />
                   <InfoItem icon={<FaClock className="text-yellow-500" />} label="Expires At" value={formatDate(selectedInvite.expires_at)} />
                   <InfoItem icon={<FaTag className="text-orange-500" />} label="Status"
@@ -881,8 +908,8 @@ export default function CompanyInvites() {
                               {selectedInvite.attendance_methods.map((method, idx) => (
                                 <span key={idx} className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 text-slate-700 text-[11px] font-semibold rounded-full border border-slate-100 shadow-sm capitalize">
                                   <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
-                                  {method.method}
-                                  {method.is_auto && <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-black ml-1">AUTO</span>}
+                                  {formatAttendanceMethod(method)}
+                                  {method?.is_auto && <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-black ml-1">AUTO</span>}
                                 </span>
                               ))}
                             </div>
@@ -922,9 +949,9 @@ export default function CompanyInvites() {
                             <div className="p-3 flex flex-wrap gap-2">
                               {selectedInvite.weekends.map((weekend, idx) => (
                                 <div key={idx} className="flex items-center justify-between gap-4 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100 shadow-sm min-w-[120px]">
-                                  <span className="text-[11px] font-bold text-slate-700 capitalize">{weekend.day}</span>
-                                  <span className={`text-[9px] px-2 py-0.5 rounded-lg font-black uppercase ${weekend.type === "half" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>
-                                    {weekend.type || "full"}
+                                  <span className="text-[11px] font-bold text-slate-700 capitalize">{formatWeekendDay(weekend)}</span>
+                                  <span className={`text-[9px] px-2 py-0.5 rounded-lg font-black uppercase ${weekend?.type === "half" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>
+                                    {weekend?.type || "full"}
                                   </span>
                                 </div>
                               ))}
@@ -932,6 +959,43 @@ export default function CompanyInvites() {
                           </motion.div>
                         )}
                       </AnimatePresence>
+                    </div>
+                  )}
+
+                  {selectedInvite.salary_components?.length > 0 && (
+                    <div className="rounded-xl border border-emerald-100 bg-emerald-50/30 overflow-hidden shadow-sm">
+                      <div className="w-full flex items-center justify-between p-4">
+                        <h4 className="text-xs font-bold text-slate-600 uppercase tracking-widest flex items-center gap-2">
+                          <FaDollarSign className="text-emerald-500" /> Salary Components
+                        </h4>
+                        <span className="px-2 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-700 font-bold">
+                          {selectedInvite.salary_components.length}
+                        </span>
+                      </div>
+                      <div className="border-t border-emerald-50 bg-white p-3">
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {selectedInvite.salary_components.map((component) => (
+                            <div key={component.id ?? component.component_id} className="rounded-xl border border-slate-100 bg-slate-50 p-3 shadow-sm">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="truncate text-[11px] font-bold text-slate-700">
+                                    {component.component_name || component.name || `Component ${component.component_id}`}
+                                  </p>
+                                  <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                                    {component.component_code || component.code || "N/A"}
+                                  </p>
+                                </div>
+                                <span className="shrink-0 rounded-lg bg-white px-2 py-1 text-[10px] font-bold uppercase text-slate-600 ring-1 ring-slate-200">
+                                  {component.calc_type || "N/A"}
+                                </span>
+                              </div>
+                              <p className="mt-2 text-sm font-bold text-emerald-700">
+                                {component.calc_type === "percentage" ? `${component.calc_value}%` : formatCurrency(component.calc_value)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
