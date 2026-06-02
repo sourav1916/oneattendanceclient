@@ -49,6 +49,9 @@ const fmt = (str) =>
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
+const fmtMonthYear = (d) =>
+  d ? new Date(d).toLocaleDateString("en-IN", { month: "short", year: "numeric" }) : "—";
+
 const fmtDateTime = (d) => {
   if (!d) return "—";
   return new Date(d).toLocaleString("en-IN", {
@@ -1187,7 +1190,7 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel, subType = "atten
       return (
         <div className="space-y-2">
           <Field label="ID" value={item.id} />
-          <Field label="Payroll Period" value={fmtDate(item.payroll_period || item.period || item.month)} highlight />
+          <Field label="Payroll Period" value={fmtMonthYear(item.payroll_period || item.period || item.month)} highlight />
           <Field label="Total Earnings" value={item.total_earnings || item.gross_amount || item.gross} />
           <Field label="Total Deductions" value={item.total_deductions || item.deductions} />
           <Field label="Net Salary" value={item.net_salary || item.net_pay || item.net} />
@@ -1457,7 +1460,7 @@ function useSalaryConfig(onView, width) {
 
 function usePayrollConfig(onView, width) {
   const columns = [
-    { key: "payroll_period", label: "Payroll Period", render: (p) => <span className="font-medium text-gray-800 text-sm">{fmtDate(p.payroll_period || p.period || p.month)}</span> },
+    { key: "payroll_period", label: "Payroll Period", render: (p) => <span className="font-medium text-gray-800 text-sm">{fmtMonthYear(p.payroll_period || p.period || p.month)}</span> },
     width > 480 && { key: "total_earnings", label: "Total Earnings", render: (p) => <span className="text-sm text-gray-700">{p.total_earnings || p.gross_amount || p.gross || "—"}</span> },
     width > 800 && { key: "total_deductions", label: "Total Deductions", render: (p) => <span className="text-sm text-rose-600">{p.total_deductions || p.deductions || "—"}</span> },
     { key: "net_salary", label: "Net Salary", render: (p) => <span className="inline-flex whitespace-nowrap rounded-lg bg-green-50 px-3 py-1 text-xs font-bold text-green-700">{p.net_salary || p.net_pay || p.net || "—"}</span> },
@@ -1467,7 +1470,7 @@ function usePayrollConfig(onView, width) {
   const cardRenderer = (p, index, activeId, onToggle) => (
     <ManagementCard key={p.id || index} accent="emerald" delay={index * 0.04} onClick={() => onView(p)} activeId={activeId} onToggle={onToggle} menuId={`pay-${p.id || index}`}
       actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(p), className: "text-blue-600 hover:bg-blue-50" }]}
-      hoverable title={fmtDate(p.payroll_period || p.period || p.month) || "Payroll"} subtitle={`Earnings: ${p.total_earnings || p.gross_amount || p.gross || "—"} · Deductions: ${p.total_deductions || p.deductions || "—"}`} eyebrow="Payroll Record" badge={<Pill value={p.status} />}
+      hoverable title={fmtMonthYear(p.payroll_period || p.period || p.month) || "Payroll"} subtitle={`Earnings: ${p.total_earnings || p.gross_amount || p.gross || "—"} · Deductions: ${p.total_deductions || p.deductions || "—"}`} eyebrow="Payroll Record" badge={<Pill value={p.status} />}
     >
       <div className="grid grid-cols-3 gap-2 text-center mt-1">
         {[["Earnings", p.total_earnings || p.gross_amount || p.gross, "blue"], ["Deductions", p.total_deductions || p.deductions, "red"], ["Net", p.net_salary || p.net_pay || p.net, "green"]].map(([lbl, val, clr]) => (
