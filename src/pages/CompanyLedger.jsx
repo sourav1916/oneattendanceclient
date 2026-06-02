@@ -265,28 +265,40 @@ const MobileTransactionCard = ({ transaction, onView, onEdit, onDelete }) => (
       </div>
     </div>
 
-    <div className="border-t border-slate-50 pt-3 mt-1 flex items-center justify-between">
-      <div>
-        <span className="text-xs text-slate-400">Balance: </span>
-        <span className={`text-xs font-bold ${Number(transaction.balance) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-          {formatCurrency(transaction.balance)}
-        </span>
-        {transaction.employee && (
-          <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
-            <FaUser size={8} /> {transaction.employee.name}
-          </p>
-        )}
+    <div className="border-t border-slate-50 pt-3 mt-1">
+      <div className="grid grid-cols-3 gap-2 text-right text-xs mb-3">
+        <div>
+          <p className="font-bold uppercase tracking-wide text-slate-400">Old Balance</p>
+          <p className="font-mono font-bold text-slate-600">{formatNumber(transaction.old_balance)}</p>
+        </div>
+        <div>
+          <p className="font-bold uppercase tracking-wide text-slate-400">New Balance</p>
+          <p className={`font-mono font-bold ${Number(transaction.new_balance) >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>{formatNumber(transaction.new_balance)}</p>
+        </div>
+        <div>
+          <p className="font-bold uppercase tracking-wide text-slate-400">Amount</p>
+          <p className={`font-mono font-bold ${transaction.entry_type === 'debit' ? 'text-rose-600' : 'text-emerald-600'}`}>{formatNumber(transaction.amount)}</p>
+        </div>
       </div>
-      <div className="flex items-center gap-2">
-        <button onClick={() => onView(transaction)} className="w-7 h-7 rounded-lg bg-slate-50 hover:bg-violet-50 hover:text-violet-600 text-slate-400 flex items-center justify-center transition-all">
-          <FaEye size={12} />
-        </button>
-        <button onClick={() => onEdit(transaction)} className="w-7 h-7 rounded-lg bg-slate-50 hover:bg-blue-50 hover:text-blue-600 text-slate-400 flex items-center justify-center transition-all">
-          <FaEdit size={12} />
-        </button>
-        <button onClick={() => onDelete(transaction)} className="w-7 h-7 rounded-lg bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-400 flex items-center justify-center transition-all">
-          <FaTrash size={12} />
-        </button>
+      <div className="flex items-center justify-between">
+        <div>
+          {transaction.employee && (
+            <p className="text-[10px] text-slate-400 flex items-center gap-1">
+              <FaUser size={8} /> {transaction.employee.name}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => onView(transaction)} className="w-7 h-7 rounded-lg bg-slate-50 hover:bg-violet-50 hover:text-violet-600 text-slate-400 flex items-center justify-center transition-all">
+            <FaEye size={12} />
+          </button>
+          <button onClick={() => onEdit(transaction)} className="w-7 h-7 rounded-lg bg-slate-50 hover:bg-blue-50 hover:text-blue-600 text-slate-400 flex items-center justify-center transition-all">
+            <FaEdit size={12} />
+          </button>
+          <button onClick={() => onDelete(transaction)} className="w-7 h-7 rounded-lg bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-400 flex items-center justify-center transition-all">
+            <FaTrash size={12} />
+          </button>
+        </div>
       </div>
     </div>
   </motion.div>
@@ -1080,12 +1092,16 @@ const CompanyLedger = ({ employeeId }) => {
                  entry_type = 'debit';
               }
            }
-           const balance = tx.new_balance !== undefined ? tx.new_balance : (tx.balance || 0);
+           const old_balance = tx.old_balance !== undefined ? Number(tx.old_balance) : Number(tx.previous_balance || 0);
+           const new_balance = tx.new_balance !== undefined ? Number(tx.new_balance) : Number(tx.balance || 0);
+           const balance = new_balance;
            const debit  = tx.debit  !== undefined ? tx.debit  : (entry_type === 'debit'  ? tx.amount : 0);
            const credit = tx.credit !== undefined ? tx.credit : (entry_type === 'credit' ? tx.amount : 0);
            return {
               ...tx,
               entry_type,
+              old_balance,
+              new_balance,
               debit,
               credit,
               balance,
@@ -1239,39 +1255,35 @@ const CompanyLedger = ({ employeeId }) => {
       },
     },
     {
-      key: 'debit',
-      label: 'Debit',
+      key: 'old_balance',
+      label: 'Old Balance',
       render: (tx) => {
-        if (tx.isTotalRow) return <span className="font-bold text-blue-600 font-mono text-sm">{formatNumber(tx.debit)}</span>;
-        return tx.debit > 0 ? (
-          <span className="font-bold text-blue-600 font-mono">{formatNumber(tx.debit)}</span>
-        ) : (
-          <span className="text-slate-400 font-mono">0.00</span>
-        );
+        if (tx.isTotalRow) return <span className="text-slate-400 font-semibold">—</span>;
+        return <span className="font-bold text-slate-600 font-mono">{formatNumber(tx.old_balance)}</span>;
       },
       className: 'text-right',
     },
     {
-      key: 'credit',
-      label: 'Credit',
-      render: (tx) => {
-        if (tx.isTotalRow) return <span className="font-bold text-amber-600 font-mono text-sm">{formatNumber(tx.credit)}</span>;
-        return tx.credit > 0 ? (
-          <span className="font-bold text-amber-600 font-mono">{formatNumber(tx.credit)}</span>
-        ) : (
-          <span className="text-slate-400 font-mono">0.00</span>
-        );
-      },
-      className: 'text-right',
-    },
-    {
-      key: 'balance',
-      label: 'Balance',
+      key: 'new_balance',
+      label: 'New Balance',
       render: (tx) => {
         if (tx.isTotalRow) return <span className={`font-mono font-bold text-sm ${tx.balance >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>{formatNumber(tx.balance)}</span>;
         return (
-          <span className={`font-mono font-bold ${tx.balance >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
-            {formatNumber(tx.balance)}
+          <span className={`font-mono font-bold ${tx.new_balance >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
+            {formatNumber(tx.new_balance)}
+          </span>
+        );
+      },
+      className: 'text-right',
+    },
+    {
+      key: 'amount',
+      label: 'Amount',
+      render: (tx) => {
+        if (tx.isTotalRow) return <span className="font-bold text-slate-800 font-mono text-sm">{formatNumber((tx.debit || 0) + (tx.credit || 0))}</span>;
+        return (
+          <span className={`font-mono font-bold ${tx.entry_type === 'debit' ? 'text-rose-600' : 'text-emerald-600'}`}>
+            {formatNumber(tx.amount)}
           </span>
         );
       },
@@ -1290,6 +1302,8 @@ const CompanyLedger = ({ employeeId }) => {
         transaction_type: 'opening_balance',
         entry_type: openingBalance.debit > 0 ? 'debit' : 'credit',
         amount: Math.abs(openingBalance.balance || 0),
+        old_balance: 0,
+        new_balance: openingBalance.balance || 0,
         debit: openingBalance.debit || 0,
         credit: openingBalance.credit || 0,
         balance: openingBalance.balance || 0,

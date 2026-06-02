@@ -98,8 +98,13 @@ let permissionPackagesRequestCache = { companyId: null, promise: null, data: nul
 let onboardingPackagesRequestCache = { companyId: null, promise: null, data: null };
 const employeeListRequestCache = new Map();
 
-const getEmployeeListCacheKey = ({ companyId, page, limit, search }) =>
-    `${companyId ?? 'none'}|${page}|${limit}|${search ?? ''}`;
+const EMPLOYEE_STATUS_FILTER_OPTIONS = [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+];
+
+const getEmployeeListCacheKey = ({ companyId, page, limit, search, status }) =>
+    `${companyId ?? 'none'}|${page}|${limit}|${search ?? ''}|${status ?? ''}`;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -988,6 +993,7 @@ const EmployeeManagement = () => {
     const [showPermissions, setShowPermissions] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+    const [employeeStatusFilter, setEmployeeStatusFilter] = useState('active');
     const [createFormData, setCreateFormData] = useState(getDefaultCreateFormData);
     const [createOtpRequested, setCreateOtpRequested] = useState(false);
     const [otpLoading, setOtpLoading] = useState(false);
@@ -1039,7 +1045,7 @@ const EmployeeManagement = () => {
             if (pagination.page !== 1) goToPage(1);
             else fetchEmployees(1);
         }
-    }, [debouncedSearchTerm]);
+    }, [debouncedSearchTerm, employeeStatusFilter]);
 
     // ─── API Calls ────────────────────────────────────────────────────────────
 
@@ -1195,8 +1201,9 @@ const EmployeeManagement = () => {
             const companyId = company?.id ?? null;
             const params = new URLSearchParams({ page: page.toString(), limit: pagination.limit.toString() });
             if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
+            if (employeeStatusFilter) params.append('status', employeeStatusFilter);
 
-            const requestKey = getEmployeeListCacheKey({ companyId, page, limit: pagination.limit, search: debouncedSearchTerm });
+            const requestKey = getEmployeeListCacheKey({ companyId, page, limit: pagination.limit, search: debouncedSearchTerm, status: employeeStatusFilter });
             const cachedEntry = employeeListRequestCache.get(requestKey);
             let result;
 
@@ -1237,7 +1244,7 @@ const EmployeeManagement = () => {
             fetchInProgress.current = false;
             isInitialLoad.current = false;
         }
-    }, [pagination.page, pagination.limit, debouncedSearchTerm, updatePagination]);
+    }, [pagination.page, pagination.limit, debouncedSearchTerm, employeeStatusFilter, updatePagination]);
 
     useEffect(() => {
         if (!initialFetchDone.current) { fetchEmployees(1, true); initialFetchDone.current = true; }
@@ -1776,6 +1783,16 @@ const EmployeeManagement = () => {
                                     <FaTimes size={14} />
                                 </button>
                             )}
+                        </div>
+                        <div className="w-full md:w-44">
+                            <Select
+                                options={EMPLOYEE_STATUS_FILTER_OPTIONS}
+                                value={EMPLOYEE_STATUS_FILTER_OPTIONS.find(option => option.value === employeeStatusFilter)}
+                                onChange={option => setEmployeeStatusFilter(option?.value || 'active')}
+                                placeholder="Status"
+                                isClearable={false}
+                                styles={customSelectStyles}
+                            />
                         </div>
                         <div className="hidden lg:block h-8 w-px bg-gray-200 mx-1" />
                         <div>
