@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Select from "../SelectField";
 import { toast } from "react-toastify";
@@ -114,6 +114,11 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
   const [isLoadingConstants, setIsLoadingConstants] = useState(false);
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
+  const constantsRequestRef = useRef(false);
+  const permissionPackagesRequestRef = useRef(false);
+  const invitePackagesRequestRef = useRef(false);
+  const salaryPackagesRequestRef = useRef(false);
+  const salaryComponentsRequestRef = useRef(false);
 
   const companyAttendanceMethodList = useMemo(() => {
     let methods = companyAttendanceMethods;
@@ -207,11 +212,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
 
   useEffect(() => {
     if (!isOpen) return;
-
-    fetchPermissionPackages();
-    fetchAllConstants();
-    fetchInvitePackages();
-    fetchSalaryComponents();
   }, [isOpen]);
 
   const normalizeSalaryComponents = (components = []) =>
@@ -227,6 +227,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       .filter((component) => component.component_id);
 
   const fetchSalaryComponents = async () => {
+    if (availableSalaryComponents.length || isLoadingSalaryComponents || salaryComponentsRequestRef.current) return;
+    salaryComponentsRequestRef.current = true;
     setIsLoadingSalaryComponents(true);
     try {
       const company = JSON.parse(localStorage.getItem("company"));
@@ -234,6 +236,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       const result = await response.json();
       if (result.success) setAvailableSalaryComponents(result.data || []);
     } catch (err) {
+      salaryComponentsRequestRef.current = false;
       console.error("Failed to fetch salary components", err);
     } finally {
       setIsLoadingSalaryComponents(false);
@@ -241,6 +244,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
   };
 
   const fetchSalaryPackages = async () => {
+    if (salaryPackages.length || isLoadingSalaryPackages || salaryPackagesRequestRef.current) return;
+    salaryPackagesRequestRef.current = true;
     setIsLoadingSalaryPackages(true);
     try {
       const company = JSON.parse(localStorage.getItem("company"));
@@ -248,6 +253,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       const result = await response.json();
       if (result.success) setSalaryPackages(result.data || []);
     } catch (err) {
+      salaryPackagesRequestRef.current = false;
       console.error("Failed to fetch salary packages", err);
     } finally {
       setIsLoadingSalaryPackages(false);
@@ -255,6 +261,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
   };
 
   const fetchInvitePackages = async () => {
+    if (invitePackages.length || isLoadingPackages || invitePackagesRequestRef.current) return;
+    invitePackagesRequestRef.current = true;
     setIsLoadingPackages(true);
     try {
       const company = JSON.parse(localStorage.getItem("company"));
@@ -272,6 +280,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         );
       }
     } catch (err) {
+      invitePackagesRequestRef.current = false;
       console.error("Failed to fetch invite packages", err);
     } finally {
       setIsLoadingPackages(false);
@@ -303,7 +312,12 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     // Permission Package
     if (pkg.permission_package_id) {
       const found = permissionPackages.find((p) => p.value === pkg.permission_package_id);
-      setSelectedPermissionPackage(found || null);
+      setSelectedPermissionPackage(
+        found || {
+          value: pkg.permission_package_id,
+          label: pkg.permission_package_name || `Package ${pkg.permission_package_id}`,
+        }
+      );
     }
 
     // Attendance Methods
@@ -346,10 +360,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
 
   useEffect(() => {
     if (!isOpen) return;
-    if (!isLoadingConstants && employmentTypes.length > 0) {
-      loadStaffData();
-    }
-  }, [isOpen, isLoadingConstants, staffData, employmentTypes, designations, salaryTypes, permissionPackages]);
+    loadStaffData();
+  }, [isOpen, staffData]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -371,6 +383,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
   };
 
   const fetchAllConstants = async () => {
+    if ((employmentTypes.length && designations.length && salaryTypes.length) || isLoadingConstants || constantsRequestRef.current) return;
+    constantsRequestRef.current = true;
     setIsLoadingConstants(true);
     try {
       const company = JSON.parse(localStorage.getItem("company"));
@@ -415,6 +429,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         );
       }
     } catch (err) {
+      constantsRequestRef.current = false;
       console.error("Failed to fetch constants", err);
       toast.error(err.message || "Failed to fetch configuration data");
     } finally {
@@ -423,6 +438,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
   };
 
   const fetchPermissionPackages = async () => {
+    if (permissionPackages.length || isLoadingPermissions || permissionPackagesRequestRef.current) return;
+    permissionPackagesRequestRef.current = true;
     setIsLoadingPermissions(true);
     try {
       const company = JSON.parse(localStorage.getItem("company"));
@@ -443,6 +460,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         }))
       );
     } catch (err) {
+      permissionPackagesRequestRef.current = false;
       console.error("Permission packages error", err);
       toast.error(err.message || "Failed to fetch permission packages");
     } finally {
@@ -715,8 +733,23 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     setIsSalaryComponentsOpen(false);
   };
 
+  const handleInvitePackageMenuOpen = () => {
+    fetchAllConstants();
+    fetchPermissionPackages();
+    fetchInvitePackages();
+  };
+
   const handleSalaryPackageMenuOpen = () => {
-    if (!salaryPackages.length && !isLoadingSalaryPackages) fetchSalaryPackages();
+    fetchSalaryPackages();
+  };
+
+  const handleSalaryComponentMenuOpen = () => {
+    fetchSalaryComponents();
+  };
+
+  const handleSalaryComponentsToggle = () => {
+    if (!isSalaryComponentsOpen) fetchSalaryComponents();
+    setIsSalaryComponentsOpen((prev) => !prev);
   };
 
   const handleSalaryPackageChange = (option) => {
@@ -965,6 +998,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
               options={invitePackages}
               value={selectedPackage}
               onChange={handlePackageSelect}
+              onMenuOpen={handleInvitePackageMenuOpen}
+              onFocus={handleInvitePackageMenuOpen}
               placeholder={isLoadingPackages ? "Loading packages..." : "Optional: Select a package to auto-fill"}
               isClearable
               isLoading={isLoadingPackages}
@@ -981,7 +1016,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.2 }}
-            className="space-y-6"
+            className="flex flex-col gap-6"
           >
             {showInviteFields ? (
               <>
@@ -995,6 +1030,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                       options={designations}
                       value={designation}
                       onChange={setDesignation}
+                      onMenuOpen={fetchAllConstants}
+                      onFocus={fetchAllConstants}
                       placeholder="Select designation"
                       isClearable
                       styles={customSelectStyles}
@@ -1010,6 +1047,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                       options={permissionPackages}
                       value={selectedPermissionPackage}
                       onChange={setSelectedPermissionPackage}
+                      onMenuOpen={fetchPermissionPackages}
+                      onFocus={fetchPermissionPackages}
                       placeholder={isLoadingPermissions ? "Loading..." : "Select permission package"}
                       isClearable
                       isLoading={isLoadingPermissions}
@@ -1026,6 +1065,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                       options={employmentTypes}
                       value={employmentType}
                       onChange={setEmploymentType}
+                      onMenuOpen={fetchAllConstants}
+                      onFocus={fetchAllConstants}
                       placeholder="Select employment type"
                       isClearable
                       styles={customSelectStyles}
@@ -1041,6 +1082,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                       options={salaryTypes}
                       value={staffType}
                       onChange={setStaffType}
+                      onMenuOpen={fetchAllConstants}
+                      onFocus={fetchAllConstants}
                       placeholder="Select salary type"
                       isClearable
                       styles={customSelectStyles}
@@ -1048,7 +1091,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="order-last rounded-xl border border-slate-200 bg-white p-4">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                       <FaDollarSign className="h-4 w-4 text-indigo-500" />
@@ -1057,35 +1100,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                     <span className="text-xs text-slate-500">Required for invite payroll setup</span>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Salary Package (Quick Fill)</label>
-                      <Select
-                        value={selectedSalaryPackageOption}
-                        onChange={handleSalaryPackageChange}
-                        onMenuOpen={handleSalaryPackageMenuOpen}
-                        onFocus={handleSalaryPackageMenuOpen}
-                        options={salaryPackageOptions}
-                        isLoading={isLoadingSalaryPackages}
-                        isClearable
-                        placeholder={isLoadingSalaryPackages ? "Loading packages..." : "Custom / Manual"}
-                        noOptionsMessage={() => "No packages found"}
-                        menuPlacement="auto"
-                        menuPosition="fixed"
-                        menuPortalTarget={document.body}
-                        styles={{ ...customSelectStyles, menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Base Amount</label>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={baseAmount}
-                        onChange={(e) => handleBaseAmountChange(e.target.value)}
-                        placeholder="Enter amount"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-                      />
-                    </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Effective From</label>
                       <AdvancedDateFilter
@@ -1106,6 +1120,35 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                         buttonClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Base Amount</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={baseAmount}
+                        onChange={(e) => handleBaseAmountChange(e.target.value)}
+                        placeholder="Enter amount"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Salary Package (Quick Fill)</label>
+                      <Select
+                        value={selectedSalaryPackageOption}
+                        onChange={handleSalaryPackageChange}
+                        onMenuOpen={handleSalaryPackageMenuOpen}
+                        onFocus={handleSalaryPackageMenuOpen}
+                        options={salaryPackageOptions}
+                        isLoading={isLoadingSalaryPackages}
+                        isClearable
+                        placeholder={isLoadingSalaryPackages ? "Loading packages..." : "Custom / Manual"}
+                        noOptionsMessage={() => "No packages found"}
+                        menuPlacement="auto"
+                        menuPosition="fixed"
+                        menuPortalTarget={document.body}
+                        styles={{ ...customSelectStyles, menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
+                      />
+                    </div>
                   </div>
 
                   <div className="mt-5 border-t border-slate-100 pt-4">
@@ -1113,7 +1156,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                       <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Salary Components</label>
                       <button
                         type="button"
-                        onClick={() => setIsSalaryComponentsOpen((prev) => !prev)}
+                        onClick={handleSalaryComponentsToggle}
                         className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 transition hover:bg-indigo-100"
                       >
                         <FaPlus className="h-2.5 w-2.5" />
@@ -1126,6 +1169,8 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                         <Select
                           value={null}
                           onChange={addSalaryComponent}
+                          onMenuOpen={handleSalaryComponentMenuOpen}
+                          onFocus={handleSalaryComponentMenuOpen}
                           options={salaryComponentOptions}
                           placeholder={isLoadingSalaryComponents ? "Loading components..." : "Choose a component"}
                           isLoading={isLoadingSalaryComponents}

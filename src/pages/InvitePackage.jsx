@@ -5,7 +5,7 @@ import {
   FaClock, FaCalendarAlt, FaSpinner, FaEye, FaEdit, FaTrash,
   FaCheckCircle, FaTimesCircle, FaSearch, FaTimes, FaShieldAlt,
   FaUserCheck, FaSave, FaPlus, FaCog, FaChevronDown,
-  FaToggleOn, FaToggleOff
+  FaToggleOn, FaToggleOff, FaListUl, FaCoins
 } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import apiCall from "../utils/api";
@@ -37,6 +37,11 @@ const backdropVariants = {
 
 const formatDisplay = (str) =>
   typeof str === 'object' && str !== null ? str.label || 'N/A' : (str ? str.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A");
+
+const getRecordValue = (value) => {
+  if (value && typeof value === "object") return value.value ?? "";
+  return value ?? "";
+};
 
 const getStatusBadge = (isActive) => {
   if (isActive) {
@@ -110,12 +115,23 @@ const normalizeDuration = (value, fallback = DEFAULT_DURATION) => {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 };
 
-// weekends is now a plain string[] from the API — no shape normalization needed
+// Format duration for display: "00:45" → "45 min", "01:00" → "1h 0m"
+const formatDurationDisplay = (value) => {
+  if (!value) return "N/A";
+  const normalized = normalizeDuration(value);
+  const [h, m] = normalized.split(":").map(Number);
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+};
+
+// weekends is a plain string[] from the API
 const normalizePackageRecord = (pkg) => ({
   ...pkg,
   break_minutes: normalizeDuration(pkg?.break_minutes, DEFAULT_DURATION),
   grace_minutes: normalizeDuration(pkg?.grace_minutes, DEFAULT_DURATION),
   weekends: Array.isArray(pkg?.weekends) ? pkg.weekends : [],
+  permissions: Array.isArray(pkg?.permissions) ? pkg.permissions : [],
+  salary_components: Array.isArray(pkg?.salary_components) ? pkg.salary_components : [],
 });
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -133,6 +149,13 @@ const InfoItem = ({ icon, label, value, className = "" }) => (
     </div>
   </div>
 );
+
+// Salary component type badge colors
+const getSalaryComponentBadge = (type) => {
+  if (type === "earning") return "bg-emerald-50 text-emerald-700 border border-emerald-100";
+  if (type === "deduction") return "bg-red-50 text-red-700 border border-red-100";
+  return "bg-gray-50 text-gray-600 border border-gray-100";
+};
 
 // Simple day-toggle weekend config — weekends is string[]
 const WeekendConfig = ({ weekends, onChange }) => {
@@ -179,11 +202,12 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
     salary_type: "",
     employment_type: "",
     permission_package_id: "",
+    component_package: "",
     shift_start: "09:00:00",
     shift_end: "18:00:00",
     break_minutes: DEFAULT_DURATION,
     grace_minutes: DEFAULT_DURATION,
-    weekends: [],           // string[] e.g. ["saturday","sunday"]
+    weekends: [],
     attendance_methods: [],
     auto_approve: false,
     remarks: ""
@@ -191,6 +215,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
 
   const [loading, setLoading] = useState(false);
   const [permissionPackages, setPermissionPackages] = useState([]);
+  const [salaryComponentPackages, setSalaryComponentPackages] = useState([]);
   const [constants, setConstants] = useState({ designations: [], salary_types: [], employment_types: [] });
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [showAttendanceMethods, setShowAttendanceMethods] = useState(false);
@@ -207,10 +232,12 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
       setFormData({
         code: packageData.code || "",
         name: packageData.name || "",
-        designation: packageData.designation || "",
-        salary_type: packageData.salary_type || "",
-        employment_type: packageData.employment_type || "",
+        designation: getRecordValue(packageData.designation),
+        salary_type: getRecordValue(packageData.salary_type),
+        employment_type: getRecordValue(packageData.employment_type),
         permission_package_id: packageData.permission_package_id?.toString() || "",
+        // component_package from API is now a plain integer ID (e.g. 18) or null
+        component_package: packageData.component_package != null ? packageData.component_package.toString() : "",
         shift_start: packageData.shift_start || "09:00:00",
         shift_end: packageData.shift_end || "18:00:00",
         break_minutes: normalizeDuration(packageData.break_minutes),
@@ -228,6 +255,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
         salary_type: "",
         employment_type: "",
         permission_package_id: "",
+        component_package: "",
         shift_start: "09:00:00",
         shift_end: "18:00:00",
         break_minutes: DEFAULT_DURATION,
@@ -270,6 +298,15 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
             console.error('Failed to fetch form constants:', error);
           }
         })(),
+        (async () => {
+          try {
+            const salaryRes = await apiCall('/salary/components/packages', 'GET', null, company?.id);
+            const salaryJson = await salaryRes.json();
+            if (salaryJson.success) setSalaryComponentPackages(salaryJson.data || []);
+          } catch (error) {
+            console.error('Failed to fetch salary component packages:', error);
+          }
+        })(),
       ]);
     } catch (error) {
       console.error("Failed to fetch options:", error);
@@ -300,7 +337,6 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
     try {
       const company = JSON.parse(localStorage.getItem("company"));
 
-      // weekends is already string[] — send as-is
       const payload = {
         code: formData.code,
         name: formData.name,
@@ -308,11 +344,12 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
         salary_type: formData.salary_type,
         employment_type: formData.employment_type,
         permission_package_id: parseInt(formData.permission_package_id),
+        component_package: formData.component_package ? parseInt(formData.component_package) : null,
         shift_start: formData.shift_start,
         shift_end: formData.shift_end,
         break_minutes: formData.break_minutes,
         grace_minutes: formData.grace_minutes,
-        weekends: formData.weekends,            // ["saturday","sunday",...]
+        weekends: formData.weekends,
         attendance_methods: formData.attendance_methods,
         auto_approve: formData.auto_approve,
         remarks: formData.remarks
@@ -448,8 +485,8 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                 </div>
               </div>
 
-              {/* Permission Package & Remarks */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Permission Package / Salary Component Package / Remarks */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
                     <FaShieldAlt className="text-indigo-500" /> Permission Package
@@ -460,6 +497,27 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                     value={permissionPackages.map(pkg => ({ value: pkg.id, label: pkg.package_name })).find(p => String(p.value) === String(formData.permission_package_id)) || null}
                     onChange={(option) => handleChange({ target: { name: 'permission_package_id', value: option ? option.value : '' } })}
                     placeholder="Select permission package"
+                    isClearable
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
+                    <FaDollarSign className="text-emerald-500" /> Salary Component Package
+                  </label>
+                  <SelectField
+                    name="component_package"
+                    options={salaryComponentPackages.map(pkg => ({
+                      value: pkg.id,
+                      label: `${pkg.name} (${pkg.code})`,
+                    }))}
+                    value={salaryComponentPackages
+                      .map(pkg => ({
+                        value: pkg.id,
+                        label: `${pkg.name} (${pkg.code})`,
+                      }))
+                      .find(pkg => String(pkg.value) === String(formData.component_package)) || null}
+                    onChange={(option) => handleChange({ target: { name: 'component_package', value: option ? option.value : '' } })}
+                    placeholder="Select salary package"
                     isClearable
                   />
                 </div>
@@ -503,7 +561,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                 />
               </div>
 
-              {/* Weekend Config — collapsible, simple day toggles */}
+              {/* Weekend Config — collapsible */}
               <div className="rounded-xl border border-gray-200 bg-gray-50/30 overflow-hidden">
                 <button
                   type="button"
@@ -662,11 +720,16 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
 
 function ViewPackageModal({ isOpen, onClose, package: pkg }) {
   const [showWeekends, setShowWeekends] = useState(false);
+  const [showPermissions, setShowPermissions] = useState(false);
+  const [showSalaryComponents, setShowSalaryComponents] = useState(false);
 
   if (!isOpen || !pkg) return null;
 
   const status = getStatusBadge(pkg.is_active);
   const StatusIcon = status.icon;
+
+  const earningComponents = (pkg.salary_components || []).filter(c => c.component_type === "earning");
+  const deductionComponents = (pkg.salary_components || []).filter(c => c.component_type === "deduction");
 
   return (
     <AnimatePresence mode="wait">
@@ -735,12 +798,13 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
                 <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={formatDisplay(pkg.salary_type)} />
                 <InfoItem icon={<FaClock className="text-orange-500" />} label="Shift Start" value={pkg.shift_start} />
                 <InfoItem icon={<FaClock className="text-amber-500" />} label="Shift End" value={pkg.shift_end} />
-                <InfoItem icon={<FaClock className="text-rose-500" />} label="Break Time" value={pkg.break_minutes} />
-                <InfoItem icon={<FaClock className="text-indigo-500" />} label="Grace Period" value={pkg.grace_minutes} />
-                <InfoItem icon={<FaTag className="text-slate-500" />} label="Remarks" value={pkg.remarks || "—"} className="col-span-2" />
+                <InfoItem icon={<FaClock className="text-rose-500" />} label="Break Time" value={formatDurationDisplay(pkg.break_minutes)} />
+                <InfoItem icon={<FaClock className="text-indigo-500" />} label="Grace Period" value={formatDurationDisplay(pkg.grace_minutes)} />
+                <InfoItem icon={<FaShieldAlt className="text-indigo-400" />} label="Permission Package" value={pkg.permission_package_name || "—"} />
+                <InfoItem icon={<FaTag className="text-slate-500" />} label="Remarks" value={pkg.remarks || "—"} />
               </div>
 
-              {/* Advanced Settings */}
+              {/* Advanced Settings Row */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Auto Approve */}
                 <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
@@ -763,7 +827,7 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
                   <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-sm">
                     <div className="flex items-center gap-2 mb-2">
                       <FaUserCheck className="text-indigo-500" size={16} />
-                      <span className="text-sm font-semibold text-slate-700">Methods</span>
+                      <span className="text-sm font-semibold text-slate-700">Attendance Methods</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {pkg.attendance_methods.map((method, idx) => (
@@ -776,7 +840,7 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
                 )}
               </div>
 
-              {/* Weekends — simple day pills, collapsible */}
+              {/* Weekends — collapsible */}
               {pkg.weekends?.length > 0 && (
                 <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                   <button
@@ -819,6 +883,128 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
                   </AnimatePresence>
                 </div>
               )}
+
+              {/* Permissions — collapsible, full details */}
+              {pkg.permissions?.length > 0 && (
+                <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                  <button
+                    onClick={() => setShowPermissions(!showPermissions)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors"
+                    type="button"
+                  >
+                    <div className="flex items-center gap-2">
+                      <FaShieldAlt className="text-indigo-500" />
+                      <span className="text-sm font-semibold text-slate-700">Permissions</span>
+                      <span className="ml-1 px-2 py-0.5 text-[10px] rounded-full bg-indigo-100 text-indigo-700 font-bold">
+                        {pkg.permissions.length}
+                      </span>
+                    </div>
+                    <motion.div animate={{ rotate: showPermissions ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                      <FaChevronDown className="w-4 h-4 text-slate-400" />
+                    </motion.div>
+                  </button>
+
+                  <AnimatePresence>
+                    {showPermissions && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-3 bg-white">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {pkg.permissions.map((perm) => (
+                              <div
+                                key={perm.id}
+                                className="flex items-start gap-2 px-3 py-2 rounded-lg bg-slate-50 border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-colors"
+                              >
+                                <FaCheckCircle className="text-indigo-400 mt-0.5 shrink-0" size={12} />
+                                <div className="min-w-0">
+                                  <p className="text-xs font-semibold text-slate-700 leading-snug truncate">{perm.name}</p>
+                                  <p className="text-[10px] text-slate-400 font-mono truncate mt-0.5">{perm.code}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
+              {/* Salary Components — collapsible, split by type */}
+              {pkg.salary_components?.length > 0 && (
+                <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                  <button
+                    onClick={() => setShowSalaryComponents(!showSalaryComponents)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors"
+                    type="button"
+                  >
+                    <div className="flex items-center gap-2">
+                      <FaCoins className="text-emerald-500" />
+                      <span className="text-sm font-semibold text-slate-700">Salary Components</span>
+                      <span className="ml-1 px-2 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-700 font-bold">
+                        {pkg.salary_components.length}
+                      </span>
+                      {earningComponents.length > 0 && (
+                        <span className="px-2 py-0.5 text-[9px] rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 font-bold">
+                          {earningComponents.length} earning
+                        </span>
+                      )}
+                      {deductionComponents.length > 0 && (
+                        <span className="px-2 py-0.5 text-[9px] rounded-full bg-red-50 text-red-600 border border-red-100 font-bold">
+                          {deductionComponents.length} deduction
+                        </span>
+                      )}
+                    </div>
+                    <motion.div animate={{ rotate: showSalaryComponents ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                      <FaChevronDown className="w-4 h-4 text-slate-400" />
+                    </motion.div>
+                  </button>
+
+                  <AnimatePresence>
+                    {showSalaryComponents && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-3 bg-white space-y-3">
+                          {/* Earnings */}
+                          {earningComponents.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 mb-2 flex items-center gap-1">
+                                <FaCoins size={9} /> Earnings
+                              </p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {earningComponents.map((comp) => (
+                                  <SalaryComponentRow key={comp.id} comp={comp} />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {/* Deductions */}
+                          {deductionComponents.length > 0 && (
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-red-500 mb-2 flex items-center gap-1">
+                                <FaCoins size={9} /> Deductions
+                              </p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {deductionComponents.map((comp) => (
+                                  <SalaryComponentRow key={comp.id} comp={comp} />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
             </div>
 
             {/* Footer */}
@@ -834,6 +1020,34 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+// Salary component row used in the View modal
+function SalaryComponentRow({ comp }) {
+  const isActive = comp.is_active;
+  const isPercentage = comp.calc_type === "percentage";
+
+  return (
+    <div className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition-colors ${isActive
+      ? "bg-white border-slate-100 hover:border-slate-200"
+      : "bg-slate-50 border-slate-100 opacity-60"
+      }`}>
+      <div className="flex items-center gap-2 min-w-0">
+        <span className={`shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide border ${getSalaryComponentBadge(comp.component_type)}`}>
+          {comp.component_code}
+        </span>
+        <span className="font-medium text-slate-700 truncate">{comp.component_name}</span>
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+        <span className="font-bold text-slate-800">
+          {isPercentage ? `${comp.calc_value}%` : comp.calc_value > 0 ? `${comp.calc_value}` : "—"}
+        </span>
+        {!isActive && (
+          <span className="text-[9px] bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded font-bold">OFF</span>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -1301,6 +1515,12 @@ export default function InvitePackageManagement() {
                         {visibleColumns.showName && (
                           <td className="px-4 lg:px-6 py-4 font-semibold text-gray-800">
                             <span className="block truncate">{pkg.name}</span>
+                            {/* Salary components count hint */}
+                            {pkg.salary_components?.length > 0 && (
+                              <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-emerald-600 font-medium">
+                                <FaCoins size={8} /> {pkg.salary_components.length} components
+                              </span>
+                            )}
                           </td>
                         )}
                         {visibleColumns.showDesignation && (
@@ -1326,10 +1546,15 @@ export default function InvitePackageManagement() {
                           <td className="px-4 lg:px-6 py-4">
                             <div className="flex items-center gap-2 text-xs text-gray-600">
                               <FaShieldAlt className="text-indigo-400 shrink-0" />
-                              <span className="truncate max-w-[140px]">
+                              <span className="truncate max-w-[110px]">
                                 {pkg.permission_package_name || "N/A"}
                               </span>
                             </div>
+                            {pkg.permissions?.length > 0 && (
+                              <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-indigo-500 font-medium">
+                                <FaListUl size={8} /> {pkg.permissions.length} permissions
+                              </span>
+                            )}
                           </td>
                         )}
                         {visibleColumns.showSchedule && (
@@ -1340,6 +1565,11 @@ export default function InvitePackageManagement() {
                                 <span className="whitespace-nowrap">
                                   {pkg.shift_start} - {pkg.shift_end}
                                 </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                                <span>Break {formatDurationDisplay(pkg.break_minutes)}</span>
+                                <span>·</span>
+                                <span>Grace {formatDurationDisplay(pkg.grace_minutes)}</span>
                               </div>
                               {pkg.weekends?.length > 0 && (
                                 <div className="text-[10px] text-gray-500 font-medium">
@@ -1430,6 +1660,7 @@ export default function InvitePackageManagement() {
                         </span>
                       </div>
                       <p className="text-xs text-gray-500 font-mono mt-1 bg-gray-50 px-2 py-1 rounded-lg inline-block">{pkg.code}</p>
+
                       <div className="mt-3 space-y-2">
                         <p className="text-sm text-gray-600 flex items-center gap-2">
                           <FaUserTie className="text-indigo-500" />{formatDisplay(pkg.designation)}
@@ -1438,17 +1669,43 @@ export default function InvitePackageManagement() {
                           <span className="text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-full">{formatDisplay(pkg.employment_type)}</span>
                           <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full">{formatDisplay(pkg.salary_type)}</span>
                         </div>
+
+                        {/* Permission package */}
+                        {pkg.permission_package_name && (
+                          <div className="flex items-center gap-1.5 text-xs text-indigo-600">
+                            <FaShieldAlt size={11} />
+                            <span className="truncate">{pkg.permission_package_name}</span>
+                            {pkg.permissions?.length > 0 && (
+                              <span className="ml-auto shrink-0 text-[10px] bg-indigo-50 border border-indigo-100 rounded px-1.5 py-0.5 text-indigo-500 font-bold">
+                                {pkg.permissions.length} perms
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Salary components summary */}
+                        {pkg.salary_components?.length > 0 && (
+                          <div className="flex items-center gap-1.5 text-xs text-emerald-600">
+                            <FaCoins size={11} />
+                            <span>
+                              {pkg.salary_components.filter(c => c.component_type === "earning").length} earnings,&nbsp;
+                              {pkg.salary_components.filter(c => c.component_type === "deduction").length} deductions
+                            </span>
+                          </div>
+                        )}
+
                         <div className="flex justify-between items-center pt-2 border-t border-gray-100 flex-wrap gap-1">
                           <span className="text-xs text-gray-500 flex items-center gap-1">
                             <FaClock className="text-yellow-500" />{pkg.shift_start} - {pkg.shift_end}
                           </span>
                           <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <FaClock className="text-amber-500" />Break {pkg.break_minutes}
+                            <FaClock className="text-amber-500" />Break {formatDurationDisplay(pkg.break_minutes)}
                           </span>
                           <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <FaClock className="text-rose-500" />Grace {pkg.grace_minutes}
+                            <FaClock className="text-rose-500" />Grace {formatDurationDisplay(pkg.grace_minutes)}
                           </span>
                         </div>
+
                         {/* Weekend pills preview */}
                         {pkg.weekends?.length > 0 && (
                           <div className="flex flex-wrap gap-1 pt-1">

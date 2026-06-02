@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Select from "../SelectField";
 import { toast } from "react-toastify";
@@ -20,7 +20,6 @@ import {
   FaCalendarAlt,
   FaSearch,
   FaEnvelope,
-  FaPhone,
   FaRegCheckCircle,
   FaListAlt,
   FaChevronDown,
@@ -91,16 +90,13 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
   const [shiftEnd, setShiftEnd] = useState(DEFAULT_SHIFT_END);
   const [breakMinutes, setBreakMinutes] = useState(DEFAULT_DURATION);
   const [graceMinutes, setGraceMinutes] = useState(DEFAULT_DURATION);
-  const [weekends, setWeekends] = useState([]); // Array of days (strings)
+  const [weekends, setWeekends] = useState([]);
   const [baseAmount, setBaseAmount] = useState("");
   const [effectiveFrom, setEffectiveFrom] = useState("");
   const [effectiveTo, setEffectiveTo] = useState("");
   const [salaryComponents, setSalaryComponents] = useState([]);
   const [availableSalaryComponents, setAvailableSalaryComponents] = useState([]);
   const [isLoadingSalaryComponents, setIsLoadingSalaryComponents] = useState(false);
-  const [salaryPackages, setSalaryPackages] = useState([]);
-  const [selectedSalaryPackageId, setSelectedSalaryPackageId] = useState("");
-  const [isLoadingSalaryPackages, setIsLoadingSalaryPackages] = useState(false);
 
   const [invitePackages, setInvitePackages] = useState([]);
   const [selectedPackage, setSelectedPackage] = useState(null);
@@ -112,6 +108,10 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
   const [isLoadingConstants, setIsLoadingConstants] = useState(false);
+  const constantsRequestRef = useRef(false);
+  const permissionPackagesRequestRef = useRef(false);
+  const invitePackagesRequestRef = useRef(false);
+  const salaryComponentsRequestRef = useRef(false);
 
   const companyAttendanceMethodList = useMemo(() => {
     let methods = companyAttendanceMethods;
@@ -227,12 +227,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     setEffectiveFrom("");
     setEffectiveTo("");
     setSalaryComponents([]);
-    setSelectedSalaryPackageId("");
     setSelectedPackage(null);
-    fetchPermissionPackages();
-    fetchAllConstants();
-    fetchInvitePackages();
-    fetchSalaryComponents();
   }, [isOpen]);
 
   const normalizeSalaryComponents = (components = []) =>
@@ -248,6 +243,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
       .filter((component) => component.component_id);
 
   const fetchSalaryComponents = async () => {
+    if (availableSalaryComponents.length || isLoadingSalaryComponents || salaryComponentsRequestRef.current) return;
+    salaryComponentsRequestRef.current = true;
     setIsLoadingSalaryComponents(true);
     try {
       const company = JSON.parse(localStorage.getItem("company"));
@@ -255,27 +252,16 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
       const result = await response.json();
       if (result.success) setAvailableSalaryComponents(result.data || []);
     } catch (err) {
+      salaryComponentsRequestRef.current = false;
       console.error("Failed to fetch salary components", err);
     } finally {
       setIsLoadingSalaryComponents(false);
     }
   };
 
-  const fetchSalaryPackages = async () => {
-    setIsLoadingSalaryPackages(true);
-    try {
-      const company = JSON.parse(localStorage.getItem("company"));
-      const response = await apiCall("/salary/components/packages", "GET", null, company?.id);
-      const result = await response.json();
-      if (result.success) setSalaryPackages(result.data || []);
-    } catch (err) {
-      console.error("Failed to fetch salary packages", err);
-    } finally {
-      setIsLoadingSalaryPackages(false);
-    }
-  };
-
   const fetchInvitePackages = async () => {
+    if (invitePackages.length || isLoadingPackages || invitePackagesRequestRef.current) return;
+    invitePackagesRequestRef.current = true;
     setIsLoadingPackages(true);
     try {
       const company = JSON.parse(localStorage.getItem("company"));
@@ -293,6 +279,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
         );
       }
     } catch (err) {
+      invitePackagesRequestRef.current = false;
       console.error("Failed to fetch invite packages", err);
     } finally {
       setIsLoadingPackages(false);
@@ -305,26 +292,37 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
 
     // Designation
     if (pkg.designation) {
-      const found = designations.find((d) => d.value === pkg.designation);
-      setDesignation(found || { value: pkg.designation, label: pkg.designation });
+      const val = typeof pkg.designation === "object" ? pkg.designation.value : pkg.designation;
+      const label = typeof pkg.designation === "object" ? pkg.designation.label : pkg.designation;
+      const found = designations.find((d) => d.value === val);
+      setDesignation(found || { value: val, label: label });
     }
 
     // Employment Type
     if (pkg.employment_type) {
-      const found = employmentTypes.find((e) => e.value === pkg.employment_type);
-      setEmploymentType(found || { value: pkg.employment_type, label: pkg.employment_type });
+      const val = typeof pkg.employment_type === "object" ? pkg.employment_type.value : pkg.employment_type;
+      const label = typeof pkg.employment_type === "object" ? pkg.employment_type.label : pkg.employment_type;
+      const found = employmentTypes.find((e) => e.value === val);
+      setEmploymentType(found || { value: val, label: label });
     }
 
     // Salary Type
     if (pkg.salary_type) {
-      const found = salaryTypes.find((s) => s.value === pkg.salary_type);
-      setStaffType(found || { value: pkg.salary_type, label: pkg.salary_type });
+      const val = typeof pkg.salary_type === "object" ? pkg.salary_type.value : pkg.salary_type;
+      const label = typeof pkg.salary_type === "object" ? pkg.salary_type.label : pkg.salary_type;
+      const found = salaryTypes.find((s) => s.value === val);
+      setStaffType(found || { value: val, label: label });
     }
 
     // Permission Package
     if (pkg.permission_package_id) {
       const found = permissionPackages.find((p) => p.value === pkg.permission_package_id);
-      setSelectedPermissionPackage(found || null);
+      setSelectedPermissionPackage(
+        found || {
+          value: pkg.permission_package_id,
+          label: pkg.permission_package_name || `Package ${pkg.permission_package_id}`,
+        }
+      );
     }
 
     // Attendance Methods
@@ -349,23 +347,27 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
 
     // Weekends
     if (Array.isArray(pkg.weekends)) {
-      setWeekends(pkg.weekends.map(w => typeof w === 'object' ? w.day : w));
+      setWeekends(pkg.weekends.map((w) => (typeof w === "object" ? w.day : w)));
       if (pkg.weekends.length > 0) setIsWeekendsOpen(true);
     }
 
     if (typeof pkg.base_amount !== "undefined") setBaseAmount(String(pkg.base_amount || ""));
     if (pkg.effective_from) setEffectiveFrom(normalizeDate(pkg.effective_from));
     if (typeof pkg.effective_to !== "undefined") setEffectiveTo(normalizeDate(pkg.effective_to));
-    if (Array.isArray(pkg.components)) {
-      setSalaryComponents(normalizeSalaryComponents(pkg.components));
-      setSelectedSalaryPackageId("");
-      if (pkg.components.length > 0) setIsSalaryComponentsOpen(true);
+
+    // Salary Components — use salary_components from invite package response
+    const components = pkg.salary_components || pkg.components || [];
+    if (Array.isArray(components)) {
+      setSalaryComponents(normalizeSalaryComponents(components));
+      if (components.length > 0) setIsSalaryComponentsOpen(true);
     }
 
     toast.info(`Applied details from ${pkg.name}`);
   };
 
   const fetchAllConstants = async () => {
+    if ((employmentTypes.length && designations.length && salaryTypes.length) || isLoadingConstants || constantsRequestRef.current) return;
+    constantsRequestRef.current = true;
     setIsLoadingConstants(true);
     try {
       const company = JSON.parse(localStorage.getItem("company"));
@@ -410,6 +412,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
         );
       }
     } catch (err) {
+      constantsRequestRef.current = false;
       console.error("Failed to fetch constants", err);
       toast.error(err.message || "Failed to fetch configuration data");
     } finally {
@@ -418,6 +421,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
   };
 
   const fetchPermissionPackages = async () => {
+    if (permissionPackages.length || isLoadingPermissions || permissionPackagesRequestRef.current) return;
+    permissionPackagesRequestRef.current = true;
     setIsLoadingPermissions(true);
     try {
       const company = JSON.parse(localStorage.getItem("company"));
@@ -438,6 +443,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
         }))
       );
     } catch (err) {
+      permissionPackagesRequestRef.current = false;
       console.error("Permission packages error", err);
       toast.error(err.message || "Failed to fetch permission packages");
     } finally {
@@ -544,7 +550,9 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
       toast.warning("Please select salary effective from date");
       return;
     }
-    const invalidComponent = salaryComponents.find((component) => !component.component_id || !component.calc_type || component.calc_value === "");
+    const invalidComponent = salaryComponents.find(
+      (component) => !component.component_id || !component.calc_type || component.calc_value === ""
+    );
     if (invalidComponent) {
       toast.warning("Please complete salary component details");
       return;
@@ -613,7 +621,6 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     setEffectiveFrom("");
     setEffectiveTo("");
     setSalaryComponents([]);
-    setSelectedSalaryPackageId("");
     setSelectedPackage(null);
     setIsSubmitting(false);
     onClose();
@@ -621,9 +628,9 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
 
   const methodBadges = companyAttendanceMethodList.length
     ? companyAttendanceMethodList.map((method) => ({
-      key: method,
-      label: ATTENDANCE_LABELS[method] || formatDisplay(method),
-    }))
+        key: method,
+        label: ATTENDANCE_LABELS[method] || formatDisplay(method),
+      }))
     : [];
 
   const toggleAttendanceMethod = (method) => {
@@ -633,9 +640,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
   };
 
   const toggleWeekend = (day) => {
-    setWeekends(prev =>
-      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
-    );
+    setWeekends((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
   };
 
   const handleBaseAmountChange = (value) => {
@@ -649,12 +654,10 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
       updated[index] = { ...updated[index], [key]: value };
       return updated;
     });
-    setSelectedSalaryPackageId("");
   };
 
   const removeSalaryComponent = (index) => {
     setSalaryComponents((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
-    setSelectedSalaryPackageId("");
   };
 
   const addSalaryComponent = (option) => {
@@ -672,33 +675,22 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
         reason: "",
       },
     ]);
-    setSelectedSalaryPackageId("");
     setIsSalaryComponentsOpen(false);
   };
 
-  const handleSalaryPackageMenuOpen = () => {
-    if (!salaryPackages.length && !isLoadingSalaryPackages) fetchSalaryPackages();
+  const handleInvitePackageMenuOpen = () => {
+    fetchAllConstants();
+    fetchPermissionPackages();
+    fetchInvitePackages();
   };
 
-  const handleSalaryPackageChange = (option) => {
-    const packageId = option?.value || "";
-    setSelectedSalaryPackageId(packageId);
-    if (!packageId) return;
+  const handleSalaryComponentMenuOpen = () => {
+    fetchSalaryComponents();
+  };
 
-    const salaryPackage = salaryPackages.find((pkg) => String(pkg.id) === String(packageId));
-    if (!salaryPackage) return;
-
-    setSalaryComponents(
-      (salaryPackage.items || []).map((item) => ({
-        component_id: item.component_id,
-        calc_type: item.calc_type || "percentage",
-        calc_value: parseFloat(item.calc_value || 0).toFixed(2),
-        effective_from: effectiveFrom || "",
-        effective_to: null,
-        reason: `Default from ${salaryPackage.name} package`,
-      }))
-    );
-    if ((salaryPackage.items || []).length > 0) setIsSalaryComponentsOpen(false);
+  const handleSalaryComponentsToggle = () => {
+    if (!isSalaryComponentsOpen) fetchSalaryComponents();
+    setIsSalaryComponentsOpen((prev) => !prev);
   };
 
   const selectedSalaryComponentIds = useMemo(
@@ -714,20 +706,19 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     [availableSalaryComponents, selectedSalaryComponentIds]
   );
 
-  const salaryPackageOptions = useMemo(
-    () => salaryPackages.map((pkg) => ({ value: pkg.id, label: `${pkg.name} (${pkg.code})` })),
-    [salaryPackages]
+  const canCreateInvite = Boolean(
+    selectedUser &&
+      designation &&
+      staffType &&
+      employmentType &&
+      selectedAttendanceMethods.length > 0 &&
+      baseAmount &&
+      effectiveFrom &&
+      !isSubmitting &&
+      !isLoadingConstants &&
+      !isSearchingUser &&
+      !submitDisabled
   );
-
-  const selectedSalaryPackageOption = useMemo(
-    () =>
-      selectedSalaryPackageId
-        ? salaryPackageOptions.find((pkg) => String(pkg.value) === String(selectedSalaryPackageId)) || null
-        : null,
-    [salaryPackageOptions, selectedSalaryPackageId]
-  );
-
-  const canCreateInvite = Boolean(selectedUser && designation && staffType && employmentType && selectedAttendanceMethods.length > 0 && baseAmount && effectiveFrom && !isSubmitting && !isLoadingConstants && !isSearchingUser && !submitDisabled);
 
   return (
     <Modal
@@ -757,10 +748,10 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
               submitDisabled
                 ? submitTitle
                 : !selectedUser
-                  ? "Search and verify a user first"
-                  : !designation || !staffType || !employmentType || selectedAttendanceMethods.length === 0
-                    ? "Complete all required fields"
-                    : ""
+                ? "Search and verify a user first"
+                : !designation || !staffType || !employmentType || selectedAttendanceMethods.length === 0
+                ? "Complete all required fields"
+                : ""
             }
             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -771,6 +762,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
       }
     >
       <div className="space-y-6 p-2 lg:p-0">
+        {/* Find User */}
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
           <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
             <FaSearch className="h-4 w-4 text-indigo-500" />
@@ -808,8 +800,9 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
-              className="space-y-6"
+              className="flex flex-col gap-6"
             >
+              {/* User Found */}
               <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
@@ -841,6 +834,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                 </div>
               </div>
 
+              {/* Quick Fill via Package */}
               <div className="space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/30 p-4">
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                   <FaListAlt className="h-4 w-4 text-indigo-500" />
@@ -850,6 +844,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                   options={invitePackages}
                   value={selectedPackage}
                   onChange={handlePackageSelect}
+                  onMenuOpen={handleInvitePackageMenuOpen}
+                  onFocus={handleInvitePackageMenuOpen}
                   placeholder={isLoadingPackages ? "Loading packages..." : "Optional: Select a package to auto-fill"}
                   isClearable
                   isLoading={isLoadingPackages}
@@ -857,6 +853,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                 />
               </div>
 
+              {/* Role Fields */}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-3">
                   <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -867,6 +864,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                     options={designations}
                     value={designation}
                     onChange={setDesignation}
+                    onMenuOpen={fetchAllConstants}
+                    onFocus={fetchAllConstants}
                     placeholder="Select designation"
                     isClearable
                     styles={customSelectStyles}
@@ -882,6 +881,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                     options={permissionPackages}
                     value={selectedPermissionPackage}
                     onChange={setSelectedPermissionPackage}
+                    onMenuOpen={fetchPermissionPackages}
+                    onFocus={fetchPermissionPackages}
                     placeholder={isLoadingPermissions ? "Loading..." : "Select permission package"}
                     isClearable
                     isLoading={isLoadingPermissions}
@@ -898,6 +899,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                     options={employmentTypes}
                     value={employmentType}
                     onChange={setEmploymentType}
+                    onMenuOpen={fetchAllConstants}
+                    onFocus={fetchAllConstants}
                     placeholder="Select employment type"
                     isClearable
                     styles={customSelectStyles}
@@ -913,6 +916,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                     options={salaryTypes}
                     value={staffType}
                     onChange={setStaffType}
+                    onMenuOpen={fetchAllConstants}
+                    onFocus={fetchAllConstants}
                     placeholder="Select salary type"
                     isClearable
                     styles={customSelectStyles}
@@ -920,7 +925,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white p-4">
+              {/* Salary Details */}
+              <div className="order-last rounded-xl border border-slate-200 bg-white p-4">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                     <FaDollarSign className="h-4 w-4 text-indigo-500" />
@@ -928,36 +934,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                   </label>
                   <span className="text-xs text-slate-500">Required for invite payroll setup</span>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Salary Package (Quick Fill)</label>
-                    <Select
-                      value={selectedSalaryPackageOption}
-                      onChange={handleSalaryPackageChange}
-                      onMenuOpen={handleSalaryPackageMenuOpen}
-                      onFocus={handleSalaryPackageMenuOpen}
-                      options={salaryPackageOptions}
-                      isLoading={isLoadingSalaryPackages}
-                      isClearable
-                      placeholder={isLoadingSalaryPackages ? "Loading packages..." : "Custom / Manual"}
-                      noOptionsMessage={() => "No packages found"}
-                      menuPlacement="auto"
-                      menuPosition="fixed"
-                      menuPortalTarget={document.body}
-                      styles={{ ...customSelectStyles, menuPortal: (base) => ({ ...base, zIndex: 9999 }) }}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Base Amount</label>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={baseAmount}
-                      onChange={(e) => handleBaseAmountChange(e.target.value)}
-                      placeholder="Enter amount"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
-                    />
-                  </div>
+                <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Effective From</label>
                     <AdvancedDateFilter
@@ -978,14 +955,26 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                       buttonClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Base Amount</label>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={baseAmount}
+                      onChange={(e) => handleBaseAmountChange(e.target.value)}
+                      placeholder="Enter amount"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                    />
+                  </div>
                 </div>
 
+                {/* Salary Components */}
                 <div className="mt-5 border-t border-slate-100 pt-4">
                   <div className="mb-3 flex items-center justify-between">
                     <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Salary Components</label>
                     <button
                       type="button"
-                      onClick={() => setIsSalaryComponentsOpen((prev) => !prev)}
+                      onClick={handleSalaryComponentsToggle}
                       className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 transition hover:bg-indigo-100"
                     >
                       <FaPlus className="h-2.5 w-2.5" />
@@ -998,6 +987,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                       <Select
                         value={null}
                         onChange={addSalaryComponent}
+                        onMenuOpen={handleSalaryComponentMenuOpen}
+                        onFocus={handleSalaryComponentMenuOpen}
                         options={salaryComponentOptions}
                         placeholder={isLoadingSalaryComponents ? "Loading components..." : "Choose a component"}
                         isLoading={isLoadingSalaryComponents}
@@ -1013,7 +1004,9 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                   {salaryComponents.length > 0 ? (
                     <div className="space-y-3">
                       {salaryComponents.map((component, index) => {
-                        const componentData = availableSalaryComponents.find((item) => String(item.id) === String(component.component_id));
+                        const componentData = availableSalaryComponents.find(
+                          (item) => String(item.id) === String(component.component_id)
+                        );
                         return (
                           <div key={`${component.component_id}-${index}`} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                             <div className="grid gap-3 md:grid-cols-12">
@@ -1021,13 +1014,18 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                                 <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Component</label>
                                 <div className="truncate rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
                                   {componentData?.name || `Component ${component.component_id}`}
-                                  {componentData?.code && <span className="ml-2 text-[10px] font-normal text-slate-400">({componentData.code})</span>}
+                                  {componentData?.code && (
+                                    <span className="ml-2 text-[10px] font-normal text-slate-400">({componentData.code})</span>
+                                  )}
                                 </div>
                               </div>
                               <div className="md:col-span-3">
                                 <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Type</label>
                                 <Select
-                                  value={{ value: component.calc_type, label: component.calc_type === "percentage" ? "Percentage (%)" : "Fixed Amount" }}
+                                  value={{
+                                    value: component.calc_type,
+                                    label: component.calc_type === "percentage" ? "Percentage (%)" : "Fixed Amount",
+                                  }}
                                   onChange={(option) => updateSalaryComponent(index, "calc_type", option?.value || "percentage")}
                                   options={[
                                     { value: "percentage", label: "Percentage (%)" },
@@ -1085,6 +1083,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                 </div>
               </div>
 
+              {/* Attendance Methods */}
               <div className="rounded-xl border border-slate-200 bg-white p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -1102,10 +1101,11 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                           key={method.key}
                           type="button"
                           onClick={() => toggleAttendanceMethod(method.key)}
-                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${active
-                            ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
-                            : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
-                            }`}
+                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+                            active
+                              ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
+                              : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
+                          }`}
                         >
                           {active && <FaCheck className="h-3 w-3" />}
                           {method.label}
@@ -1120,6 +1120,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                 )}
               </div>
 
+              {/* Attendance Settings */}
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                   <FaCheck className="h-4 w-4 text-indigo-500" />
@@ -1136,6 +1137,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                 </label>
               </div>
 
+              {/* Shift / Duration / Weekends */}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
                   <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -1143,18 +1145,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                     Shift Timings
                   </label>
                   <div className="grid grid-cols-2 gap-3">
-                    <TimeDurationPickerField
-                      label="Start Time"
-                      value={shiftStart}
-                      onChange={setShiftStart}
-                      mode="time"
-                    />
-                    <TimeDurationPickerField
-                      label="End Time"
-                      value={shiftEnd}
-                      onChange={setShiftEnd}
-                      mode="time"
-                    />
+                    <TimeDurationPickerField label="Start Time" value={shiftStart} onChange={setShiftStart} mode="time" />
+                    <TimeDurationPickerField label="End Time" value={shiftEnd} onChange={setShiftEnd} mode="time" />
                   </div>
                 </div>
 
@@ -1164,18 +1156,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                     Duration Settings
                   </label>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <TimeDurationPickerField
-                      label="Break Minutes"
-                      value={breakMinutes}
-                      onChange={setBreakMinutes}
-                      mode="duration"
-                    />
-                    <TimeDurationPickerField
-                      label="Grace Minutes"
-                      value={graceMinutes}
-                      onChange={setGraceMinutes}
-                      mode="duration"
-                    />
+                    <TimeDurationPickerField label="Break Minutes" value={breakMinutes} onChange={setBreakMinutes} mode="duration" />
+                    <TimeDurationPickerField label="Grace Minutes" value={graceMinutes} onChange={setGraceMinutes} mode="duration" />
                   </div>
                 </div>
 
@@ -1210,19 +1192,27 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                         className="overflow-hidden"
                       >
                         <div className="flex flex-col gap-2 pt-1">
-                          {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => {
+                          {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) => {
                             const isSelected = weekends.includes(day);
                             return (
-                              <div key={day} className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-2">
+                              <div
+                                key={day}
+                                className="flex items-center justify-between gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-2"
+                              >
                                 <button
                                   type="button"
                                   onClick={() => toggleWeekend(day)}
-                                  className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isSelected
-                                    ? 'bg-indigo-600 text-white shadow-md'
-                                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                                    }`}
+                                  className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                    isSelected
+                                      ? "bg-indigo-600 text-white shadow-md"
+                                      : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+                                  }`}
                                 >
-                                  <div className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${isSelected ? 'bg-white border-white' : 'bg-slate-100 border-slate-200'}`}>
+                                  <div
+                                    className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border ${
+                                      isSelected ? "bg-white border-white" : "bg-slate-100 border-slate-200"
+                                    }`}
+                                  >
                                     {isSelected && <FaCheck className="w-2.5 h-2.5 text-indigo-600" />}
                                   </div>
                                   {day.charAt(0).toUpperCase() + day.slice(1)}
