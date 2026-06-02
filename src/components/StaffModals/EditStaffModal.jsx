@@ -108,7 +108,14 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
   const [isLoadingPackages, setIsLoadingPackages] = useState(false);
   const [isWeekendsOpen, setIsWeekendsOpen] = useState(false);
   const [isSalaryComponentsOpen, setIsSalaryComponentsOpen] = useState(false);
-
+  
+  const [isInvitePackageOpen, setIsInvitePackageOpen] = useState(false);
+  const [isRoleFieldsOpen, setIsRoleFieldsOpen] = useState(false);
+  const [isSalaryDetailsOpen, setIsSalaryDetailsOpen] = useState(false);
+  const [isAttendanceMethodsOpen, setIsAttendanceMethodsOpen] = useState(false);
+  const [isAttendanceSettingsOpen, setIsAttendanceSettingsOpen] = useState(false);
+  const [isShiftTimingsOpen, setIsShiftTimingsOpen] = useState(false);
+  const [isDurationSettingsOpen, setIsDurationSettingsOpen] = useState(false);
   const [isSearchingUser, setIsSearchingUser] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
@@ -236,9 +243,9 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       const result = await response.json();
       if (result.success) setAvailableSalaryComponents(result.data || []);
     } catch (err) {
-      salaryComponentsRequestRef.current = false;
       console.error("Failed to fetch salary components", err);
     } finally {
+      salaryComponentsRequestRef.current = false;
       setIsLoadingSalaryComponents(false);
     }
   };
@@ -253,9 +260,9 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       const result = await response.json();
       if (result.success) setSalaryPackages(result.data || []);
     } catch (err) {
-      salaryPackagesRequestRef.current = false;
       console.error("Failed to fetch salary packages", err);
     } finally {
+      salaryPackagesRequestRef.current = false;
       setIsLoadingSalaryPackages(false);
     }
   };
@@ -280,9 +287,9 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         );
       }
     } catch (err) {
-      invitePackagesRequestRef.current = false;
       console.error("Failed to fetch invite packages", err);
     } finally {
+      invitePackagesRequestRef.current = false;
       setIsLoadingPackages(false);
     }
   };
@@ -352,7 +359,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     if (Array.isArray(pkg.components)) {
       setSalaryComponents(normalizeSalaryComponents(pkg.components));
       setSelectedSalaryPackageId("");
-      if (pkg.components.length > 0) setIsSalaryComponentsOpen(true);
     }
 
     toast.info(`Applied details from ${pkg.name}`);
@@ -429,10 +435,10 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         );
       }
     } catch (err) {
-      constantsRequestRef.current = false;
       console.error("Failed to fetch constants", err);
       toast.error(err.message || "Failed to fetch configuration data");
     } finally {
+      constantsRequestRef.current = false;
       setIsLoadingConstants(false);
     }
   };
@@ -460,10 +466,10 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         }))
       );
     } catch (err) {
-      permissionPackagesRequestRef.current = false;
       console.error("Permission packages error", err);
       toast.error(err.message || "Failed to fetch permission packages");
     } finally {
+      permissionPackagesRequestRef.current = false;
       setIsLoadingPermissions(false);
     }
   };
@@ -576,9 +582,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
       setEffectiveTo(normalizeDate(staffData.effective_to));
       setSalaryComponents(normalizeSalaryComponents(staffData.components || []));
       setSelectedSalaryPackageId("");
-      if (Array.isArray(staffData.components) && staffData.components.length > 0) {
-        setIsSalaryComponentsOpen(true);
-      }
       if (Array.isArray(staffData.weekends) && staffData.weekends.length > 0) {
         setIsWeekendsOpen(true);
       }
@@ -770,7 +773,6 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         reason: `Default from ${salaryPackage.name} package`,
       }))
     );
-    if ((salaryPackage.items || []).length > 0) setIsSalaryComponentsOpen(false);
   };
 
   const selectedSalaryComponentIds = useMemo(
@@ -989,23 +991,45 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
         )}
 
         {selectedUser && (
-          <div className="space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/30 p-4">
-            <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <FaListAlt className="h-4 w-4 text-indigo-500" />
-              Quick Fill via Package (Optional)
-            </label>
-            <Select
-              options={invitePackages}
-              value={selectedPackage}
-              onChange={handlePackageSelect}
-              onMenuOpen={handleInvitePackageMenuOpen}
-              onFocus={handleInvitePackageMenuOpen}
-              placeholder={isLoadingPackages ? "Loading packages..." : "Optional: Select a package to auto-fill"}
-              isClearable
-              isLoading={isLoadingPackages}
-              styles={customSelectStyles}
-            />
-            <p className="text-[10px] text-slate-400 italic">Choosing a package will automatically populate all fields below.</p>
+          <div className="rounded-xl border border-indigo-100 bg-indigo-50/30 p-4">
+            <button
+              type="button"
+              onClick={() => setIsInvitePackageOpen(!isInvitePackageOpen)}
+              className="flex w-full items-center justify-between"
+            >
+              <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                <FaListAlt className="h-4 w-4 text-indigo-500" />
+                Quick Fill via Package (Optional)
+              </label>
+              {isInvitePackageOpen ? (
+                <FaChevronUp className="h-3 w-3 text-slate-400" />
+              ) : (
+                <FaChevronDown className="h-3 w-3 text-slate-400" />
+              )}
+            </button>
+            <AnimatePresence>
+              {isInvitePackageOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                  animate={{ height: "auto", opacity: 1, marginTop: 12 }}
+                  exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                  className="overflow-hidden space-y-3"
+                >
+                  <Select
+                    options={invitePackages}
+                    value={selectedPackage}
+                    onChange={handlePackageSelect}
+                    onMenuOpen={handleInvitePackageMenuOpen}
+                    onFocus={handleInvitePackageMenuOpen}
+                    placeholder={isLoadingPackages ? "Loading packages..." : "Optional: Select a package to auto-fill"}
+                    isClearable
+                    isLoading={isLoadingPackages}
+                    styles={customSelectStyles}
+                  />
+                  <p className="text-[10px] text-slate-400 italic">Choosing a package will automatically populate all fields below.</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
 
@@ -1020,85 +1044,133 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
           >
             {showInviteFields ? (
               <>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <FaBriefcase className="h-4 w-4 text-indigo-500" />
-                      Designation
-                    </label>
-                    <Select
-                      options={designations}
-                      value={designation}
-                      onChange={setDesignation}
-                      onMenuOpen={fetchAllConstants}
-                      onFocus={fetchAllConstants}
-                      placeholder="Select designation"
-                      isClearable
-                      styles={customSelectStyles}
-                    />
-                  </div>
+              {/* Role Fields */}
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <button
+                  type="button"
+                  onClick={() => setIsRoleFieldsOpen(!isRoleFieldsOpen)}
+                  className="flex w-full items-center justify-between"
+                >
+                  <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                    <FaBriefcase className="h-4 w-4 text-indigo-500" />
+                    Role Fields
+                  </label>
+                  {isRoleFieldsOpen ? (
+                    <FaChevronUp className="h-3 w-3 text-slate-400" />
+                  ) : (
+                    <FaChevronDown className="h-3 w-3 text-slate-400" />
+                  )}
+                </button>
+                <AnimatePresence>
+                  {isRoleFieldsOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                      animate={{ height: "auto", opacity: 1, marginTop: 12 }}
+                      exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-3">
+                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                            <FaBriefcase className="h-4 w-4 text-indigo-500" />
+                            Designation
+                          </label>
+                          <Select
+                            options={designations}
+                            value={designation}
+                            onChange={setDesignation}
+                            onMenuOpen={fetchAllConstants}
+                            onFocus={fetchAllConstants}
+                            placeholder="Select designation"
+                            isClearable
+                            styles={customSelectStyles}
+                          />
+                        </div>
 
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <FaShieldAlt className="h-4 w-4 text-indigo-500" />
-                      Permission Package
-                    </label>
-                    <Select
-                      options={permissionPackages}
-                      value={selectedPermissionPackage}
-                      onChange={setSelectedPermissionPackage}
-                      onMenuOpen={fetchPermissionPackages}
-                      onFocus={fetchPermissionPackages}
-                      placeholder={isLoadingPermissions ? "Loading..." : "Select permission package"}
-                      isClearable
-                      isLoading={isLoadingPermissions}
-                      styles={customSelectStyles}
-                    />
-                  </div>
+                        <div className="space-y-3">
+                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                            <FaShieldAlt className="h-4 w-4 text-indigo-500" />
+                            Permission Package
+                          </label>
+                          <Select
+                            options={permissionPackages}
+                            value={selectedPermissionPackage}
+                            onChange={setSelectedPermissionPackage}
+                            onMenuOpen={fetchPermissionPackages}
+                            onFocus={fetchPermissionPackages}
+                            placeholder={isLoadingPermissions ? "Loading..." : "Select permission package"}
+                            isClearable
+                            isLoading={isLoadingPermissions}
+                            styles={customSelectStyles}
+                          />
+                        </div>
 
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <FaUserTie className="h-4 w-4 text-indigo-500" />
-                      Employment Type
-                    </label>
-                    <Select
-                      options={employmentTypes}
-                      value={employmentType}
-                      onChange={setEmploymentType}
-                      onMenuOpen={fetchAllConstants}
-                      onFocus={fetchAllConstants}
-                      placeholder="Select employment type"
-                      isClearable
-                      styles={customSelectStyles}
-                    />
-                  </div>
+                        <div className="space-y-3">
+                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                            <FaUserTie className="h-4 w-4 text-indigo-500" />
+                            Employment Type
+                          </label>
+                          <Select
+                            options={employmentTypes}
+                            value={employmentType}
+                            onChange={setEmploymentType}
+                            onMenuOpen={fetchAllConstants}
+                            onFocus={fetchAllConstants}
+                            placeholder="Select employment type"
+                            isClearable
+                            styles={customSelectStyles}
+                          />
+                        </div>
 
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <FaClock className="h-4 w-4 text-indigo-500" />
-                      Salary Type
-                    </label>
-                    <Select
-                      options={salaryTypes}
-                      value={staffType}
-                      onChange={setStaffType}
-                      onMenuOpen={fetchAllConstants}
-                      onFocus={fetchAllConstants}
-                      placeholder="Select salary type"
-                      isClearable
-                      styles={customSelectStyles}
-                    />
-                  </div>
-                </div>
+                        <div className="space-y-3">
+                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                            <FaClock className="h-4 w-4 text-indigo-500" />
+                            Salary Type
+                          </label>
+                          <Select
+                            options={salaryTypes}
+                            value={staffType}
+                            onChange={setStaffType}
+                            onMenuOpen={fetchAllConstants}
+                            onFocus={fetchAllConstants}
+                            placeholder="Select salary type"
+                            isClearable
+                            styles={customSelectStyles}
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
                 <div className="order-last rounded-xl border border-slate-200 bg-white p-4">
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <FaDollarSign className="h-4 w-4 text-indigo-500" />
-                      Salary Details
-                    </label>
-                    <span className="text-xs text-slate-500">Required for invite payroll setup</span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsSalaryDetailsOpen(!isSalaryDetailsOpen)}
+                    className="flex w-full items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                        <FaDollarSign className="h-4 w-4 text-indigo-500" />
+                        Salary Details
+                      </label>
+                      <span className="text-xs text-slate-500">Required for invite payroll setup</span>
+                    </div>
+                    {isSalaryDetailsOpen ? (
+                      <FaChevronUp className="h-3 w-3 text-slate-400" />
+                    ) : (
+                      <FaChevronDown className="h-3 w-3 text-slate-400" />
+                    )}
+                  </button>
+                  <AnimatePresence>
+                    {isSalaryDetailsOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                        animate={{ height: "auto", opacity: 1, marginTop: 16 }}
+                        exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                        className="overflow-hidden"
+                      >
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Effective From</label>
@@ -1256,100 +1328,191 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                       </div>
                     )}
                   </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <FaFingerprint className="h-4 w-4 text-indigo-500" />
-                      Attendance Methods
-                    </label>
-                    <span className="text-xs text-slate-500">Choose from company methods</span>
-                  </div>
-                  {methodBadges.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {methodBadges.map((method) => {
-                        const active = selectedAttendanceMethods.includes(method.key);
-                        return (
-                          <button
-                            key={method.key}
-                            type="button"
-                            onClick={() => toggleAttendanceMethod(method.key)}
-                            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${active
-                              ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
-                              : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
-                              }`}
-                          >
-                            {active && <FaCheck className="h-3 w-3" />}
-                            {method.label}
-                          </button>
-                        );
-                      })}
+                  <button
+                    type="button"
+                    onClick={() => setIsAttendanceMethodsOpen(!isAttendanceMethodsOpen)}
+                    className="flex w-full items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                        <FaFingerprint className="h-4 w-4 text-indigo-500" />
+                        Attendance Methods
+                      </label>
+                      <span className="text-xs text-slate-500">Choose from company methods</span>
                     </div>
-                  ) : (
-                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
-                      No attendance methods available for this company.
-                    </div>
-                  )}
+                    {isAttendanceMethodsOpen ? (
+                      <FaChevronUp className="h-3 w-3 text-slate-400" />
+                    ) : (
+                      <FaChevronDown className="h-3 w-3 text-slate-400" />
+                    )}
+                  </button>
+                  <AnimatePresence>
+                    {isAttendanceMethodsOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                        animate={{ height: "auto", opacity: 1, marginTop: 16 }}
+                        exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                        className="overflow-hidden"
+                      >
+                        {methodBadges.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {methodBadges.map((method) => {
+                              const active = selectedAttendanceMethods.includes(method.key);
+                              return (
+                                <button
+                                  key={method.key}
+                                  type="button"
+                                  onClick={() => toggleAttendanceMethod(method.key)}
+                                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${active
+                                    ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
+                                    : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
+                                    }`}
+                                >
+                                  {active && <FaCheck className="h-3 w-3" />}
+                                  {method.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                            No attendance methods available for this company.
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                    <FaCheck className="h-4 w-4 text-indigo-500" />
-                    Attendance Settings
-                  </label>
-                  <label className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={autoApprove}
-                      onChange={(e) => setAutoApprove(e.target.checked)}
-                      className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="text-sm text-slate-700">Auto approve Attendance</span>
-                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsAttendanceSettingsOpen(!isAttendanceSettingsOpen)}
+                    className="flex w-full items-center justify-between"
+                  >
+                    <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                      <FaCheck className="h-4 w-4 text-indigo-500" />
+                      Attendance Settings
+                    </label>
+                    {isAttendanceSettingsOpen ? (
+                      <FaChevronUp className="h-3 w-3 text-slate-400" />
+                    ) : (
+                      <FaChevronDown className="h-3 w-3 text-slate-400" />
+                    )}
+                  </button>
+                  <AnimatePresence>
+                    {isAttendanceSettingsOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                        animate={{ height: "auto", opacity: 1, marginTop: 12 }}
+                        exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <label className="mt-3 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={autoApprove}
+                            onChange={(e) => setAutoApprove(e.target.checked)}
+                            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span className="text-sm text-slate-700">Auto approve Attendance</span>
+                        </label>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-xl border border-slate-200 bg-white p-4">
-                    <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <FaClock className="h-4 w-4 text-indigo-500" />
-                      Shift Timings
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <TimeDurationPickerField
-                        label="Start Time"
-                        value={shiftStart}
-                        onChange={setShiftStart}
-                        mode="time"
-                      />
-                      <TimeDurationPickerField
-                        label="End Time"
-                        value={shiftEnd}
-                        onChange={setShiftEnd}
-                        mode="time"
-                      />
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsShiftTimingsOpen(!isShiftTimingsOpen)}
+                      className="flex w-full items-center justify-between"
+                    >
+                      <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                        <FaClock className="h-4 w-4 text-indigo-500" />
+                        Shift Timings
+                      </label>
+                      {isShiftTimingsOpen ? (
+                        <FaChevronUp className="h-3 w-3 text-slate-400" />
+                      ) : (
+                        <FaChevronDown className="h-3 w-3 text-slate-400" />
+                      )}
+                    </button>
+                    <AnimatePresence>
+                      {isShiftTimingsOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                          animate={{ height: "auto", opacity: 1, marginTop: 12 }}
+                          exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="grid grid-cols-2 gap-3 mt-3">
+                            <TimeDurationPickerField
+                              label="Start Time"
+                              value={shiftStart}
+                              onChange={setShiftStart}
+                              mode="time"
+                            />
+                            <TimeDurationPickerField
+                              label="End Time"
+                              value={shiftEnd}
+                              onChange={setShiftEnd}
+                              mode="time"
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   <div className="rounded-xl border border-slate-200 bg-white p-4">
-                    <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <FaClock className="h-4 w-4 text-indigo-500" />
-                      Duration Settings
-                    </label>
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <TimeDurationPickerField
-                        label="Break Minutes"
-                        value={breakMinutes}
-                        onChange={setBreakMinutes}
-                        mode="duration"
-                      />
-                      <TimeDurationPickerField
-                        label="Grace Minutes"
-                        value={graceMinutes}
-                        onChange={setGraceMinutes}
-                        mode="duration"
-                      />
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsDurationSettingsOpen(!isDurationSettingsOpen)}
+                      className="flex w-full items-center justify-between"
+                    >
+                      <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                        <FaClock className="h-4 w-4 text-indigo-500" />
+                        Duration Settings
+                      </label>
+                      {isDurationSettingsOpen ? (
+                        <FaChevronUp className="h-3 w-3 text-slate-400" />
+                      ) : (
+                        <FaChevronDown className="h-3 w-3 text-slate-400" />
+                      )}
+                    </button>
+                    <AnimatePresence>
+                      {isDurationSettingsOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                          animate={{ height: "auto", opacity: 1, marginTop: 12 }}
+                          exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mt-3">
+                            <TimeDurationPickerField
+                              label="Break Minutes"
+                              value={breakMinutes}
+                              onChange={setBreakMinutes}
+                              mode="duration"
+                            />
+                            <TimeDurationPickerField
+                              label="Grace Minutes"
+                              value={graceMinutes}
+                              onChange={setGraceMinutes}
+                              mode="duration"
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   <div className="rounded-xl border border-slate-200 bg-white p-4">
