@@ -442,16 +442,19 @@ const getAccessMessage = (access) => {
   return "You don't have permission";
 };
 
-const isAllowedPermission = (permission) => (
-  permission?.is_allowed === 1 ||
-  permission?.is_allowed === true ||
-  !Object.prototype.hasOwnProperty.call(permission || {}, "is_allowed")
+const isAllowedFlag = (value) => (
+  value === 1 ||
+  value === true ||
+  value === "1" ||
+  String(value).toLowerCase() === "true"
 );
+
+const isAllowedPermission = (permission) => isAllowedFlag(permission?.is_allowed);
 
 export const usePermissionAccess = () => {
   const { permissions = [], userDetails, activeRole, company, attendanceMethods = [] } = useAuth();
 
-  const isSystemAdmin = userDetails?.meta?.is_system_admin === 1;
+  const isSystemAdmin = isAllowedFlag(userDetails?.meta?.is_system_admin);
   const isCompanyOwnerForCurrentCompany =
     activeRole === "company_owner" || company?.role === "company_owner";
 
@@ -511,7 +514,7 @@ export const usePermissionAccess = () => {
       );
     }
 
-    if (allowCompanyOwner && isCompanyOwnerForCurrentCompany) {
+    if (allowCompanyOwner && isCompanyOwnerForCurrentCompany && normalizedPermissions.length === 0) {
       return buildAccessResult(true, ACCESS_REASONS.ALLOWED, normalizedPermissions);
     }
 

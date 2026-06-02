@@ -79,11 +79,14 @@ const normalizeAttendanceMethods = (value) => {
   return methods.map(normalizeAttendanceMethod).filter(Boolean);
 };
 
-const isAllowedPermission = (permission) => (
-  permission?.is_allowed === 1 ||
-  permission?.is_allowed === true ||
-  !Object.prototype.hasOwnProperty.call(permission || {}, "is_allowed")
+const isAllowedFlag = (value) => (
+  value === 1 ||
+  value === true ||
+  value === "1" ||
+  String(value).toLowerCase() === "true"
 );
+
+const isAllowedPermission = (permission) => isAllowedFlag(permission?.is_allowed);
 
 const getStoredCompany = () => {
   const storedCompany = localStorage.getItem("company");
@@ -353,7 +356,7 @@ export const AuthProvider = ({ children }) => {
   // ✅ PERMISSION HELPER 🔥
   const hasPermission = (requiredPermissions) => {
     // System Admins override
-    if (userDetails?.meta?.is_system_admin === 1) return true;
+    if (isAllowedFlag(userDetails?.meta?.is_system_admin)) return true;
     
     if (!requiredPermissions || requiredPermissions.length === 0) return true;
     
