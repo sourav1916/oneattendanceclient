@@ -18,6 +18,7 @@ import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import ActionMenu from '../components/ActionMenu';
 import { RefreshButton, ManagementHub } from '../components/common';
+import usePermissionAccess from '../hooks/usePermissionAccess';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -223,6 +224,10 @@ const PayrollViewModal = ({ payroll, employee, onClose }) => {
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 const MyPayroll = () => {
+    const { checkPageAccess, checkActionAccess, getAccessMessage } = usePermissionAccess();
+    const pageAccess = checkPageAccess('myPayroll');
+    const downloadAccess = checkActionAccess('myPayroll', 'download');
+
     const [payrollData, setPayrollData] = useState([]);
     const [employee, setEmployee] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -292,6 +297,7 @@ const MyPayroll = () => {
     // ─── API ────────────────────────────────────────────────────────────────────
 
     const fetchPayroll = useCallback(async (page = pagination.page, resetLoading = true) => {
+        if (!pageAccess.allowed) return;
         if (fetchInProgress.current) return;
         fetchInProgress.current = true;
         if (resetLoading) setLoading(true);
@@ -340,17 +346,21 @@ const MyPayroll = () => {
             setLoading(false);
             fetchInProgress.current = false;
         }
-    }, [pagination.page, pagination.limit, debouncedSearch, updatePagination]);
+    }, [pageAccess.allowed, pagination.page, pagination.limit, debouncedSearch, updatePagination]);
 
     const lastFetchParams = useRef({ page: null, limit: null, search: null });
 
     useEffect(() => {
+        if (!pageAccess.allowed) return;
+
         if (lastFetchParams.current.search !== null && lastFetchParams.current.search !== debouncedSearch) {
             goToPage(1);
         }
-    }, [debouncedSearch, goToPage]);
+    }, [pageAccess.allowed, debouncedSearch, goToPage]);
 
     useEffect(() => {
+        if (!pageAccess.allowed) return;
+
         const currentParams = { page: pagination.page, limit: pagination.limit, search: debouncedSearch };
 
         if (
@@ -363,7 +373,7 @@ const MyPayroll = () => {
 
         lastFetchParams.current = currentParams;
         fetchPayroll(pagination.page, true);
-    }, [pagination.page, pagination.limit, debouncedSearch, fetchPayroll]);
+    }, [pageAccess.allowed, pagination.page, pagination.limit, debouncedSearch, fetchPayroll]);
 
     // ─── Summary Stats ──────────────────────────────────────────────────────────
 
@@ -380,6 +390,11 @@ const MyPayroll = () => {
     }, [pagination.page, goToPage]);
 
     const handleDownloadPdf = async (payrollEntryId) => {
+        if (!downloadAccess.allowed) {
+            toast.error(getAccessMessage(downloadAccess));
+            return;
+        }
+
         setIsDownloading(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
@@ -400,6 +415,22 @@ const MyPayroll = () => {
     };
 
     // ─── Render ─────────────────────────────────────────────────────────────────
+
+    if (!pageAccess.allowed) {
+        return (
+            <ManagementHub
+                eyebrow={<><FaFileInvoiceDollar size={11} /> My Payroll</>}
+                title="My Payroll"
+                description="Review your payroll history, earnings, deductions, and attendance impact."
+                accent="blue"
+            >
+                <div className="text-center py-16 bg-white rounded-xl shadow-xl">
+                    <FaExclamationTriangle className="text-6xl text-amber-400 mx-auto mb-4" />
+                    <p className="text-xl text-gray-600">{getAccessMessage(pageAccess)}</p>
+                </div>
+            </ManagementHub>
+        );
+    }
 
     return (
         <>

@@ -34,6 +34,10 @@ const PERMISSION_ACCESS_CONFIG = {
       permissions: ["salary_view_own"],
       disableForCompanyOwner: true,
     },
+    myPayroll: {
+      permissions: ["payroll_view", "payroll_view_all"],
+      disableForCompanyOwner: true,
+    },
     myLedger: {
       permissions: ["salary_view_own"],
       disableForCompanyOwner: true,
@@ -229,6 +233,16 @@ const PERMISSION_ACCESS_CONFIG = {
       },
       advanceView: {
         permissions: "salary_view_own",
+        disableForCompanyOwner: true,
+      },
+    },
+    myPayroll: {
+      read: {
+        permissions: ["payroll_view", "payroll_view_all"],
+        disableForCompanyOwner: true,
+      },
+      download: {
+        permissions: ["payroll_view", "payroll_view_all"],
         disableForCompanyOwner: true,
       },
     },

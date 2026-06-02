@@ -294,7 +294,7 @@ const MY_SALARY_HUB_TABS = [
     shortLabel: "Payroll",
     description: "Review your payroll history and payment records.",
     icon: FaFileInvoiceDollar,
-    pageKey: "mySalary",
+    pageKey: "myPayroll",
     component: MyPayroll,
     accent: "bg-blue-50 text-blue-700 border-blue-200",
   },
