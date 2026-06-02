@@ -127,6 +127,11 @@ const formatMonthYearLabel = (month, year) =>
         year: "numeric",
     });
 
+const getCurrentMonthDate = () => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+};
+
 const normalizeDateFilterSelection = (result) => {
     if (typeof result === 'string' && result) {
         return {
@@ -886,7 +891,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     const [searchTerm, setSearchTerm] = useState('');
     const [showOverrideForm, setShowOverrideForm] = useState(false);
     const [editingOverride, setEditingOverride] = useState(null);
-    const [formData, setFormData] = useState({ component_package_id: '', base_amount: '', currency: normalizeCurrencyCode(companyCurrency), effective_from: '', effective_to: '', components: [] });
+    const [formData, setFormData] = useState({ component_package_id: '', base_amount: '', currency: normalizeCurrencyCode(companyCurrency), effective_from: getCurrentMonthDate(), effective_to: '', components: [] });
     const [overrideForm, setOverrideForm] = useState({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
 
     // Derived: Selected package details
@@ -966,7 +971,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     const editOverride = (index) => { const o = formData.components[index]; setOverrideForm({ component_id: o.component_id, calc_type: o.calc_type, calc_value: o.calc_value, effective_from: o.effective_from || '', effective_to: o.effective_to || '', reason: o.reason || '' }); setEditingOverride(index); setShowOverrideForm(true); };
     const removeOverride = (index) => { setFormData({ ...formData, components: formData.components.filter((_, i) => i !== index), component_package_id: '' }); };
 
-    const resetForm = () => { setSelectedEmployee(null); setSearchTerm(''); setFormData({ component_package_id: packages[0]?.id || '', base_amount: '', currency: normalizeCurrencyCode(companyCurrency), effective_from: '', effective_to: '', components: [] }); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' }); setShowOverrideForm(false); setEditingOverride(null); };
+    const resetForm = () => { setSelectedEmployee(null); setSearchTerm(''); setFormData({ component_package_id: packages[0]?.id || '', base_amount: '', currency: normalizeCurrencyCode(companyCurrency), effective_from: getCurrentMonthDate(), effective_to: '', components: [] }); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' }); setShowOverrideForm(false); setEditingOverride(null); };
 
     const handleSubmit = async (e) => {
         e.preventDefault();

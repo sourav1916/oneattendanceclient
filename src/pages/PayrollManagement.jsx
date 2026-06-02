@@ -64,6 +64,22 @@ const PAYROLL_ROW_TYPES = {
     PREVIEW: 'preview',
 };
 
+const triggerFileDownload = (url, filename) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+const downloadBlob = (blob, filename) => {
+    const downloadUrl = URL.createObjectURL(blob);
+    triggerFileDownload(downloadUrl, filename);
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+};
+
 const normalizePayrollList = (data) => {
     if (Array.isArray(data)) {
         return data.map(item => ({
@@ -492,18 +508,61 @@ const PayrollManagement = () => {
         }
     }, [currentDate, goToPage, pagination.page]);
 
-    const handleDownloadPdf = async (payrollEntryId) => {
+    const getPayrollPdfFilename = (payrollItem) => {
+        const month = Number(payrollItem?.payroll?.month ?? selectedMonth);
+        const year = Number(payrollItem?.payroll?.year ?? selectedYear);
+        const normalizedMonth = Number.isFinite(month) ? String(month).padStart(2, '0') : 'month';
+        const normalizedYear = Number.isFinite(year) ? String(year) : 'year';
+        return `${normalizedMonth}_${normalizedYear}_payroll.pdf`;
+    };
+
+    const handleDownloadPdf = async (payrollItem) => {
+        const payrollEntryId = payrollItem?.payroll?.id;
+        if (!payrollEntryId) {
+            toast.error('Payroll entry ID not found');
+            return;
+        }
+
         setIsDownloading(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
             const companyId = company?.id ?? null;
             const response = await apiCall('/payroll/download', 'POST', { payroll_entry_id: payrollEntryId }, companyId);
-            const result = await response.json();
-            if (result.success && result.url) {
-                toast.success(result.message || 'Payslip generated successfully');
-                window.open(result.url, '_blank');
+
+            if (!response.ok) {
+                let errorMessage = 'Failed to download payslip';
+                try {
+                    const errorResult = await response.json();
+                    errorMessage = errorResult?.message || errorMessage;
+                } catch {
+                    // Keep fallback message when the server does not return JSON.
+                }
+                throw new Error(errorMessage);
+            }
+
+            const filename = getPayrollPdfFilename(payrollItem);
+            const contentType = response.headers.get('content-type') || '';
+
+            if (contentType.includes('application/json')) {
+                const result = await response.json();
+                const fileUrl = result.url || result.file_url || result.data?.url || result.data?.file_url;
+                if (result.success && fileUrl) {
+                    try {
+                        const fileResponse = await fetch(fileUrl);
+                        if (!fileResponse.ok) throw new Error('Unable to fetch PDF file');
+                        const fileBlob = await fileResponse.blob();
+                        downloadBlob(fileBlob, filename);
+                    } catch {
+                        triggerFileDownload(fileUrl, filename);
+                    }
+                    toast.success(result.message || 'Payslip downloaded successfully');
+                } else {
+                    throw new Error(result.message || 'Failed to download payslip');
+                }
             } else {
-                throw new Error(result.message || 'Failed to download payslip');
+                const blob = await response.blob();
+                downloadBlob(blob, filename);
+                toast.success('Payslip downloaded successfully');
             }
         } catch (e) {
             toast.error(e.message || 'Failed to download payslip');
@@ -971,7 +1030,7 @@ const PayrollManagement = () => {
                                                                 {
                                                                     label: 'Download PDF',
                                                                     icon: <FaDownload size={14} />,
-                                                                    onClick: () => handleDownloadPdf(item.payroll.id),
+                                                                    onClick: () => handleDownloadPdf(item),
                                                                     className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                                                                 },
                                                                 {
@@ -1067,7 +1126,7 @@ const PayrollManagement = () => {
                                                                 {
                                                                     label: 'Download PDF',
                                                                     icon: <FaDownload size={14} />,
-                                                                    onClick: () => handleDownloadPdf(item.payroll.id),
+                                                                    onClick: () => handleDownloadPdf(item),
                                                                     className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                                                                 },
                                                                 {

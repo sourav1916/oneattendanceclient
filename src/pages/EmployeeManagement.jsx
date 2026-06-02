@@ -64,6 +64,7 @@ const DEFAULT_DURATION = '00:30';
 const getDefaultCreateFormData = () => {
     const today = new Date();
     const joining_date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const effective_from = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
     return {
         signup_type: 'email',
         email: '',
@@ -84,7 +85,7 @@ const getDefaultCreateFormData = () => {
         grace_minutes: '',
         joining_date,
         base_amount: '',
-        effective_from: '',
+        effective_from,
         effective_to: '',
         component_package_id: '',
         components: [],

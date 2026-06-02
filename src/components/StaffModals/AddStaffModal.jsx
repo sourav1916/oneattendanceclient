@@ -59,6 +59,11 @@ const getMonthYearValue = (value) =>
 const monthYearToDate = (value) =>
   value && value.month && value.year ? `${value.year}-${String(value.month).padStart(2, "0")}-01` : "";
 
+const getCurrentMonthDate = () => {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
+};
+
 const normalizeDuration = (value, fallback = DEFAULT_DURATION) => {
   if (typeof value === "number") {
     const hours = Math.floor(value / 60);
@@ -92,7 +97,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
   const [graceMinutes, setGraceMinutes] = useState(DEFAULT_DURATION);
   const [weekends, setWeekends] = useState([]);
   const [baseAmount, setBaseAmount] = useState("");
-  const [effectiveFrom, setEffectiveFrom] = useState("");
+  const [effectiveFrom, setEffectiveFrom] = useState(getCurrentMonthDate);
   const [effectiveTo, setEffectiveTo] = useState("");
   const [salaryComponents, setSalaryComponents] = useState([]);
   const [availableSalaryComponents, setAvailableSalaryComponents] = useState([]);
@@ -232,7 +237,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     setGraceMinutes(DEFAULT_DURATION);
     setWeekends([]);
     setBaseAmount("");
-    setEffectiveFrom("");
+    setEffectiveFrom(getCurrentMonthDate());
     setEffectiveTo("");
     setSalaryComponents([]);
     setSelectedPackage(null);
@@ -629,7 +634,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     setGraceMinutes(DEFAULT_DURATION);
     setWeekends([]);
     setBaseAmount("");
-    setEffectiveFrom("");
+    setEffectiveFrom(getCurrentMonthDate());
     setEffectiveTo("");
     setSalaryComponents([]);
     setSelectedPackage(null);
