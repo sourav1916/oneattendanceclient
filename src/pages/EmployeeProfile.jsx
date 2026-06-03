@@ -12,7 +12,7 @@ import {
   FaUser, FaUserCheck, FaHourglassEnd, FaExclamationCircle,
   FaComment, FaCog, FaMapPin, FaServer, FaInfoCircle,
   FaSpinner, FaSignInAlt, FaSignOutAlt, FaHourglassHalf,
-  FaChevronLeft,
+  FaChevronLeft, FaFilePdf, FaPlus,
 } from "react-icons/fa";
 import apiCall from "../utils/api";
 import { toast } from "react-toastify";
@@ -1547,7 +1547,7 @@ function useShiftConfig(onView, width) {
 
 // ─── GENERIC TAB CONTENT ──────────────────────────────────────────────────────
 
-function TabContent({ tabKey, tabLabel, employeeId, refreshKey = 0 }) {
+function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -1557,6 +1557,7 @@ function TabContent({ tabKey, tabLabel, employeeId, refreshKey = 0 }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedLogItem, setSelectedLogItem] = useState(null);
   const [subType, setSubType] = useState("attendance");
+  const [downloadingShiftPdf, setDownloadingShiftPdf] = useState(false);
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
   const fetchRef = useRef(false);
   const mountedRef = useRef(false);
@@ -1617,6 +1618,45 @@ function TabContent({ tabKey, tabLabel, employeeId, refreshKey = 0 }) {
 
   const onView = (item) => setSelectedItem(item);
   const onViewLogs = (item) => setSelectedLogItem(item);
+
+  const handleDownloadShiftPdf = useCallback(async () => {
+    if (!employeeId) return;
+
+    setDownloadingShiftPdf(true);
+    try {
+      const companyStr = localStorage.getItem("company");
+      const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+
+      const response = await apiCall(`/shifts/download?employee_id=${employeeId}&month=${month}&year=${year}`, "GET", null, companyId);
+      const contentType = response.headers.get("content-type") || "";
+
+      if (contentType.includes("application/pdf") || contentType.includes("application/octet-stream")) {
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        window.open(blobUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      const result = await response.json();
+      if (result?.success && result?.url) {
+        window.open(result.url, "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      throw new Error(result?.message || "Failed to download shift PDF");
+    } catch (error) {
+      toast.error(error?.message || "Failed to download shift PDF");
+    } finally {
+      setDownloadingShiftPdf(false);
+    }
+  }, [employeeId]);
+
+  const handleCreateLeaveClick = () => {
+    toast.info("Create leave modal will be added later.");
+  };
   const permConfig = usePermissionsConfig(onView, effectiveWidth);
   const attConfig = useAttendanceConfig(onView, onViewLogs, effectiveWidth, subType);
   const salConfig = useSalaryConfig(onView, effectiveWidth);
@@ -1626,6 +1666,7 @@ function TabContent({ tabKey, tabLabel, employeeId, refreshKey = 0 }) {
 
   const CONFIG_MAP = { permissions: permConfig, attendance: attConfig, salary: salConfig, payroll: payConfig, leaves: leaveConfig, shifts: shiftConfig };
   const { columns, cardRenderer, rowKey } = CONFIG_MAP[normalizedTabKey] || permConfig;
+  const hasToolbarActions = normalizedTabKey === "shifts" || normalizedTabKey === "leaves" || normalizedTabKey === "salary";
 
   const getActions = (row) => {
     const base = [{ label: "View Details", icon: <FaEye size={13} />, onClick: () => setSelectedItem(row), className: "text-blue-600 hover:text-blue-700 hover:bg-blue-50" }];
@@ -1643,20 +1684,38 @@ function TabContent({ tabKey, tabLabel, employeeId, refreshKey = 0 }) {
         </div>
       )}
 
-      {!loading && rows.length > 0 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-500">
-            <span className="font-semibold text-gray-800">{rows.length}</span>
-            {pagination.total > rows.length && <> of <span className="font-semibold text-gray-800">{pagination.total}</span></>}
-            {" "}{tabLabel.toLowerCase()} records
+      {!loading && (rows.length > 0 || hasToolbarActions) && (
+        <div className="flex p-2 bg-white rounded-xl shadow-lg items-center justify-between">
+          <p className="text-md text-blue-700 px-4 font-semibold flex items-center gap-2">
+            {tabIcon}{tabLabel}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-row justify-end">
+            {normalizedTabKey === "shifts" && (
+              <button
+                type="button"
+                onClick={handleDownloadShiftPdf}
+                disabled={downloadingShiftPdf}
+                className="inline-flex whitespace-nowrap items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-bold text-emerald-700 shadow-sm transition-all hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {downloadingShiftPdf ? <FaSpinner className="animate-spin" size={10} /> : <FaFilePdf size={10} />}
+                {downloadingShiftPdf ? "Preparing PDF…" : "Download This Month PDF"}
+              </button>
+            )}
+            {normalizedTabKey === "leaves" && (
+              <button
+                type="button"
+                onClick={handleCreateLeaveClick}
+                className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 shadow-sm transition-all hover:bg-amber-100"
+              >
+                <FaPlus size={10} /> Create Leave
+              </button>
+            )}
             {normalizedTabKey === "salary" && (
               <button onClick={() => navigate(`/employee-salary-history/${employeeId}`)} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-all shadow-sm">
                 <FaHistory size={10} /> History
               </button>
             )}
-            {normalizedTabKey !== "permissions" && (
+            {rows.length > 0 && normalizedTabKey !== "permissions" && (
               <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent={accent} />
             )}
           </div>
@@ -1822,7 +1881,7 @@ export default function EmployeeProfilePage() {
                   ) : activeTab === "ledger" ? (
                     <CompanyLedger employeeId={profile.employee?.id ?? employeeId} />
                   ) : (
-                    <TabContent tabKey={activeTab} tabLabel={TABS.find((tab) => tab.key === activeTab)?.label || "Profile"} employeeId={profile.employee?.id ?? employeeId} refreshKey={refreshKey} />
+                    <TabContent tabKey={activeTab} tabLabel={TABS.find((tab) => tab.key === activeTab)?.label || "Profile"} tabIcon={TABS.find((tab) => tab.key === activeTab)?.icon || ""} employeeId={profile.employee?.id ?? employeeId} refreshKey={refreshKey} />
                   )}
                 </div>
               </ProfileHub>

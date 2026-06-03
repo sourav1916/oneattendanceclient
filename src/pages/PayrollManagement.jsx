@@ -192,6 +192,8 @@ const PayrollManagement = () => {
 
     const viewPayrollAccess = checkActionAccess('payrollManagement', 'read');
     const generatePayrollAccess = checkActionAccess('payrollManagement', 'create');
+    const downloadPayrollAccess = checkActionAccess('payrollManagement', 'read');
+    const emailPayrollAccess = checkActionAccess('payrollManagement', 'read');
 
     useEffect(() => {
         isMounted.current = true;
@@ -392,6 +394,7 @@ const PayrollManagement = () => {
     };
 
     const openEmailModal = (item) => {
+        if (emailPayrollAccess.disabled) return;
         setSelectedPayroll(item);
         setEmailOverride('');
         setModalType(MODAL_TYPES.SEND_EMAIL);
@@ -399,7 +402,7 @@ const PayrollManagement = () => {
     };
 
     const openBulkEmailModal = () => {
-        if (selectedIds.length === 0) return;
+        if (selectedIds.length === 0 || emailPayrollAccess.disabled) return;
         setSelectedPayroll(null);
         setEmailOverride('');
         setModalType(MODAL_TYPES.SEND_EMAIL);
@@ -517,6 +520,8 @@ const PayrollManagement = () => {
     };
 
     const handleDownloadPdf = async (payrollItem) => {
+        if (downloadPayrollAccess.disabled) return;
+
         const payrollEntryId = payrollItem?.payroll?.id;
         if (!payrollEntryId) {
             toast.error('Payroll entry ID not found');
@@ -1031,12 +1036,16 @@ const PayrollManagement = () => {
                                                                     label: 'Download PDF',
                                                                     icon: <FaDownload size={14} />,
                                                                     onClick: () => handleDownloadPdf(item),
+                                                                    disabled: downloadPayrollAccess.disabled,
+                                                                    title: downloadPayrollAccess.disabled ? getAccessMessage(downloadPayrollAccess) : '',
                                                                     className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                                                                 },
                                                                 {
                                                                     label: 'Send Email',
                                                                     icon: <FaEnvelope size={14} />,
                                                                     onClick: () => openEmailModal(item),
+                                                                    disabled: emailPayrollAccess.disabled,
+                                                                    title: emailPayrollAccess.disabled ? getAccessMessage(emailPayrollAccess) : '',
                                                                     className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
                                                                 },
                                                             ]}
@@ -1127,12 +1136,16 @@ const PayrollManagement = () => {
                                                                     label: 'Download PDF',
                                                                     icon: <FaDownload size={14} />,
                                                                     onClick: () => handleDownloadPdf(item),
+                                                                    disabled: downloadPayrollAccess.disabled,
+                                                                    title: downloadPayrollAccess.disabled ? getAccessMessage(downloadPayrollAccess) : '',
                                                                     className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                                                                 },
                                                                 {
                                                                     label: 'Send Email',
                                                                     icon: <FaEnvelope size={14} />,
                                                                     onClick: () => openEmailModal(item),
+                                                                    disabled: emailPayrollAccess.disabled,
+                                                                    title: emailPayrollAccess.disabled ? getAccessMessage(emailPayrollAccess) : '',
                                                                     className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50'
                                                                 },
                                                             ]}
@@ -1229,7 +1242,8 @@ const PayrollManagement = () => {
                                 variant="solid"
                                 leftIcon={<FaEnvelope />}
                                 onClick={openBulkEmailModal}
-                                disabled={isEmailing}
+                                disabled={isEmailing || emailPayrollAccess.disabled}
+                                title={emailPayrollAccess.disabled ? getAccessMessage(emailPayrollAccess) : ''}
                                 className="shadow-lg shadow-purple-200 !text-xs !px-3 !py-1.5"
                             >
                                 Send Email
