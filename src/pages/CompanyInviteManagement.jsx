@@ -20,6 +20,7 @@ import usePermissionAccess from "../hooks/usePermissionAccess";
 import Modal from "../components/Modal";
 import { RefreshButton } from "../components/common";
 import ProfileAvatar from "../components/common/ProfileAvatar";
+import CurrencyIcon from "../components/common/CurrencyIcon";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 

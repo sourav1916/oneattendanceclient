@@ -17,6 +17,7 @@ import {
   FaCreditCard
 } from 'react-icons/fa';
 import apiCall from '../utils/api';
+import { toast } from 'react-toastify';
 
 const DURATION_OPTIONS = [
   { key: 'monthly_price', label: 'Monthly', suffix: '/mo', discount: 0 },
@@ -54,6 +55,7 @@ const SubscriptionPage = () => {
   const [employees, setEmployees] = useState(25);
   const [selectedDuration, setSelectedDuration] = useState(DURATION_OPTIONS[0]);
   const [hoveredPlan, setHoveredPlan] = useState(null);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
   
   // Fetch packages from API
   useEffect(() => {
@@ -135,6 +137,41 @@ const SubscriptionPage = () => {
       alert('This is your current plan');
     } else {
       alert(`Selected ${planName} plan for ${employees} employees`);
+    }
+  };
+  
+  const handlePurchase = async (durationKey) => {
+    if (!currentPackage) return;
+    
+    // Map durationKey to package_period
+    const periodMap = {
+      'monthly_price': 'monthly',
+      'quarterly_price': 'quarterly',
+      'half_yearly_price': 'half_yearly',
+      'yearly_price': 'yearly'
+    };
+    
+    try {
+      setPurchaseLoading(true);
+      const companyId = localStorage.getItem('companyId');
+      const payload = {
+        package_id: currentPackage.id,
+        package_period: periodMap[durationKey]
+      };
+      
+      const response = await apiCall('/subscriptions/purchase-subscription', 'POST', companyId, payload);
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success(result.message || 'Subscription purchased successfully!');
+      } else {
+        throw new Error(result.message || 'Failed to purchase subscription');
+      }
+    } catch (err) {
+      console.error('Purchase error:', err);
+      toast.error(err.message || 'An error occurred during purchase');
+    } finally {
+      setPurchaseLoading(false);
     }
   };
   
@@ -258,8 +295,16 @@ const SubscriptionPage = () => {
                       </div>
                       
                       <button
-                        disabled={priceValue === null || isNaN(priceValue)}
-                        className={`mt-6 w-full py-2.5 rounded-xl font-semibold transition-all duration-200 ${
+                        disabled={priceValue === null || isNaN(priceValue) || purchaseLoading}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isSelected) {
+                            handlePurchase(duration.key);
+                          } else {
+                            handleDurationChange(duration);
+                          }
+                        }}
+                        className={`mt-6 w-full py-2.5 rounded-xl font-semibold transition-all duration-200 flex justify-center items-center gap-2 ${
                           priceValue === null || isNaN(priceValue)
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                             : isSelected
@@ -267,7 +312,8 @@ const SubscriptionPage = () => {
                               : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
                         }`}
                       >
-                        {isSelected ? 'Selected' : 'Buy Now'}
+                        {purchaseLoading && isSelected && <FaSpinner className="animate-spin" />}
+                        {isSelected ? 'Buy Now' : 'Choose Plan'}
                       </button>
                     </div>
                   </motion.div>
@@ -439,17 +485,17 @@ const SubscriptionPage = () => {
                 <motion.button
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.98 }}
-                  disabled={!currentPackage}
-                  onClick={() => currentPackage && alert(`Proceed with ${currentPackage.name} plan for ${employees} employees`)}
+                  disabled={!currentPackage || purchaseLoading}
+                  onClick={() => handlePurchase(selectedDuration.key)}
                   className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
-                    currentPackage
+                    currentPackage && !purchaseLoading
                       ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md hover:shadow-lg cursor-pointer'
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}
                 >
-                  <FaCreditCard />
-                  Continue to Payment
-                  <FaArrowRight className="text-sm" />
+                  {purchaseLoading ? <FaSpinner className="animate-spin text-lg" /> : <FaCreditCard />}
+                  {purchaseLoading ? 'Processing...' : 'Buy Now'}
+                  {!purchaseLoading && <FaArrowRight className="text-sm" />}
                 </motion.button>
                 
                 {/* Trust Badges */}
