@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FaUsers, 
-  FaDatabase, 
-  FaChartBar, 
-  FaCode, 
+import {
+  FaUsers,
+  FaDatabase,
+  FaChartBar,
+  FaCode,
   FaCheckCircle,
   FaArrowRight,
   FaSpinner,
@@ -56,22 +56,21 @@ const SubscriptionPage = () => {
   const [selectedDuration, setSelectedDuration] = useState(DURATION_OPTIONS[0]);
   const [hoveredPlan, setHoveredPlan] = useState(null);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
-  
+
   // Fetch packages from API
   useEffect(() => {
     const fetchPackages = async () => {
       try {
         setLoading(true);
         setError(null);
-        const companyId=localStorage.getItem('companyId');
-        const response = await apiCall('/subscriptions/packages', 'GET',companyId);
-        
+        const response = await apiCall('/subscriptions/packages', 'GET');
+
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const result = await response.json();
-        
+
         if (result.success && Array.isArray(result.data)) {
           setPackages(result.data);
         } else {
@@ -86,51 +85,51 @@ const SubscriptionPage = () => {
         setLoading(false);
       }
     };
-    
+
     fetchPackages();
   }, []);
-  
+
   // Find package matching employee count
   const findMatchingPackage = () => {
     if (!packages.length) return null;
-    
-    return packages.find(pkg => 
-      employees >= pkg.min_employee_count && 
+
+    return packages.find(pkg =>
+      employees >= pkg.min_employee_count &&
       employees <= pkg.max_employee_count
     );
   };
-  
+
   const currentPackage = findMatchingPackage();
-  
+
   // Calculate current price based on selected duration
   const getCurrentPrice = () => {
     if (!currentPackage) return null;
     const priceValue = currentPackage[selectedDuration.key];
     return priceValue ? parseFloat(priceValue) : null;
   };
-  
+
   const currentPrice = getCurrentPrice();
   const pricePerUser = calculatePricePerUser(currentPrice, employees);
-  
+
   // Get max employee range from packages
-  const maxEmployees = packages.length > 0 
+  const maxEmployees = packages.length > 0
     ? Math.max(...packages.map(p => p.max_employee_count))
     : 200;
-  
+
   const minEmployees = packages.length > 0
     ? Math.min(...packages.map(p => p.min_employee_count))
     : 1;
-  
+
   // Handle slider change
   const handleEmployeesChange = (e) => {
     setEmployees(parseInt(e.target.value));
   };
-  
+
   // Handle duration change
   const handleDurationChange = (duration) => {
     setSelectedDuration(duration);
   };
-  
+
   // Handle plan button click
   const handlePlanAction = (planName) => {
     if (planName === 'Current') {
@@ -139,10 +138,10 @@ const SubscriptionPage = () => {
       alert(`Selected ${planName} plan for ${employees} employees`);
     }
   };
-  
+
   const handlePurchase = async (durationKey) => {
     if (!currentPackage) return;
-    
+
     // Map durationKey to package_period
     const periodMap = {
       'monthly_price': 'monthly',
@@ -150,18 +149,21 @@ const SubscriptionPage = () => {
       'half_yearly_price': 'half_yearly',
       'yearly_price': 'yearly'
     };
-    
+
     try {
       setPurchaseLoading(true);
-      const companyId = localStorage.getItem('companyId');
+
+      const storedCompany = localStorage.getItem('company');
+      const company = storedCompany ? JSON.parse(storedCompany) : null;
+
       const payload = {
         package_id: currentPackage.id,
         package_period: periodMap[durationKey]
       };
-      
-      const response = await apiCall('/subscriptions/purchase-subscription', 'POST', companyId, payload);
+
+      const response = await apiCall('/subscriptions/purchase-subscription', 'POST', payload, company?.id);
       const result = await response.json();
-      
+
       if (result.success) {
         toast.success(result.message || 'Subscription purchased successfully!');
       } else {
@@ -174,13 +176,13 @@ const SubscriptionPage = () => {
       setPurchaseLoading(false);
     }
   };
-  
+
   // Animation variants
   const fadeInUp = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 }
   };
-  
+
   const staggerContainer = {
     hidden: { opacity: 0 },
     visible: {
@@ -188,7 +190,7 @@ const SubscriptionPage = () => {
       transition: { staggerChildren: 0.1 }
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
@@ -206,7 +208,7 @@ const SubscriptionPage = () => {
           </div>
         </div>
       </div>
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Loading State */}
         {loading && (
@@ -215,14 +217,14 @@ const SubscriptionPage = () => {
             <p className="text-gray-500">Loading subscription packages...</p>
           </div>
         )}
-        
+
         {/* Error State */}
         {error && !loading && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
             <FaExclamationTriangle className="text-4xl text-red-500 mx-auto mb-3" />
             <p className="text-red-600 font-medium">Failed to load packages</p>
             <p className="text-sm text-red-400 mt-1">{error}</p>
-            <button 
+            <button
               onClick={() => window.location.reload()}
               className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600"
             >
@@ -230,12 +232,12 @@ const SubscriptionPage = () => {
             </button>
           </div>
         )}
-        
+
         {/* Main Content */}
         {!loading && !error && (
           <>
             {/* Duration Cards Row */}
-            <motion.div 
+            <motion.div
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
@@ -244,18 +246,17 @@ const SubscriptionPage = () => {
               {DURATION_OPTIONS.map((duration) => {
                 const priceValue = currentPackage ? parseFloat(currentPackage[duration.key]) : null;
                 const isSelected = selectedDuration.key === duration.key;
-                
+
                 return (
                   <motion.div
                     key={duration.key}
                     variants={fadeInUp}
                     whileHover={{ y: -8, transition: { duration: 0.2 } }}
                     onClick={() => handleDurationChange(duration)}
-                    className={`relative rounded-2xl w-full max-w-[250px] min-w-[200px] cursor-pointer transition-all duration-300 p-6 ${
-                      isSelected 
-                        ? 'bg-white shadow-xl border-2 border-indigo-500 scale-105 md:scale-105 z-10' 
+                    className={`relative rounded-2xl w-full max-w-[250px] min-w-[200px] cursor-pointer transition-all duration-300 p-6 ${isSelected
+                        ? 'bg-white shadow-xl border-2 border-indigo-500 scale-105 md:scale-105 z-10'
                         : 'bg-white shadow-md border border-gray-200 hover:shadow-lg'
-                    }`}
+                      }`}
                   >
                     {duration.discount > 0 && (
                       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -264,7 +265,7 @@ const SubscriptionPage = () => {
                         </span>
                       </div>
                     )}
-                    
+
                     <div className="text-center">
                       <h3 className={`text-xl font-bold ${isSelected ? 'text-indigo-600' : 'text-gray-800'}`}>
                         {duration.label}
@@ -274,26 +275,26 @@ const SubscriptionPage = () => {
                           {priceValue !== null ? formatCurrency(priceValue) : '—'}
                         </span>
                       </div>
-                      
+
                       {priceValue !== null && !isNaN(priceValue) && employees > 0 ? (
                         <p className="text-sm text-gray-500 font-medium">
                           {formatCurrency(priceValue / employees)} <span className="font-normal text-gray-400">/ user{duration.suffix}</span>
                         </p>
                       ) : (
-                         <p className="text-sm text-gray-400">—</p>
+                        <p className="text-sm text-gray-400">—</p>
                       )}
-                      
+
                       <div className="mt-6 space-y-3 text-left">
-                         <div className="flex items-center gap-2 text-sm text-gray-600">
-                           <FaUsers className="text-indigo-500 text-xs" />
-                           <span>Up to {currentPackage ? currentPackage.max_employee_count : 10} Users</span>
-                         </div>
-                         <div className="flex items-center gap-2 text-sm text-gray-600">
-                           <FaCheckCircle className="text-green-500 text-xs" />
-                           <span>All Pro Features</span>
-                         </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <FaUsers className="text-indigo-500 text-xs" />
+                          <span>Up to {currentPackage ? currentPackage.max_employee_count : 10} Users</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <FaCheckCircle className="text-green-500 text-xs" />
+                          <span>All Pro Features</span>
+                        </div>
                       </div>
-                      
+
                       <button
                         disabled={priceValue === null || isNaN(priceValue) || purchaseLoading}
                         onClick={(e) => {
@@ -304,13 +305,12 @@ const SubscriptionPage = () => {
                             handleDurationChange(duration);
                           }
                         }}
-                        className={`mt-6 w-full py-2.5 rounded-xl font-semibold transition-all duration-200 flex justify-center items-center gap-2 ${
-                          priceValue === null || isNaN(priceValue)
+                        className={`mt-6 w-full py-2.5 rounded-xl font-semibold transition-all duration-200 flex justify-center items-center gap-2 ${priceValue === null || isNaN(priceValue)
                             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                             : isSelected
                               ? 'bg-indigo-600 text-white shadow-md'
                               : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
-                        }`}
+                          }`}
                       >
                         {purchaseLoading && isSelected && <FaSpinner className="animate-spin" />}
                         {isSelected ? 'Buy Now' : 'Choose Plan'}
@@ -320,7 +320,7 @@ const SubscriptionPage = () => {
                 );
               })}
             </motion.div>
-            
+
             {/* Price Calculator Section - Right side as in image */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -335,7 +335,7 @@ const SubscriptionPage = () => {
                 </div>
                 <p className="text-indigo-100 text-sm mt-1">Calculate your exact subscription cost</p>
               </div>
-              
+
               <div className="p-6">
                 {/* Employees Slider */}
                 <div className="mb-8">
@@ -344,7 +344,7 @@ const SubscriptionPage = () => {
                       <FaUsers className="text-indigo-500" />
                       Employees
                     </label>
-                    <motion.span 
+                    <motion.span
                       key={employees}
                       initial={{ scale: 1.2, color: '#6366f1' }}
                       animate={{ scale: 1, color: '#1f2937' }}
@@ -367,7 +367,7 @@ const SubscriptionPage = () => {
                     <span>{maxEmployees}+</span>
                   </div>
                 </div>
-                
+
                 {/* Duration Tabs */}
                 <div className="mb-8">
                   <label className="text-sm font-semibold text-gray-700 block mb-3">Duration</label>
@@ -378,11 +378,10 @@ const SubscriptionPage = () => {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleDurationChange(duration)}
-                        className={`relative px-5 py-2.5 rounded-xl font-medium transition-all ${
-                          selectedDuration.key === duration.key
+                        className={`relative px-5 py-2.5 rounded-xl font-medium transition-all ${selectedDuration.key === duration.key
                             ? 'text-white'
                             : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
-                        }`}
+                          }`}
                       >
                         {selectedDuration.key === duration.key && (
                           <motion.div
@@ -403,13 +402,13 @@ const SubscriptionPage = () => {
                     ))}
                   </div>
                 </div>
-                
+
                 {/* Package Info */}
                 <div className="bg-gray-50 rounded-xl p-4 mb-6">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Your package</span>
                     {currentPackage ? (
-                      <motion.span 
+                      <motion.span
                         key={currentPackage.name}
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -422,13 +421,13 @@ const SubscriptionPage = () => {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Price Breakdown */}
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <span className="text-gray-600">Base price</span>
                     <AnimatePresence mode="wait">
-                      <motion.span 
+                      <motion.span
                         key={currentPrice}
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -438,7 +437,7 @@ const SubscriptionPage = () => {
                       </motion.span>
                     </AnimatePresence>
                   </div>
-                  
+
                   {pricePerUser && (
                     <div className="flex justify-between items-center py-2 border-b border-gray-100">
                       <span className="text-gray-600">Per employee</span>
@@ -447,7 +446,7 @@ const SubscriptionPage = () => {
                       </span>
                     </div>
                   )}
-                  
+
                   {selectedDuration.discount > 0 && currentPrice && (
                     <div className="flex justify-between items-center py-2 text-green-600">
                       <span className="flex items-center gap-1">
@@ -460,13 +459,13 @@ const SubscriptionPage = () => {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Total */}
                 <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-xl p-4 mb-6">
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-bold text-gray-800">Estimated total</span>
                     <AnimatePresence mode="wait">
-                      <motion.span 
+                      <motion.span
                         key={currentPrice}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -480,24 +479,23 @@ const SubscriptionPage = () => {
                     <p className="text-xs text-gray-500 mt-1">billed {selectedDuration.label.toLowerCase()}</p>
                   )}
                 </div>
-                
+
                 {/* Action Button */}
                 <motion.button
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.98 }}
                   disabled={!currentPackage || purchaseLoading}
                   onClick={() => handlePurchase(selectedDuration.key)}
-                  className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
-                    currentPackage && !purchaseLoading
+                  className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${currentPackage && !purchaseLoading
                       ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md hover:shadow-lg cursor-pointer'
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  }`}
+                    }`}
                 >
                   {purchaseLoading ? <FaSpinner className="animate-spin text-lg" /> : <FaCreditCard />}
                   {purchaseLoading ? 'Processing...' : 'Buy Now'}
                   {!purchaseLoading && <FaArrowRight className="text-sm" />}
                 </motion.button>
-                
+
                 {/* Trust Badges */}
                 <div className="flex items-center justify-center gap-4 mt-6 text-xs text-gray-400">
                   <span className="flex items-center gap-1">
