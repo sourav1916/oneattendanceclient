@@ -4,7 +4,7 @@ import {
   FaClock, FaExclamationCircle, FaSpinner, FaEye,
   FaCheckCircle, FaTimesCircle, FaEnvelope, FaPhone, FaCalendarAlt,
   FaSearch, FaBuilding, FaCheck, FaBan, FaUser, FaMapMarkerAlt,
-  FaTimes, FaBriefcase, FaDollarSign, FaUserTag, FaInfoCircle, FaTag,
+  FaTimes, FaBriefcase, FaUserTag, FaInfoCircle, FaTag,
   FaShieldAlt, FaUserCheck, FaChevronDown,
 } from "react-icons/fa";
 import { toast } from 'react-toastify';
@@ -18,7 +18,7 @@ import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import { ManagementHub, ManagementTable, ManagementCard } from '../components/common';
 import ProfileAvatar from '../components/common/ProfileAvatar';
 import SelectField from "../components/SelectField";
-
+import CurrencyIcon from "../components/common/CurrencyIcon";
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
 const modalVariants = {
@@ -299,7 +299,7 @@ const ViewModal = ({ invite, onClose, onAccept, onReject }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-4">
             <InfoItem icon={<FaBriefcase className="text-blue-500" />} label="Designation" value={formatDisplay(invite.designation)} />
             <InfoItem icon={<FaUserTag className="text-purple-500" />} label="Employment Type" value={formatDisplay(invite.employment_type)} />
-            <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={formatDisplay(invite.salary_type)} />
+            <InfoItem icon={<CurrencyIcon className="text-emerald-500" size={12} />} label="Salary Type" value={formatDisplay(invite.salary_type)} />
             <InfoItem
               icon={<FaClock className="text-orange-500" />}
               label="Schedule"

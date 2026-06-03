@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
     FaEdit, FaTrash, FaEye, FaTimes, FaCheck, FaUserCircle,
-    FaSearch, FaSpinner, FaCalendarAlt, FaDollarSign,
+    FaSearch, FaSpinner, FaCalendarAlt,
     FaMoneyBillWave, FaChartLine, FaExclamationTriangle,
     FaCheckCircle, FaCheckSquare, FaFileInvoiceDollar, FaClock, FaPlus,
     FaDownload, FaSave, FaCalculator, FaClipboardList,
@@ -24,6 +24,7 @@ import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import ProfileAvatar from '../components/common/ProfileAvatar';
 import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
 import Modal from '../components/Modal';
+import CurrencyIcon from "../components/common/CurrencyIcon";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1161,7 +1162,7 @@ const PayrollManagement = () => {
                                         <div className="space-y-3 mb-4">
                                             <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
                                                 <span className="text-sm text-gray-600 flex items-center gap-2">
-                                                    <FaDollarSign className="text-green-500" />
+                                                    <CurrencyIcon className="text-green-500" size={12} />
                                                     Net Salary
                                                 </span>
                                                 <span className={`font-bold text-lg ${isNegative ? 'text-red-600' : 'text-green-600'}`}>
@@ -1293,7 +1294,7 @@ const PayrollManagement = () => {
                         {/* Salary Summary */}
                         <div className="col-span-1 pb-6 border-b">
                             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                <FaDollarSign className="text-green-500" />
+                                <CurrencyIcon className="text-green-500" size={12} />
                                 Salary Summary
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1350,7 +1351,7 @@ const PayrollManagement = () => {
                                 </div>
                                 <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <FaDollarSign className="text-purple-600" />
+                                        <CurrencyIcon className="text-purple-600" size={12} />
                                         <span className="text-xs font-semibold text-gray-600">LOP Deduction</span>
                                     </div>
                                     <div className="text-lg font-bold text-purple-700">{formatCurrency(selectedPayroll.payroll.attendance?.lop_deduction || 0)}</div>

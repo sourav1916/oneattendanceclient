@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import {
     FaBriefcase, FaCalendarAlt, FaCamera, FaCheck, FaClock, FaCog,
-    FaDollarSign, FaEdit, FaEnvelope, FaEye, FaFingerprint,
+ FaEdit, FaEnvelope, FaEye, FaFingerprint,
     FaHandPaper, FaIdCard, FaMapMarkerAlt, FaNetworkWired, FaPhone,
     FaPlus, FaRobot, FaSave, FaSearch, FaShieldAlt, FaSpinner, FaListAlt,
     FaTimes, FaTrash, FaUser, FaUserCheck, FaUserCircle, FaUserCog,
@@ -25,6 +25,7 @@ import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import { CountryCodeModal, getFlagEmoji, ManagementHub, ManagementTable, RefreshButton, ManagementCard } from '../components/common';
 import ProfileAvatar from '../components/common/ProfileAvatar';
 import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
+import CurrencyIcon from "../components/common/CurrencyIcon";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -266,7 +267,7 @@ const EmployeeEditModal = ({
                         </div>
                         <div className="space-y-3">
                             <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                <FaDollarSign className="h-4 w-4 text-indigo-500" />Salary Type
+                                <CurrencyIcon className="text-emerald-500" size={12} />Salary Type
                             </label>
                             <Select options={salaryTypeOptions}
                                 value={salaryTypeOptions.find(o => o.value === formData.salary_type) || null}
@@ -686,7 +687,7 @@ const ManualCreateEmployeeModal = ({
                                         placeholder="Select employment type" isClearable styles={customSelectStyles} />
                                 </div>
                                 <div className="space-y-3">
-                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><FaDollarSign className="text-indigo-500" />Salary Type</label>
+                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><CurrencyIcon className="text-emerald-500" size={12} />Salary Type</label>
                                     <Select options={salaryTypeOptions}
                                         value={salaryTypeOptions.find(o => o.value === formData.salary_type) || null}
                                         onChange={(o) => setFormData(p => ({ ...p, salary_type: o?.value || '' }))}
@@ -772,7 +773,7 @@ const ManualCreateEmployeeModal = ({
 
                             <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-4">
                                 <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-2">
-                                    <FaDollarSign className="text-indigo-500" /> Assign Salary Details
+                                        <CurrencyIcon className="text-emerald-500" size={12} /> Assign Salary Details
                                 </h4>
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -1894,7 +1895,7 @@ const EmployeeManagement = () => {
                                                 </p>
                                             )}
                                             <p className="text-xs text-slate-500 flex items-center gap-1.5">
-                                                <FaDollarSign className="text-gray-400 shrink-0" />
+                                                <CurrencyIcon className="text-emerald-500" size={12} />
                                                 {getSalaryTypeDisplay(emp.salary_type)}
                                             </p>
                                         </div>
@@ -2007,7 +2008,7 @@ const EmployeeManagement = () => {
                                 <InfoItem icon={<FaEnvelope />} label="Email Address" value={selectedEmployee.email} />
                                 <InfoItem icon={<FaPhone />} label="Phone Number" value={selectedEmployee.phone || 'N/A'} />
                                 <InfoItem icon={<FaBriefcase />} label="Employment" value={getEmploymentTypeDisplay(selectedEmployee.employment_type)} />
-                                <InfoItem icon={<FaDollarSign />} label="Salary Type" value={getSalaryTypeDisplay(selectedEmployee.salary_type)} />
+                                <InfoItem icon={<CurrencyIcon className="text-emerald-500" size={12} />} label="Salary Type" value={getSalaryTypeDisplay(selectedEmployee.salary_type)} />
                                 <InfoItem icon={<FaCalendarAlt />} label="Joining Date" value={formatDate(selectedEmployee.joining_date)} />
                             </div>
 

@@ -3,7 +3,7 @@ import {
     FaMoneyBillWave, FaPlus, FaSpinner, FaCheckCircle, FaMinus,
     FaTimesCircle, FaExclamationTriangle, FaTimes,
     FaChartBar, FaEdit, FaTrash, FaInfoCircle,
-    FaListUl, FaTh, FaPercentage, FaDollarSign,
+    FaListUl, FaTh, FaPercentage,
     FaBuilding, FaBalanceScale, FaTag, FaToggleOn, FaToggleOff, FaEye,
     FaSearch, FaClock, FaBriefcase, FaUserCircle, FaCog, FaSave, FaIdCard
 } from 'react-icons/fa';

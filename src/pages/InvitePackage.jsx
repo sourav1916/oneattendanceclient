@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FaBox, FaCode, FaTag, FaBriefcase, FaDollarSign, FaUserTie,
+  FaBox, FaCode, FaTag, FaBriefcase, FaUserTie,
   FaClock, FaCalendarAlt, FaSpinner, FaEye, FaEdit, FaTrash,
   FaCheckCircle, FaTimesCircle, FaSearch, FaTimes, FaShieldAlt,
   FaUserCheck, FaSave, FaPlus, FaCog, FaChevronDown,
@@ -20,6 +20,7 @@ import { useAuth } from "../context/AuthContext";
 import TimeDurationPickerField from "../components/TimeDurationPicker";
 import { RefreshButton } from '../components/common';
 import SelectField from "../components/SelectField";
+import CurrencyIcon from "../components/common/CurrencyIcon";
 
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
@@ -472,7 +473,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
-                    <FaDollarSign className="text-indigo-500" /> Salary Type
+                    <CurrencyIcon className="text-emerald-500" size={12} /> Salary Type
                   </label>
                   <SelectField
                     name="salary_type"
@@ -502,7 +503,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
-                    <FaDollarSign className="text-emerald-500" /> Salary Component Package
+                    <CurrencyIcon className="text-emerald-500" size={12} /> Salary Component Package
                   </label>
                   <SelectField
                     name="component_package"
@@ -795,7 +796,7 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 <InfoItem icon={<FaUserTie className="text-blue-500" />} label="Designation" value={formatDisplay(pkg.designation)} />
                 <InfoItem icon={<FaBriefcase className="text-purple-500" />} label="Employment" value={formatDisplay(pkg.employment_type)} />
-                <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={formatDisplay(pkg.salary_type)} />
+                <InfoItem icon={<CurrencyIcon className="text-emerald-500" size={12} />} label="Salary Type" value={formatDisplay(pkg.salary_type)} />
                 <InfoItem icon={<FaClock className="text-orange-500" />} label="Shift Start" value={pkg.shift_start} />
                 <InfoItem icon={<FaClock className="text-amber-500" />} label="Shift End" value={pkg.shift_end} />
                 <InfoItem icon={<FaClock className="text-rose-500" />} label="Break Time" value={formatDurationDisplay(pkg.break_minutes)} />

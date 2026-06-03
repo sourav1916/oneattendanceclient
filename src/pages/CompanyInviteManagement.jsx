@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   FaUserTie, FaClock, FaExclamationCircle, FaSpinner,
   FaEye, FaEdit, FaBan, FaCheckCircle, FaTimesCircle, FaEnvelope,
-  FaPhone, FaCalendarAlt, FaBriefcase, FaDollarSign, FaTag,
+  FaPhone, FaCalendarAlt, FaBriefcase, FaTag,
   FaSearch, FaTimes, FaShieldAlt, FaUserCircle, FaPlus, FaListUl, FaChevronDown, FaUserCheck, FaCog
 } from "react-icons/fa";
 import { toast } from 'react-toastify';
@@ -799,8 +799,8 @@ export default function CompanyInvites() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <InfoItem icon={<FaBriefcase className="text-blue-500" />} label="Designation" value={formatDisplay(selectedInvite.designation)} />
                   <InfoItem icon={<FaUserTie className="text-purple-500" />} label="Employment Type" value={formatDisplay(selectedInvite.employment_type)} />
-                  <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={formatDisplay(selectedInvite.salary_type)} />
-                  <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Base Amount" value={formatCurrency(selectedInvite.base_amount)} />
+                  <InfoItem icon={<CurrencyIcon className="text-emerald-500" size={12} />} label="Salary Type" value={formatDisplay(selectedInvite.salary_type)} />
+                  <InfoItem icon={<CurrencyIcon className="text-emerald-500" size={12} />} label="Base Amount" value={formatCurrency(selectedInvite.base_amount)} />
                   <InfoItem icon={<FaShieldAlt className="text-indigo-500" />} label="Permission Package" value={selectedInvite.permission_package?.name || selectedInvite.permission_package_name || "N/A"} />
                   <InfoItem icon={<FaCalendarAlt className="text-cyan-500" />} label="Effective From" value={formatDateSimple(selectedInvite.effective_from)} />
                   <InfoItem icon={<FaCalendarAlt className="text-cyan-500" />} label="Effective To" value={formatDateSimple(selectedInvite.effective_to)} />
@@ -966,7 +966,7 @@ export default function CompanyInvites() {
                     <div className="rounded-xl border border-emerald-100 bg-emerald-50/30 overflow-hidden shadow-sm">
                       <div className="w-full flex items-center justify-between p-4">
                         <h4 className="text-xs font-bold text-slate-600 uppercase tracking-widest flex items-center gap-2">
-                          <FaDollarSign className="text-emerald-500" /> Salary Components
+                          <CurrencyIcon className="text-emerald-500" size={12} /> Salary Components
                         </h4>
                         <span className="px-2 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-700 font-bold">
                           {selectedInvite.salary_components.length}

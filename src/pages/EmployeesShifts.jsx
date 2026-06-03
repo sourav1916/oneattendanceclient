@@ -5,7 +5,7 @@ import {
     FaTimesCircle, FaSearch, FaTimes, FaChartBar,
     FaMoon, FaSun, FaInfoCircle, FaAngleDown,
     FaEnvelope, FaPhone, FaIdCard, FaUserTag,
-    FaDollarSign, FaHandPaper, FaRobot, FaEye,
+ FaHandPaper, FaRobot, FaEye,
     FaListUl, FaTh, FaShieldAlt, FaCog
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,6 +20,7 @@ import ActionMenu from '../components/ActionMenu';
 import { RefreshButton } from '../components/common';
 import ProfileAvatar from '../components/common/ProfileAvatar';
 import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
+import CurrencyIcon from "../components/common/CurrencyIcon";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -225,7 +226,7 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                             <InfoItem icon={<FaPhone className="text-green-500" />} label="Phone" value={u.phone || 'N/A'} />
                             <InfoItem icon={<FaCalendarAlt className="text-rose-500" />} label="Joined Date" value={formatDate(employee.joining_date)} />
                             <InfoItem icon={<FaUserTag className="text-purple-500" />} label="Employment Type" value={designationLabel(employee.employment_type)} />
-                            <InfoItem icon={<FaDollarSign className="text-emerald-500" />} label="Salary Type" value={designationLabel(employee.salary_type)} />
+                            <InfoItem icon={<CurrencyIcon className="text-emerald-500" size={12} />} label="Salary Type" value={designationLabel(employee.salary_type)} />
                         </div>
 
                         {/* Monthly Stats */}

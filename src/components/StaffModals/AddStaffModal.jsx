@@ -24,7 +24,6 @@ import {
   FaListAlt,
   FaChevronDown,
   FaChevronUp,
-  FaDollarSign,
   FaPlus,
 } from "react-icons/fa";
 import ModalScrollLock from "../ModalScrollLock";
@@ -32,6 +31,7 @@ import TimeDurationPickerField from "../TimeDurationPicker";
 import Modal from "../Modal";
 import ProfileAvatar from "../common/ProfileAvatar";
 import AdvancedDateFilter from "../AdvancedDateFilter";
+import CurrencyIcon from "../common/CurrencyIcon";
 
 const ATTENDANCE_LABELS = {
   manual: "Manual",
@@ -1000,7 +1000,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                 >
                   <div className="flex items-center gap-3">
                     <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
-                      <FaDollarSign className="h-4 w-4 text-indigo-500" />
+                      <CurrencyIcon className="h-3 w-3 text-indigo-500" size={12} />
                       Salary Details
                     </label>
                     <span className="text-xs text-slate-500">Required for invite payroll setup</span>

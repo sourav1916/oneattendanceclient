@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   FaPlus, FaEdit, FaTrash, FaSyncAlt, FaSearch, FaTimes, FaCheck,
-  FaExclamationTriangle, FaUser, FaCalendarAlt, FaClock, FaDollarSign,
+  FaExclamationTriangle, FaUser, FaCalendarAlt, FaClock,
   FaToggleOn, FaEye, FaSpinner, FaChevronDown, FaTh, FaListUl, FaCog,
   FaEnvelope, FaIdCard, FaChartBar
 } from 'react-icons/fa';
@@ -17,6 +17,7 @@ import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import YearPicker from '../components/YearPicker';
 import EmployeeSelect from '../components/common/EmployeeSelect';
 import ProfileAvatar from '../components/common/ProfileAvatar';
+import CurrencyIcon from "../components/common/CurrencyIcon";
 
 const ITEMS_PER_PAGE = 10;
 const FETCH_BATCH_SIZE = 100;
@@ -278,7 +279,7 @@ const PaidBadge = ({ isPaid, compact = false }) => (
       className={`inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 text-emerald-700 ${compact ? 'px-2 py-0.5 text-[10px] font-bold' : 'px-2.5 py-1 text-xs font-semibold'
         }`}
     >
-      <FaDollarSign size={compact ? 8 : 10} />
+      <CurrencyIcon className="text-emerald-500" size={12} />
       PAID
     </span>
   ) : (

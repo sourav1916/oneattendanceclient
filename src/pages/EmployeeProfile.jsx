@@ -5,7 +5,7 @@ import {
   FaChevronDown, FaHistory, FaEye, FaShieldAlt,
   FaClock, FaMoneyBillWave, FaCalendarAlt, FaExchangeAlt,
   FaEnvelope, FaIdCard, FaCheckCircle, FaTimesCircle,
-  FaTimes, FaDollarSign, FaCalculator, FaPhone,
+  FaTimes, FaCalculator, FaPhone,
   FaChartBar, FaHandPaper, FaCalendarPlus, FaCalendarCheck,
   FaTag, FaBriefcase, FaMapMarkerAlt, FaNetworkWired,
   FaArrowDown, FaArrowUp, FaUmbrellaBeach, FaChevronRight,

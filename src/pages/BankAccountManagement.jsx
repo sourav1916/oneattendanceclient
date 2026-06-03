@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   FaPlus, FaEdit, FaTrash, FaSearch, FaTimes, FaCheck,
-  FaUser, FaClock, FaDollarSign, FaEye, FaSpinner,
-  FaChevronDown, FaListUl, FaCog, FaUniversity, FaStar,
-  FaMoneyBillWave, FaIdCard, FaChartBar, FaToggleOn,
-  FaBuilding, FaShieldAlt, FaExclamationTriangle, FaQrcode, FaMobileAlt
+  FaEye, FaSpinner,
+  FaChevronDown, FaCog, FaUniversity, FaStar,
+  FaMoneyBillWave, FaChartBar,
+  FaBuilding, FaShieldAlt, FaExclamationTriangle, FaQrcode
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
