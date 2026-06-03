@@ -20,6 +20,7 @@ import {
   FaUniversity,
   FaIdCard,
   FaChartBar,
+  FaCreditCard,
 } from 'react-icons/fa';
 import { useLocation, Link } from 'react-router-dom';
 import usePermissionAccess from "../hooks/usePermissionAccess";
@@ -30,7 +31,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
   const location = useLocation();
   const currentPath = location.pathname;
 
-  const { checkPageAccess } = usePermissionAccess();
+  const { checkPageAccess, isCompanyOwnerForCurrentCompany } = usePermissionAccess();
 
   // Toggle section
   const toggleSection = (sectionName) => {
@@ -112,7 +113,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           path: '/permission-management',
           pageKey: 'permissionManagement'
         },
-        
+
         {
           icon: FaFileInvoiceDollar,
           label: 'Salary',
@@ -144,6 +145,7 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           path: '/company-settings',
           pageKey: 'companySettings'
         },
+
         {
           icon: FaCalendarAlt,
           label: 'Holidays',
@@ -151,6 +153,12 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
           pageKey: 'holidayManagement'
         }
       ]
+    },
+    {
+      icon: FaCreditCard,
+      label: 'Subscription',
+      path: '/subscription',
+      ownerOnly: true
     },
     {
       icon: FaCommentDots,
@@ -164,10 +172,13 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
     return currentPath === itemPath || currentPath.startsWith(itemPath + '/');
   };
 
-  const getItemAccess = (item) => checkPageAccess(item.pageKey);
+  const getItemAccess = (item) => item.pageKey ? checkPageAccess(item.pageKey) : { allowed: true, disabled: false };
 
   const getVisibleChildren = (children) =>
-    children.filter((child) => getItemAccess(child).allowed);
+    children.filter((child) => {
+      if (child.ownerOnly && !isCompanyOwnerForCurrentCompany) return false;
+      return getItemAccess(child).allowed;
+    });
 
   const isSectionActive = (children) => getVisibleChildren(children).some((child) => isActiveRoute(child.path));
 
@@ -205,9 +216,8 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
                       {/* Section Header */}
                       <button
                         onClick={() => toggleSection(item.label)}
-                        className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all duration-200 ${
-                          isActive ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50 text-gray-700'
-                        }`}
+                        className={`w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all duration-200 ${isActive ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50 text-gray-700'
+                          }`}
                       >
                         <div className="flex items-center gap-3">
                           <div className={`p-2 rounded-lg ${isActive ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
@@ -261,6 +271,11 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
 
                 // Regular menu item
                 const isActive = isActiveRoute(item.path);
+
+                if (item.ownerOnly && !isCompanyOwnerForCurrentCompany) {
+                  return null;
+                }
+
                 const access = getItemAccess(item);
                 const Icon = item.icon;
 
@@ -314,6 +329,10 @@ const Sidebar = ({ isMobile, sidebarOpen, toggleSidebar, onHover, isExpanded }) 
   const isSidebarExpanded = isExpanded;
 
   const renderMenuItem = (item, isExpandedState) => {
+    if (item.ownerOnly && !isCompanyOwnerForCurrentCompany) {
+      return null;
+    }
+
     const isActive = isActiveRoute(item.path);
     const access = getItemAccess(item);
     const Icon = item.icon;

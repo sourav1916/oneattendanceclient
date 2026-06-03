@@ -49,6 +49,7 @@ import EmployeeSalaryHistory from "./pages/EmployeeSalaryHistory";
 import UnmarkedAttendance from "./pages/UnmarkedAttendance";
 import BreakManagement from "./pages/BreakManagement";
 import ServerUnavailable from "./pages/ServerUnavailable";
+import Subscription from "./pages/Subscription";
 import {
   TabbedManagementHub,
 } from "./components/common";
@@ -300,9 +301,10 @@ const MY_SALARY_HUB_TABS = [
   },
 ];
 
-
 function AppContent() {
-  const { user, loading, mustSelectCompany, serverUnavailable, retryConnection } = useAuth();
+  const { user, loading, mustSelectCompany, serverUnavailable, retryConnection, activeRole, company } = useAuth();
+  
+  const isCompanyOwner = activeRole === "company_owner" || company?.role === "company_owner";
 
   if (serverUnavailable) {
     return <ServerUnavailable onReload={retryConnection} isRetrying={loading} />;
@@ -429,6 +431,9 @@ function AppContent() {
           accessDeniedIcon={FaInfoCircle}
         /></MainLayout></ProtectedRoute>} />
         <Route path="/company-settings" element={<ProtectedRoute pageKey="companySettings"><MainLayout><CompanySettings /></MainLayout></ProtectedRoute>} />
+        {isCompanyOwner && (
+          <Route path="/subscription" element={<ProtectedRoute><MainLayout><Subscription /></MainLayout></ProtectedRoute>} />
+        )}
         <Route path="/permission-management" element={<ProtectedRoute pageKey="permissionManagement"><MainLayout><PermissionManagement /></MainLayout></ProtectedRoute>} />
         <Route path="/leave-config" element={<ProtectedRoute pageKey="leaveConfig"><Navigate to="/leave-management?tab=config" replace /></ProtectedRoute>} />
         <Route path="/leave-balance" element={<ProtectedRoute pageKey="leaveBalance"><Navigate to="/leave-management?tab=balance" replace /></ProtectedRoute>} />
