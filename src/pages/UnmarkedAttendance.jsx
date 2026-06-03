@@ -1280,7 +1280,7 @@ export default function UnmarkedAttendance() {
                   placeholder="Date or range"
                   tabOptions={['date', 'range']}
                   showDateStepper
-                  buttonClassName="h-full min-h-[42px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                  buttonClassName="h-full min-h-[42px] w-full bg-white px-3 py-2.5 text-sm font-semibold text-slate-700"
                 />
               </div>
             </div>

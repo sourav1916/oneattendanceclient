@@ -432,12 +432,12 @@ export default function AdvancedDateFilter({
   return (
     <div className="relative inline-block w-full">
       {/* Trigger */}
-      <div className={shouldShowStepper ? "flex w-full min-w-[260px] items-stretch gap-1.5" : ""}>
+      <div className={shouldShowStepper ? "flex w-full rounded-xl border border-slate-200 min-w-[260px] items-stretch" : ""}>
         {shouldShowStepper && (
           <button
             type="button"
             onClick={() => applySingleDate(shiftDate(getStepperDate(), -1))}
-            className="flex w-9 flex-shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600 shadow-sm transition hover:bg-blue-100"
+            className="flex w-9 flex-shrink-0 items-center justify-center rounded-l-xl bg-blue-50 text-blue-600 transition hover:bg-blue-100"
             title="Previous day"
           >
             <FaChevronLeft size={11} />
@@ -451,11 +451,10 @@ export default function AdvancedDateFilter({
         aria-haspopup="dialog"
         aria-expanded={isOpen}
       >
-        <span className={`min-w-0 flex-1 truncate text-left text-xs sm:text-sm flex items-center gap-1.5 ${hasFilter ? "" : "text-gray-400"}`}>
+        <span className={`min-w-0 flex-1 justify-center truncate text-left text-xs sm:text-sm flex items-center gap-1.5 ${hasFilter ? "" : "text-gray-400"}`}>
           <FaCalendarAlt className={`flex-shrink-0 text-[11px] ${hasFilter ? "text-blue-500" : "text-gray-400"}`} />
           {getDisplayLabel()}
         </span>
-        <span className="flex-shrink-0 text-[10px] text-gray-400">▾</span>
       </button>
         {shouldShowStepper && (
           <button
@@ -464,7 +463,7 @@ export default function AdvancedDateFilter({
               if (canStepForward) applySingleDate(shiftDate(stepperDate, 1));
             }}
             disabled={!canStepForward}
-            className={`flex w-9 flex-shrink-0 items-center justify-center rounded-xl border shadow-sm transition ${
+            className={`flex w-9 flex-shrink-0 items-center justify-center rounded-r-xl bg-blue-50 text-blue-600 transition hover:bg-blue-100 ${
               canStepForward
                 ? "border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100"
                 : "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300"
