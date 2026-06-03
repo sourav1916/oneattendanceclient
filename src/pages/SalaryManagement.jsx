@@ -25,6 +25,7 @@ import AdvancedDateFilter from '../components/AdvancedDateFilter';
 import { DatePickerField } from '../components/DatePicker';
 import ProfileAvatar from '../components/common/ProfileAvatar';
 import CurrencyIcon from '../components/common/CurrencyIcon';
+import EmployeeSelect from '../components/common/EmployeeSelect';
 import { useAuth } from '../context/AuthContext';
 import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
 
@@ -881,14 +882,11 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
 // ─── Assign Salary Modal ──────────────────────────────────────────────────────
 
 const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitTitle, companyCurrency }) => {
-    const [employees, setEmployees] = useState([]);
     const [packages, setPackages] = useState([]);
     const [availableComponents, setAvailableComponents] = useState([]);
-    const [loading, setLoading] = useState(false);
     const [loadingPackages, setLoadingPackages] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
     const [showOverrideForm, setShowOverrideForm] = useState(false);
     const [editingOverride, setEditingOverride] = useState(null);
     const [formData, setFormData] = useState({ component_package_id: '', base_amount: '', currency: normalizeCurrencyCode(companyCurrency), effective_from: getCurrentMonthDate(), effective_to: '', components: [] });
@@ -915,7 +913,6 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     useEffect(() => {
         if (isOpen) {
             setFormData(prev => ({ ...prev, currency: normalizeCurrencyCode(companyCurrency) }));
-            loadEmployeesWithoutSalary();
             loadSalaryPackages();
             loadSalaryComponents();
         }
@@ -944,7 +941,6 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
         }));
     };
 
-    const loadEmployeesWithoutSalary = async () => { setLoading(true); try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/employees-without-salary', 'GET', null, company?.id); const result = await response.json(); if (result.success) setEmployees(result.data || []); } catch (error) { console.error('Failed to load employees:', error); } finally { setLoading(false); } };
     const loadSalaryPackages = async () => {
         setLoadingPackages(true);
         try {
@@ -957,7 +953,6 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
         } catch (error) { console.error('Failed to load packages:', error); } finally { setLoadingPackages(false); }
     };
     const loadSalaryComponents = async () => { try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/components/list', 'GET', null, company?.id); const result = await response.json(); if (result.success) setAvailableComponents(result.data || []); } catch (error) { console.error('Failed to load salary components:', error); } };
-    const filteredEmployees = employees.filter(emp => emp.name?.toLowerCase().includes(searchTerm.toLowerCase()) || emp.employee_code?.toLowerCase().includes(searchTerm.toLowerCase()) || emp.email?.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const addOverride = () => {
         if (!overrideForm.component_id || !overrideForm.calc_value) { toast.warning('Please fill component and value'); return; }
@@ -971,7 +966,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     const editOverride = (index) => { const o = formData.components[index]; setOverrideForm({ component_id: o.component_id, calc_type: o.calc_type, calc_value: o.calc_value, effective_from: o.effective_from || '', effective_to: o.effective_to || '', reason: o.reason || '' }); setEditingOverride(index); setShowOverrideForm(true); };
     const removeOverride = (index) => { setFormData({ ...formData, components: formData.components.filter((_, i) => i !== index), component_package_id: '' }); };
 
-    const resetForm = () => { setSelectedEmployee(null); setSearchTerm(''); setFormData({ component_package_id: packages[0]?.id || '', base_amount: '', currency: normalizeCurrencyCode(companyCurrency), effective_from: getCurrentMonthDate(), effective_to: '', components: [] }); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' }); setShowOverrideForm(false); setEditingOverride(null); };
+    const resetForm = () => { setSelectedEmployee(null); setFormData({ component_package_id: packages[0]?.id || '', base_amount: '', currency: normalizeCurrencyCode(companyCurrency), effective_from: getCurrentMonthDate(), effective_to: '', components: [] }); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' }); setShowOverrideForm(false); setEditingOverride(null); };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -982,7 +977,7 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
         try {
             const company = JSON.parse(localStorage.getItem('company'));
             const payload = {
-                employee_id: selectedEmployee.employee_id,
+                employee_id: selectedEmployee.id,
                 base_amount: parseFloat(formData.base_amount),
                 currency: formData.currency.toLowerCase(),
                 effective_from: formData.effective_from,
@@ -1030,31 +1025,12 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                             {/* Employee Selection */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Employee *</label>
-                                <div className="relative">
-                                    <input type="text" placeholder="Search employee by name, code or email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm min-h-[42px]" disabled={!!selectedEmployee} />
-                                    <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
-                                </div>
-                                {!selectedEmployee && searchTerm && (
-                                    <div className="mt-2 max-h-48 overflow-y-auto border border-slate-100 rounded-xl divide-y divide-slate-50 bg-white shadow-lg z-20">
-                                        {loading ? (<div className="p-4 text-center text-slate-400 text-sm"><FaSpinner className="animate-spin inline mr-2" />Loading...</div>)
-                                            : filteredEmployees.length === 0 ? (<div className="p-4 text-center text-slate-400 text-sm">No employees found</div>)
-                                                : filteredEmployees.map(emp => (
-                                                    <button key={emp.employee_id} type="button" onClick={() => setSelectedEmployee(emp)} className="w-full p-3 text-left hover:bg-green-50 transition-colors flex items-center gap-3">
-                                                        <ProfileAvatar record={emp} name={emp.name} className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarGradient(emp.employee_id)} flex items-center justify-center flex-shrink-0 overflow-hidden`}><span className="text-white font-bold text-xs">{getInitials(emp.name)}</span></ProfileAvatar>
-                                                        <div className="flex-1 min-w-0"><p className="font-bold text-slate-800 text-sm">{emp.name}</p><p className="text-[11px] text-slate-400">{emp.employee_code} • {emp.email}</p></div>
-                                                    </button>
-                                                ))}
-                                    </div>
-                                )}
-                                {selectedEmployee && (
-                                    <div className="mt-2 p-3 bg-green-50/50 border border-green-100 rounded-xl flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <ProfileAvatar record={selectedEmployee} name={selectedEmployee.name} className={`w-9 h-9 rounded-lg bg-gradient-to-br ${avatarGradient(selectedEmployee.employee_id)} flex items-center justify-center shadow-sm overflow-hidden`}><span className="text-white font-bold text-xs">{getInitials(selectedEmployee.name)}</span></ProfileAvatar>
-                                            <div><p className="font-bold text-slate-800 text-sm">{selectedEmployee.name}</p><p className="text-[11px] text-slate-500">{selectedEmployee.employee_code}</p></div>
-                                        </div>
-                                        <button type="button" onClick={() => setSelectedEmployee(null)} className="p-2 text-slate-400 hover:text-red-500 transition-colors"><FaTimes size={12} /></button>
-                                    </div>
-                                )}
+                                <EmployeeSelect
+                                    value={selectedEmployee?.id || ''}
+                                    onChange={(id, emp) => setSelectedEmployee(emp)}
+                                    placeholder="Search and select an employee..."
+                                    initialEmployee={selectedEmployee}
+                                />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
