@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaUsers,
@@ -57,8 +57,14 @@ const SubscriptionPage = () => {
   const [hoveredPlan, setHoveredPlan] = useState(null);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
 
+  // Guard against double-invocation in React Strict Mode
+  const hasFetched = useRef(false);
+
   // Fetch packages from API
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+
     const fetchPackages = async () => {
       try {
         setLoading(true);

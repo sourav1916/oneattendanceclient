@@ -65,9 +65,6 @@ const normalizeCurrencyCode = (currency, fallback = 'INR') => {
     return String(value).trim().toUpperCase() || fallback;
 };
 
-const getSalaryCurrency = (salary, fallbackCurrency = 'INR') =>
-    normalizeCurrencyCode(salary?.currency, fallbackCurrency);
-
 const formatCurrency = (amount, currency = 'INR') => {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -90,18 +87,12 @@ const formatDateFull = (date) => {
     });
 };
 
-const formatDisplay = (str) => str ? str.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
-
 const getStatusBadge = (effectiveTo) => {
     const isActive = !effectiveTo || new Date(effectiveTo) > new Date();
     if (isActive) {
         return { icon: FaCheckCircle, text: "Active", className: "bg-green-100 text-green-800 border border-green-200" };
     }
     return { icon: FaTimesCircle, text: "Expired", className: "bg-gray-100 text-gray-800 border border-gray-200" };
-};
-
-const isSalaryExpired = (salary) => {
-    return !!salary?.effective_to && new Date(salary.effective_to) <= new Date();
 };
 
 const getVisibleSalaryColumns = (width) => ({
@@ -111,7 +102,6 @@ const getVisibleSalaryColumns = (width) => ({
     showNetSalary: width >= 640,
     showCTC: width >= 1024,
     showStatus: width >= 850,
-    showPackage: width >= 1200,
     showEffectivePeriod: width >= 1400,
 });
 
@@ -135,26 +125,14 @@ const getCurrentMonthDate = () => {
 
 const normalizeDateFilterSelection = (result) => {
     if (typeof result === 'string' && result) {
-        return {
-            nextParams: { date: result },
-            nextLabel: formatFilterLabel(result),
-        };
+        return { nextParams: { date: result }, nextLabel: formatFilterLabel(result) };
     }
-
     if (result?.date) {
-        return {
-            nextParams: { date: result.date },
-            nextLabel: formatFilterLabel(result.date),
-        };
+        return { nextParams: { date: result.date }, nextLabel: formatFilterLabel(result.date) };
     }
-
     if (result?.month && result?.year) {
-        return {
-            nextParams: { month: result.month, year: result.year },
-            nextLabel: formatMonthYearLabel(result.month, result.year),
-        };
+        return { nextParams: { month: result.month, year: result.year }, nextLabel: formatMonthYearLabel(result.month, result.year) };
     }
-
     if (result?.from_date && result?.to_date) {
         return {
             nextParams: { from_date: result.from_date, to_date: result.to_date },
@@ -163,16 +141,13 @@ const normalizeDateFilterSelection = (result) => {
                 : `${formatFilterLabel(result.from_date)} - ${formatFilterLabel(result.to_date)}`,
         };
     }
-
     return { nextParams: {}, nextLabel: 'Filter by date' };
 };
 
 const salaryOverlapsDateFilter = (salary, filter) => {
     if (!filter || (!filter.date && !filter.from_date && !filter.to_date)) return true;
-
     const effectiveFrom = salary.effective_from ? new Date(salary.effective_from) : null;
     const effectiveTo = salary.effective_to ? new Date(salary.effective_to) : null;
-
     if (filter.date) {
         const selected = new Date(`${filter.date}T00:00:00`);
         const dayEnd = new Date(`${filter.date}T23:59:59.999`);
@@ -180,7 +155,6 @@ const salaryOverlapsDateFilter = (salary, filter) => {
         const end = effectiveTo || dayEnd;
         return start <= dayEnd && end >= selected;
     }
-
     const filterStart = new Date(`${filter.from_date}T00:00:00`);
     const filterEnd = new Date(`${filter.to_date}T23:59:59.999`);
     const start = effectiveFrom || filterStart;
@@ -189,15 +163,6 @@ const salaryOverlapsDateFilter = (salary, filter) => {
 };
 
 // ─── Sub Components ───────────────────────────────────────────────────────────
-
-const InfoItem = ({ icon, label, value }) => (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1 mb-2">
-            {icon}{label}
-        </label>
-        <div className="text-gray-800 font-medium">{value}</div>
-    </div>
-);
 
 const SalaryBadge = ({ type, value }) => {
     const colors = {
@@ -213,44 +178,14 @@ const SalaryBadge = ({ type, value }) => {
     );
 };
 
-const ComponentRow = ({ component, currency }) => {
-    const typeColors = {
-        earning: 'bg-green-50 border-green-100',
-        deduction: 'bg-red-50 border-red-100',
-        employer_contribution: 'bg-purple-50 border-purple-100'
-    };
-    return (
-        <div className={`flex items-center justify-between p-3 rounded-xl border ${typeColors[component.type] || 'bg-gray-50 border-gray-100'}`}>
-            <div className="flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-gray-800 text-sm">{component.name}</p>
-                    <span className="text-xs text-gray-400 font-mono">{component.code}</span>
-                    {component.is_overridden === 1 && (
-                        <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">Overridden</span>
-                    )}
-                </div>
-                <p className="text-xs text-gray-400 mt-0.5">
-                    {component.calc_type}: {component.calc_value}{component.calc_type === 'percentage' ? '%' : ''}
-                </p>
-            </div>
-            <div className="text-right">
-                <p className="font-bold text-gray-800">{formatCurrency(component.amount, currency)}</p>
-                <SalaryBadge type={component.type} value={component.calc_type} />
-            </div>
-        </div>
-    );
-};
-
 // ─── Salary Detail Modal ─────────────────────────────────────────────────────
 
 const SalaryDetailModal = ({ salary, onClose, companyCurrency }) => {
     const navigateToEmployeeProfile = useEmployeeNavigation();
-
     if (!salary) return null;
 
     const status = getStatusBadge(salary.effective_to);
     const StatusIcon = status.icon;
-    const displayCurrency = getSalaryCurrency(salary, companyCurrency);
 
     return (
         <Modal
@@ -283,19 +218,19 @@ const SalaryDetailModal = ({ salary, onClose, companyCurrency }) => {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Base Amount</p>
-                        <p className="text-lg font-black text-slate-900">{formatCurrency(salary.base_amount, displayCurrency)}</p>
+                        <p className="text-lg font-black text-slate-900">{formatCurrency(salary.base_amount, companyCurrency)}</p>
                     </div>
                     <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Net Salary</p>
-                        <p className="text-lg font-black text-green-600">{formatCurrency(salary.net_salary, displayCurrency)}</p>
+                        <p className="text-lg font-black text-green-600">{formatCurrency(salary.net_salary, companyCurrency)}</p>
                     </div>
                     <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Gross Salary</p>
-                        <p className="text-lg font-black text-blue-600">{formatCurrency(salary.gross_salary, displayCurrency)}</p>
+                        <p className="text-lg font-black text-blue-600">{formatCurrency(salary.gross_salary, companyCurrency)}</p>
                     </div>
                     <div className="bg-indigo-600 p-4 rounded-2xl border border-indigo-700 shadow-lg shadow-indigo-100">
                         <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mb-1">Total CTC</p>
-                        <p className="text-lg font-black text-white">{formatCurrency(salary.ctc, displayCurrency)}</p>
+                        <p className="text-lg font-black text-white">{formatCurrency(salary.ctc, companyCurrency)}</p>
                     </div>
                 </div>
 
@@ -307,14 +242,13 @@ const SalaryDetailModal = ({ salary, onClose, companyCurrency }) => {
                         </div>
                         <div className="divide-y divide-slate-50">
                             {[
-                                { label: 'Salary Package', value: salary.package?.name || 'Custom', icon: <FaBriefcase className="text-indigo-500" /> },
                                 { label: 'Effective From', value: formatDateFull(salary.effective_from), icon: <FaCalendarAlt className="text-blue-500" /> },
                                 { label: 'Effective To', value: formatDateFull(salary.effective_to), icon: <FaCalendarCheck className="text-amber-500" /> },
-                                { label: 'Base Amount', value: formatCurrency(salary.base_amount, displayCurrency), icon: <CurrencyIcon className="text-emerald-500" /> },
-                                { label: 'Gross Salary', value: formatCurrency(salary.gross_salary, displayCurrency), icon: <FaMoneyBillWave className="text-blue-500" /> },
-                                { label: 'Total Deductions', value: formatCurrency(salary.total_deductions, displayCurrency), icon: <FaChartBar className="text-rose-500" /> },
-                                { label: 'Employer Contribution', value: formatCurrency(salary.employer_contributions, displayCurrency), icon: <FaHandPaper className="text-purple-500" /> },
-                                { label: 'Net Take Home', value: formatCurrency(salary.net_salary, displayCurrency), icon: <FaCheckCircle className="text-green-500" /> },
+                                { label: 'Base Amount', value: formatCurrency(salary.base_amount, companyCurrency), icon: <CurrencyIcon className="text-emerald-500" /> },
+                                { label: 'Gross Salary', value: formatCurrency(salary.gross_salary, companyCurrency), icon: <FaMoneyBillWave className="text-blue-500" /> },
+                                { label: 'Total Deductions', value: formatCurrency(salary.total_deductions, companyCurrency), icon: <FaChartBar className="text-rose-500" /> },
+                                { label: 'Employer Contribution', value: formatCurrency(salary.employer_contributions, companyCurrency), icon: <FaHandPaper className="text-purple-500" /> },
+                                { label: 'Net Take Home', value: formatCurrency(salary.net_salary, companyCurrency), icon: <FaCheckCircle className="text-green-500" /> },
                             ].map((item, idx) => (
                                 <div key={idx} className="flex items-center justify-between px-4 py-3.5">
                                     <div className="flex items-center gap-2.5">
@@ -343,15 +277,12 @@ const SalaryDetailModal = ({ salary, onClose, companyCurrency }) => {
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <p className="text-sm font-bold text-slate-800 leading-none">{comp.name}</p>
-                                                {comp.is_overridden === 1 && (
-                                                    <span className="text-[8px] font-black uppercase tracking-tighter bg-amber-100 text-amber-700 px-1 py-0.5 rounded border border-amber-200">Overridden</span>
-                                                )}
                                             </div>
                                             <p className="text-[10px] text-slate-400 mt-1 font-mono">{comp.code} · {comp.calc_type}: {comp.calc_value}{comp.calc_type === 'percentage' ? '%' : ''}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-sm font-black text-slate-900">{formatCurrency(comp.amount, displayCurrency)}</p>
+                                        <p className="text-sm font-black text-slate-900">{formatCurrency(comp.amount, companyCurrency)}</p>
                                         <p className={`text-[9px] font-bold uppercase tracking-wider ${comp.type === 'earning' ? 'text-green-600' : comp.type === 'deduction' ? 'text-red-600' : 'text-purple-600'}`}>
                                             {comp.type.replace('_', ' ')}
                                         </p>
@@ -376,7 +307,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }
 
     const [formData, setFormData] = useState({
         base_amount: '',
-        currency: normalizeCurrencyCode(companyCurrency),
         effective_from: '',
         effective_to: '',
         component_package_id: '',
@@ -387,21 +317,19 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }
         if (isOpen && salary) {
             setFormData({
                 base_amount: salary.base_amount || '',
-                currency: getSalaryCurrency(salary, companyCurrency),
                 effective_from: salary.effective_from ? salary.effective_from.split('T')[0] : '',
                 effective_to: salary.effective_to ? salary.effective_to.split('T')[0] : '',
-                component_package_id: salary.package?.id || '',
+                component_package_id: '',
                 components: (salary.components || []).map(c => ({
                     component_id: c.id,
                     calc_type: c.calc_type,
                     calc_value: parseFloat(c.calc_value || 0).toFixed(2),
-                    reason: c.reason || ''
                 }))
             });
             loadComponents();
             loadSalaryPackages();
         }
-    }, [isOpen, salary, companyCurrency]);
+    }, [isOpen, salary]);
 
     const loadSalaryPackages = async () => {
         try {
@@ -419,7 +347,6 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }
             component_id: item.component_id,
             calc_type: item.calc_type,
             calc_value: parseFloat(item.calc_value || 0).toFixed(2),
-            reason: `Default from ${pkg.name} package`
         }));
         setFormData(prev => ({ ...prev, component_package_id: packageId, components: packageComponents }));
     };
@@ -445,14 +372,12 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }
             const payload = {
                 salary_id: salary.salary_id,
                 base_amount: parseFloat(formData.base_amount),
-                currency: formData.currency.toLowerCase(),
                 effective_from: formData.effective_from,
                 effective_to: formData.effective_to || null,
                 components: formData.components.map(o => ({
                     component_id: o.component_id,
                     calc_type: o.calc_type,
                     calc_value: parseFloat(o.calc_value),
-                    reason: o.reason || ''
                 }))
             };
             const response = await apiCall('/salary/update-salary', 'PUT', payload, company?.id);
@@ -478,18 +403,8 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }
             size="4xl"
             footer={
                 <>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={submitting}
-                        className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
-                    >
+                    <button type="button" onClick={onClose} className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">Cancel</button>
+                    <button onClick={handleSubmit} disabled={submitting} className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
                         {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
                         {submitting ? 'Saving...' : 'Save Changes'}
                     </button>
@@ -500,18 +415,40 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective From *</label>
-                        <AdvancedDateFilter tabOptions={["month"]} value={formData.effective_from ? { month: parseInt(formData.effective_from.split('-')[1]), year: parseInt(formData.effective_from.split('-')[0]) } : null} onChange={(val) => { if (val && val.month && val.year) { const firstDate = `${val.year}-${String(val.month).padStart(2, '0')}-01`; setFormData({ ...formData, effective_from: firstDate }); } else { setFormData({ ...formData, effective_from: '' }); } }} placeholder="Select month" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-left text-sm" />
+                        <AdvancedDateFilter
+                            tabOptions={["month"]}
+                            value={formData.effective_from ? { month: parseInt(formData.effective_from.split('-')[1]), year: parseInt(formData.effective_from.split('-')[0]) } : null}
+                            onChange={(val) => {
+                                if (val && val.month && val.year) {
+                                    const firstDate = `${val.year}-${String(val.month).padStart(2, '0')}-01`;
+                                    setFormData({ ...formData, effective_from: firstDate });
+                                } else { setFormData({ ...formData, effective_from: '' }); }
+                            }}
+                            placeholder="Select month"
+                            buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-left text-sm"
+                        />
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective To</label>
-                        <AdvancedDateFilter tabOptions={["month"]} value={formData.effective_to ? { month: parseInt(formData.effective_to.split('-')[1]), year: parseInt(formData.effective_to.split('-')[0]) } : null} onChange={(val) => { if (val && val.month && val.year) { const firstDate = `${val.year}-${String(val.month).padStart(2, '0')}-01`; setFormData({ ...formData, effective_to: firstDate }); } else { setFormData({ ...formData, effective_to: '' }); } }} placeholder="Optional" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-left text-sm" />
+                        <AdvancedDateFilter
+                            tabOptions={["month"]}
+                            value={formData.effective_to ? { month: parseInt(formData.effective_to.split('-')[1]), year: parseInt(formData.effective_to.split('-')[0]) } : null}
+                            onChange={(val) => {
+                                if (val && val.month && val.year) {
+                                    const firstDate = `${val.year}-${String(val.month).padStart(2, '0')}-01`;
+                                    setFormData({ ...formData, effective_to: firstDate });
+                                } else { setFormData({ ...formData, effective_to: '' }); }
+                            }}
+                            placeholder="Optional"
+                            buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none text-left text-sm"
+                        />
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Salary Package (Quick Fill)</label>
                         <SelectField
-                            value={formData.component_package_id ? { value: formData.component_package_id, label: packages.find(p => String(p.id) === String(formData.component_package_id))?.name ? `${packages.find(p => String(p.id) === String(formData.component_package_id)).name} (${packages.find(p => String(p.id) === String(formData.component_package_id)).code})` : 'Custom / Manual' } : null}
+                            value={formData.component_package_id ? { value: formData.component_package_id, label: packages.find(p => String(p.id) === String(formData.component_package_id))?.name || 'Custom / Manual' } : null}
                             onChange={(opt) => handlePackageChange(opt?.value || '')}
                             options={packages.map(pkg => ({ value: pkg.id, label: `${pkg.name} (${pkg.code})` }))}
                             isClearable
@@ -521,12 +458,14 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Base Amount *</label>
-                        <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
+                        <input
+                            type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
                             onChange={e => {
                                 const val = e.target.value.replace(/[^0-9.]/g, '');
-                                if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
+                                if (val === '' || /^\d*\.?\d*$/.test(val)) setFormData({ ...formData, base_amount: val });
                             }}
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold" />
+                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold"
+                        />
                     </div>
                 </div>
 
@@ -535,9 +474,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                             <FaCalculator className="text-blue-500" /> Salary Components
                         </label>
-                        <button type="button"
-                            onClick={() => setShowOverrideForm(true)}
-                            className="text-[10px] px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all font-bold border border-blue-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
+                        <button type="button" onClick={() => setShowOverrideForm(true)} className="text-[10px] px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all font-bold border border-blue-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
                             <FaPlus size={8} /> Add Component
                         </button>
                     </div>
@@ -547,10 +484,10 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }
                             {formData.components.map((comp, idx) => {
                                 const componentData = availableComponents.find(c => c.id === comp.component_id);
                                 return (
-                                    <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm relative group animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm relative group">
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                                             <div className="md:col-span-4">
-                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex justify-between">Component</label>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Component</label>
                                                 <div className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 truncate">
                                                     {componentData?.name || `Component ${comp.component_id}`}
                                                     <span className="ml-2 text-[10px] text-slate-400 font-mono">({componentData?.code})</span>
@@ -565,10 +502,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }
                                                         updated[idx].calc_type = opt?.value || 'percentage';
                                                         setFormData({ ...formData, components: updated, component_package_id: '' });
                                                     }}
-                                                    options={[
-                                                        { value: 'percentage', label: 'Percentage (%)' },
-                                                        { value: 'fixed', label: 'Fixed Amount' }
-                                                    ]}
+                                                    options={[{ value: 'percentage', label: 'Percentage (%)' }, { value: 'fixed', label: 'Fixed Amount' }]}
                                                     placeholder="Select type"
                                                     menuPortalTarget={document.body}
                                                 />
@@ -588,12 +522,8 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }
                                                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
                                                 />
                                             </div>
-                                            <div className="md:col-span-2 flex justify-end gap-2 pb-0.5">
+                                            <div className="md:col-span-2 flex justify-end pb-0.5">
                                                 <button type="button" onClick={() => { const updated = formData.components.filter((_, i) => i !== idx); setFormData({ ...formData, components: updated, component_package_id: '' }); }} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><FaTimes size={14} /></button>
-                                            </div>
-                                            <div className="md:col-span-12">
-                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Reason / Note</label>
-                                                <input type="text" placeholder="Reason..." value={comp.reason || ''} onChange={e => { const updated = [...formData.components]; updated[idx].reason = e.target.value; setFormData({ ...formData, components: updated, component_package_id: '' }); }} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all italic text-slate-500" />
                                             </div>
                                         </div>
                                     </div>
@@ -614,7 +544,7 @@ const EditSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency }
                                     if (!opt) return;
                                     const comp = availableComponents.find(c => String(c.id) === String(opt.value));
                                     if (comp) {
-                                        setFormData({ ...formData, components: [...formData.components, { component_id: comp.id, calc_type: comp.calc_type || 'percentage', calc_value: comp.calc_value || '', reason: '' }], component_package_id: '' });
+                                        setFormData({ ...formData, components: [...formData.components, { component_id: comp.id, calc_type: comp.calc_type || 'percentage', calc_value: comp.calc_value || '' }], component_package_id: '' });
                                         setShowOverrideForm(false);
                                     }
                                 }}
@@ -640,7 +570,6 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
 
     const [formData, setFormData] = useState({
         base_amount: '',
-        currency: normalizeCurrencyCode(companyCurrency),
         component_package_id: '',
         components: []
     });
@@ -649,19 +578,17 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
         if (isOpen && salary) {
             setFormData({
                 base_amount: salary.base_amount || '',
-                currency: getSalaryCurrency(salary, companyCurrency),
-                component_package_id: salary.package?.id || '',
+                component_package_id: '',
                 components: (salary.components || []).map(c => ({
                     component_id: c.id,
                     calc_type: c.calc_type,
                     calc_value: parseFloat(c.calc_value || 0).toFixed(2),
-                    reason: c.reason || ''
                 }))
             });
             loadComponents();
             loadSalaryPackages();
         }
-    }, [isOpen, salary, companyCurrency]);
+    }, [isOpen, salary]);
 
     const loadSalaryPackages = async () => {
         try {
@@ -679,7 +606,6 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
             component_id: item.component_id,
             calc_type: item.calc_type,
             calc_value: parseFloat(item.calc_value || 0).toFixed(2),
-            reason: `Default from ${pkg.name} package`
         }));
         setFormData(prev => ({ ...prev, component_package_id: packageId, components: packageComponents }));
     };
@@ -695,27 +621,22 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.base_amount) {
-            toast.warning('Please fill base amount');
-            return;
-        }
+        if (!formData.base_amount) { toast.warning('Please fill base amount'); return; }
         setSubmitting(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
             const payload = {
                 employee_id: salary.employee?.id,
                 base_amount: parseFloat(formData.base_amount),
-                currency: formData.currency.toLowerCase(),
                 components: formData.components.map(o => ({
                     component_id: o.component_id,
                     calc_type: o.calc_type,
                     calc_value: parseFloat(o.calc_value),
-                    reason: o.reason || ''
                 }))
             };
             const response = await apiCall('/salary/revise-salary', 'POST', payload, company?.id);
             const result = await response.json();
-            if (result.success) { toast.success('Salary structure revised successfully!'); onSuccess(); onClose(); }
+            if (result.success) { toast.success('Salary revised successfully!'); onSuccess(); onClose(); }
             else { toast.error(result.message || 'Failed to revise salary'); }
         } catch (error) { console.error(error); toast.error('Failed to revise salary'); }
         finally { setSubmitting(false); }
@@ -737,18 +658,8 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
             size="4xl"
             footer={
                 <>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={submitting}
-                        className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-purple-200"
-                    >
+                    <button type="button" onClick={onClose} className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">Cancel</button>
+                    <button onClick={handleSubmit} disabled={submitting} className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-purple-200">
                         {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
                         {submitting ? 'Revising...' : 'Revise Salary'}
                     </button>
@@ -760,7 +671,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Salary Package (Quick Fill)</label>
                         <SelectField
-                            value={formData.component_package_id ? { value: formData.component_package_id, label: packages.find(p => String(p.id) === String(formData.component_package_id))?.name ? `${packages.find(p => String(p.id) === String(formData.component_package_id)).name} (${packages.find(p => String(p.id) === String(formData.component_package_id)).code})` : 'Custom / Manual' } : null}
+                            value={formData.component_package_id ? { value: formData.component_package_id, label: packages.find(p => String(p.id) === String(formData.component_package_id))?.name || 'Custom / Manual' } : null}
                             onChange={(opt) => handlePackageChange(opt?.value || '')}
                             options={packages.map(pkg => ({ value: pkg.id, label: `${pkg.name} (${pkg.code})` }))}
                             isClearable
@@ -770,12 +681,14 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
                     </div>
                     <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">New Base Amount *</label>
-                        <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
+                        <input
+                            type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
                             onChange={e => {
                                 const val = e.target.value.replace(/[^0-9.]/g, '');
-                                if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
+                                if (val === '' || /^\d*\.?\d*$/.test(val)) setFormData({ ...formData, base_amount: val });
                             }}
-                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold" />
+                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm font-semibold"
+                        />
                     </div>
                 </div>
 
@@ -784,9 +697,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                             <FaCalculator className="text-blue-500" /> Salary Components
                         </label>
-                        <button type="button"
-                            onClick={() => setShowOverrideForm(true)}
-                            className="text-[10px] px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all font-bold border border-blue-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
+                        <button type="button" onClick={() => setShowOverrideForm(true)} className="text-[10px] px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all font-bold border border-blue-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
                             <FaPlus size={8} /> Add Component
                         </button>
                     </div>
@@ -796,10 +707,10 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
                             {formData.components.map((comp, idx) => {
                                 const componentData = availableComponents.find(c => c.id === comp.component_id);
                                 return (
-                                    <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm relative group animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm relative group">
                                         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                                             <div className="md:col-span-4">
-                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex justify-between">Component</label>
+                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Component</label>
                                                 <div className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 truncate">
                                                     {componentData?.name || `Component ${comp.component_id}`}
                                                     <span className="ml-2 text-[10px] text-slate-400 font-mono">({componentData?.code})</span>
@@ -814,10 +725,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
                                                         updated[idx].calc_type = opt?.value || 'percentage';
                                                         setFormData({ ...formData, components: updated, component_package_id: '' });
                                                     }}
-                                                    options={[
-                                                        { value: 'percentage', label: 'Percentage (%)' },
-                                                        { value: 'fixed', label: 'Fixed Amount' }
-                                                    ]}
+                                                    options={[{ value: 'percentage', label: 'Percentage (%)' }, { value: 'fixed', label: 'Fixed Amount' }]}
                                                     placeholder="Select type"
                                                     menuPortalTarget={document.body}
                                                 />
@@ -837,12 +745,8 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
                                                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
                                                 />
                                             </div>
-                                            <div className="md:col-span-2 flex justify-end gap-2 pb-0.5">
+                                            <div className="md:col-span-2 flex justify-end pb-0.5">
                                                 <button type="button" onClick={() => { const updated = formData.components.filter((_, i) => i !== idx); setFormData({ ...formData, components: updated, component_package_id: '' }); }} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><FaTimes size={14} /></button>
-                                            </div>
-                                            <div className="md:col-span-12">
-                                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Reason / Note</label>
-                                                <input type="text" placeholder="Reason..." value={comp.reason || ''} onChange={e => { const updated = [...formData.components]; updated[idx].reason = e.target.value; setFormData({ ...formData, components: updated, component_package_id: '' }); }} className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all italic text-slate-500" />
                                             </div>
                                         </div>
                                     </div>
@@ -863,7 +767,7 @@ const ReviseSalaryModal = ({ isOpen, onClose, onSuccess, salary, companyCurrency
                                     if (!opt) return;
                                     const comp = availableComponents.find(c => String(c.id) === String(opt.value));
                                     if (comp) {
-                                        setFormData({ ...formData, components: [...formData.components, { component_id: comp.id, calc_type: comp.calc_type || 'percentage', calc_value: comp.calc_value || '', reason: '' }], component_package_id: '' });
+                                        setFormData({ ...formData, components: [...formData.components, { component_id: comp.id, calc_type: comp.calc_type || 'percentage', calc_value: comp.calc_value || '' }], component_package_id: '' });
                                         setShowOverrideForm(false);
                                     }
                                 }}
@@ -888,57 +792,30 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
     const [submitting, setSubmitting] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [showOverrideForm, setShowOverrideForm] = useState(false);
-    const [editingOverride, setEditingOverride] = useState(null);
-    const [formData, setFormData] = useState({ component_package_id: '', base_amount: '', currency: normalizeCurrencyCode(companyCurrency), effective_from: getCurrentMonthDate(), effective_to: '', components: [] });
-    const [overrideForm, setOverrideForm] = useState({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
+    const [formData, setFormData] = useState({
+        component_package_id: '',
+        base_amount: '',
+        effective_from: getCurrentMonthDate(),
+        effective_to: '',
+        components: []
+    });
 
-    // Derived: Selected package details
-    const selectedPackage = useMemo(() =>
-        packages.find(p => String(p.id) === String(formData.component_package_id)),
-        [packages, formData.component_package_id]
-    );
-
-    // Derived: Component IDs already in the list
-    const existingComponentIds = useMemo(() =>
-        formData.components.map(comp => comp.component_id),
-        [formData.components]
-    );
-
-    // Filtered components for the dropdown
-    const filteredAvailableComponents = useMemo(() =>
-        availableComponents.filter(comp => !existingComponentIds.includes(comp.id)),
-        [availableComponents, existingComponentIds]
-    );
+    const existingComponentIds = useMemo(() => formData.components.map(c => c.component_id), [formData.components]);
+    const filteredAvailableComponents = useMemo(() => availableComponents.filter(c => !existingComponentIds.includes(c.id)), [availableComponents, existingComponentIds]);
 
     useEffect(() => {
-        if (isOpen) {
-            setFormData(prev => ({ ...prev, currency: normalizeCurrencyCode(companyCurrency) }));
-            loadSalaryPackages();
-            loadSalaryComponents();
-        }
-    }, [isOpen, companyCurrency]);
+        if (isOpen) { loadSalaryPackages(); loadSalaryComponents(); }
+    }, [isOpen]);
 
-    // Handle package change and fill components (Quick Fill)
     const handlePackageChange = (packageId) => {
         const pkg = packages.find(p => String(p.id) === String(packageId));
         if (!pkg) return;
-
-        // Map package items to the components structure for the form
         const packageComponents = (pkg.items || []).map(item => ({
             component_id: item.component_id,
             calc_type: item.calc_type,
             calc_value: parseFloat(item.calc_value || 0).toFixed(2),
-            effective_from: formData.effective_from || '', // Use current form date or empty
-            effective_to: null,
-            reason: `Default from ${pkg.name} package`
         }));
-
-        setFormData(prev => ({
-            ...prev,
-            component_package_id: packageId,
-            // When choosing a package, we replace existing components with package defaults
-            components: packageComponents
-        }));
+        setFormData(prev => ({ ...prev, component_package_id: packageId, components: packageComponents }));
     };
 
     const loadSalaryPackages = async () => {
@@ -947,26 +824,24 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
             const company = JSON.parse(localStorage.getItem('company'));
             const response = await apiCall('/salary/components/packages', 'GET', null, company?.id);
             const result = await response.json();
-            if (result.success) {
-                setPackages(result.data || []);
-            }
+            if (result.success) setPackages(result.data || []);
         } catch (error) { console.error('Failed to load packages:', error); } finally { setLoadingPackages(false); }
     };
-    const loadSalaryComponents = async () => { try { const company = JSON.parse(localStorage.getItem('company')); const response = await apiCall('/salary/components/list', 'GET', null, company?.id); const result = await response.json(); if (result.success) setAvailableComponents(result.data || []); } catch (error) { console.error('Failed to load salary components:', error); } };
 
-    const addOverride = () => {
-        if (!overrideForm.component_id || !overrideForm.calc_value) { toast.warning('Please fill component and value'); return; }
-        const newOverride = { component_id: parseInt(overrideForm.component_id), calc_type: overrideForm.calc_type, calc_value: parseFloat(overrideForm.calc_value), effective_from: overrideForm.effective_from || formData.effective_from, effective_to: overrideForm.effective_to || null, reason: overrideForm.reason || '' };
-        if (editingOverride !== null) { const updated = [...formData.components]; updated[editingOverride] = newOverride; setFormData({ ...formData, components: updated, component_package_id: '' }); setEditingOverride(null); }
-        else { setFormData({ ...formData, components: [...formData.components, newOverride], component_package_id: '' }); }
-        setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
-        setShowOverrideForm(false);
+    const loadSalaryComponents = async () => {
+        try {
+            const company = JSON.parse(localStorage.getItem('company'));
+            const response = await apiCall('/salary/components/list', 'GET', null, company?.id);
+            const result = await response.json();
+            if (result.success) setAvailableComponents(result.data || []);
+        } catch (error) { console.error('Failed to load salary components:', error); }
     };
 
-    const editOverride = (index) => { const o = formData.components[index]; setOverrideForm({ component_id: o.component_id, calc_type: o.calc_type, calc_value: o.calc_value, effective_from: o.effective_from || '', effective_to: o.effective_to || '', reason: o.reason || '' }); setEditingOverride(index); setShowOverrideForm(true); };
-    const removeOverride = (index) => { setFormData({ ...formData, components: formData.components.filter((_, i) => i !== index), component_package_id: '' }); };
-
-    const resetForm = () => { setSelectedEmployee(null); setFormData({ component_package_id: packages[0]?.id || '', base_amount: '', currency: normalizeCurrencyCode(companyCurrency), effective_from: getCurrentMonthDate(), effective_to: '', components: [] }); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' }); setShowOverrideForm(false); setEditingOverride(null); };
+    const resetForm = () => {
+        setSelectedEmployee(null);
+        setFormData({ component_package_id: '', base_amount: '', effective_from: getCurrentMonthDate(), effective_to: '', components: [] });
+        setShowOverrideForm(false);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -979,14 +854,12 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
             const payload = {
                 employee_id: selectedEmployee.id,
                 base_amount: parseFloat(formData.base_amount),
-                currency: formData.currency.toLowerCase(),
                 effective_from: formData.effective_from,
                 effective_to: formData.effective_to || null,
                 components: formData.components.map(o => ({
                     component_id: o.component_id,
                     calc_type: o.calc_type,
                     calc_value: parseFloat(o.calc_value),
-                    reason: o.reason || ''
                 }))
             };
             const response = await apiCall('/salary/assign-salary', 'POST', payload, company?.id);
@@ -1015,40 +888,51 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                 <p className="text-sm text-slate-500">Configure salary profile for employee</p>
                             </div>
                         </div>
-                        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all">
+                        <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-all hover:bg-slate-100">
                             <FaTimes className="h-4 w-4" />
                         </button>
                     </div>
 
                     <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                         <div className="p-6 space-y-5">
-                            {/* Employee Selection */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Employee *</label>
-                                <EmployeeSelect
-                                    value={selectedEmployee?.id || ''}
-                                    onChange={(id, emp) => setSelectedEmployee(emp)}
-                                    placeholder="Search and select an employee..."
-                                    initialEmployee={selectedEmployee}
-                                />
+                                <EmployeeSelect value={selectedEmployee?.id || ''} onChange={(id, emp) => setSelectedEmployee(emp)} placeholder="Search and select an employee..." initialEmployee={selectedEmployee} />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective From *</label>
-                                    <AdvancedDateFilter tabOptions={["month"]} value={formData.effective_from ? { month: parseInt(formData.effective_from.split('-')[1]), year: parseInt(formData.effective_from.split('-')[0]) } : null} onChange={(val) => { if (val && val.month && val.year) { const firstDate = `${val.year}-${String(val.month).padStart(2, '0')}-01`; setFormData({ ...formData, effective_from: firstDate }); } else { setFormData({ ...formData, effective_from: '' }); } }} placeholder="Select month" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-left text-sm" />
+                                    <AdvancedDateFilter
+                                        tabOptions={["month"]}
+                                        value={formData.effective_from ? { month: parseInt(formData.effective_from.split('-')[1]), year: parseInt(formData.effective_from.split('-')[0]) } : null}
+                                        onChange={(val) => {
+                                            if (val && val.month && val.year) { setFormData({ ...formData, effective_from: `${val.year}-${String(val.month).padStart(2, '0')}-01` }); }
+                                            else { setFormData({ ...formData, effective_from: '' }); }
+                                        }}
+                                        placeholder="Select month"
+                                        buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-left text-sm"
+                                    />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective To</label>
-                                    <AdvancedDateFilter tabOptions={["month"]} value={formData.effective_to ? { month: parseInt(formData.effective_to.split('-')[1]), year: parseInt(formData.effective_to.split('-')[0]) } : null} onChange={(val) => { if (val && val.month && val.year) { const firstDate = `${val.year}-${String(val.month).padStart(2, '0')}-01`; setFormData({ ...formData, effective_to: firstDate }); } else { setFormData({ ...formData, effective_to: '' }); } }} placeholder="Optional" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-left text-sm" />
+                                    <AdvancedDateFilter
+                                        tabOptions={["month"]}
+                                        value={formData.effective_to ? { month: parseInt(formData.effective_to.split('-')[1]), year: parseInt(formData.effective_to.split('-')[0]) } : null}
+                                        onChange={(val) => {
+                                            if (val && val.month && val.year) { setFormData({ ...formData, effective_to: `${val.year}-${String(val.month).padStart(2, '0')}-01` }); }
+                                            else { setFormData({ ...formData, effective_to: '' }); }
+                                        }}
+                                        placeholder="Optional"
+                                        buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-left text-sm"
+                                    />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* Salary Package */}
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Salary Package (Quick Fill)</label>
                                     <SelectField
-                                        value={formData.component_package_id ? { value: formData.component_package_id, label: packages.find(p => String(p.id) === String(formData.component_package_id))?.name ? `${packages.find(p => String(p.id) === String(formData.component_package_id)).name} (${packages.find(p => String(p.id) === String(formData.component_package_id)).code})` : 'Custom / Manual' } : null}
+                                        value={formData.component_package_id ? { value: formData.component_package_id, label: packages.find(p => String(p.id) === String(formData.component_package_id))?.name || 'Custom / Manual' } : null}
                                         onChange={(opt) => handlePackageChange(opt?.value || '')}
                                         options={packages.map(pkg => ({ value: pkg.id, label: `${pkg.name} (${pkg.code})` }))}
                                         isLoading={loadingPackages}
@@ -1058,30 +942,25 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                         menuPortalTarget={document.body}
                                     />
                                 </div>
-
-                                {/* Base Amount */}
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Base Amount *</label>
-                                    <input type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
+                                    <input
+                                        type="text" inputMode="decimal" placeholder="Enter amount" value={formData.base_amount}
                                         onChange={e => {
                                             const val = e.target.value.replace(/[^0-9.]/g, '');
-                                            if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData({ ...formData, base_amount: val }); }
+                                            if (val === '' || /^\d*\.?\d*$/.test(val)) setFormData({ ...formData, base_amount: val });
                                         }}
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm font-semibold" />
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm font-semibold"
+                                    />
                                 </div>
                             </div>
-
-
-
 
                             <div className="border-t border-slate-100 pt-5">
                                 <div className="flex items-center justify-between mb-3">
                                     <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                                         <FaCalculator className="text-indigo-500" /> Salary Components
                                     </label>
-                                    <button type="button"
-                                        onClick={() => { setEditingOverride(null); setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: formData.effective_from, effective_to: '', reason: '' }); setShowOverrideForm(true); }}
-                                        className="text-[10px] px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-all font-bold border border-indigo-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
+                                    <button type="button" onClick={() => setShowOverrideForm(true)} className="text-[10px] px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-all font-bold border border-indigo-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
                                         <FaPlus size={8} /> Add Component
                                     </button>
                                 </div>
@@ -1091,20 +970,15 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                         {formData.components.map((comp, idx) => {
                                             const componentData = availableComponents.find(c => c.id === comp.component_id);
                                             return (
-                                                <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm relative group animate-in fade-in slide-in-from-top-1 duration-200">
+                                                <div key={idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm relative group">
                                                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                                                        {/* Component Info */}
                                                         <div className="md:col-span-4">
-                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex justify-between">
-                                                                Component
-                                                            </label>
+                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Component</label>
                                                             <div className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 truncate">
                                                                 {componentData?.name || `Component ${comp.component_id}`}
                                                                 <span className="ml-2 text-[10px] text-slate-400 font-mono">({componentData?.code})</span>
                                                             </div>
                                                         </div>
-
-                                                        {/* Calc Type */}
                                                         <div className="md:col-span-3">
                                                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Type</label>
                                                             <SelectField
@@ -1114,22 +988,15 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                                                     updated[idx].calc_type = opt?.value || 'percentage';
                                                                     setFormData({ ...formData, components: updated, component_package_id: '' });
                                                                 }}
-                                                                options={[
-                                                                    { value: 'percentage', label: 'Percentage (%)' },
-                                                                    { value: 'fixed', label: 'Fixed Amount' }
-                                                                ]}
+                                                                options={[{ value: 'percentage', label: 'Percentage (%)' }, { value: 'fixed', label: 'Fixed Amount' }]}
                                                                 placeholder="Select type"
                                                                 menuPortalTarget={document.body}
                                                             />
                                                         </div>
-
-                                                        {/* Calc Value */}
                                                         <div className="md:col-span-3">
                                                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Value</label>
                                                             <input
-                                                                type="text"
-                                                                inputMode="decimal"
-                                                                value={comp.calc_value}
+                                                                type="text" inputMode="decimal" value={comp.calc_value}
                                                                 onChange={e => {
                                                                     const val = e.target.value.replace(/[^0-9.]/g, '');
                                                                     if (val === '' || /^\d*\.?\d*$/.test(val)) {
@@ -1141,36 +1008,8 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                                                 className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm font-bold focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all"
                                                             />
                                                         </div>
-
-                                                        {/* Action Buttons */}
-                                                        <div className="md:col-span-2 flex justify-end gap-2 pb-0.5">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    const updated = formData.components.filter((_, i) => i !== idx);
-                                                                    setFormData({ ...formData, components: updated, component_package_id: '' });
-                                                                }}
-                                                                className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                                                title="Remove Component"
-                                                            >
-                                                                <FaTimes size={14} />
-                                                            </button>
-                                                        </div>
-
-                                                        {/* Reason - Full Width */}
-                                                        <div className="md:col-span-12">
-                                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Reason / Note</label>
-                                                            <input
-                                                                type="text"
-                                                                placeholder="Reason for this component value..."
-                                                                value={comp.reason || ''}
-                                                                onChange={e => {
-                                                                    const updated = [...formData.components];
-                                                                    updated[idx].reason = e.target.value;
-                                                                    setFormData({ ...formData, components: updated, component_package_id: '' });
-                                                                }}
-                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all italic text-slate-500"
-                                                            />
+                                                        <div className="md:col-span-2 flex justify-end pb-0.5">
+                                                            <button type="button" onClick={() => { const updated = formData.components.filter((_, i) => i !== idx); setFormData({ ...formData, components: updated, component_package_id: '' }); }} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><FaTimes size={14} /></button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1179,47 +1018,28 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                                     </div>
                                 )}
 
-                                {/* Add New Component Form (Simplified as Inline Add) */}
                                 {showOverrideForm && (
                                     <div className="mt-4 p-4 bg-green-50/50 rounded-xl border-2 border-dashed border-green-200">
                                         <div className="flex items-center justify-between mb-3">
                                             <p className="text-[10px] font-bold text-green-900 uppercase tracking-widest">Select Component to Add</p>
                                             <button type="button" onClick={() => setShowOverrideForm(false)} className="text-slate-400 hover:text-slate-600"><FaTimes size={12} /></button>
                                         </div>
-                                        <div className="flex gap-3">
-                                            <SelectField
-                                                value={null}
-                                                onChange={(opt) => {
-                                                    if (!opt) return;
-                                                    const comp = filteredAvailableComponents.find(c => String(c.id) === String(opt.value));
-                                                    if (comp) {
-                                                        const newComp = {
-                                                            component_id: comp.id,
-                                                            calc_type: comp.calc_type || 'percentage',
-                                                            calc_value: comp.calc_value || '',
-                                                            effective_from: formData.effective_from,
-                                                            effective_to: null,
-                                                            reason: ''
-                                                        };
-                                                        setFormData({
-                                                            ...formData,
-                                                            components: [...formData.components, newComp],
-                                                            component_package_id: ''
-                                                        });
-                                                        setShowOverrideForm(false);
-                                                        setOverrideForm({ component_id: '', calc_type: 'percentage', calc_value: '', effective_from: '', effective_to: '', reason: '' });
-                                                    }
-                                                }}
-                                                options={filteredAvailableComponents.map(comp => ({ value: comp.id, label: `${comp.name} (${comp.code})` }))}
-                                                placeholder="Choose a component..."
-                                                className="flex-1"
-                                                menuPortalTarget={document.body}
-                                            />
-                                        </div>
+                                        <SelectField
+                                            value={null}
+                                            onChange={(opt) => {
+                                                if (!opt) return;
+                                                const comp = filteredAvailableComponents.find(c => String(c.id) === String(opt.value));
+                                                if (comp) {
+                                                    setFormData({ ...formData, components: [...formData.components, { component_id: comp.id, calc_type: comp.calc_type || 'percentage', calc_value: comp.calc_value || '' }], component_package_id: '' });
+                                                    setShowOverrideForm(false);
+                                                }
+                                            }}
+                                            options={filteredAvailableComponents.map(comp => ({ value: comp.id, label: `${comp.name} (${comp.code})` }))}
+                                            placeholder="Choose a component..."
+                                            menuPortalTarget={document.body}
+                                        />
                                         {filteredAvailableComponents.length === 0 && (
-                                            <p className="text-[10px] text-amber-600 mt-2 italic flex items-center gap-1">
-                                                <FaInfoCircle size={10} /> No more components available to add.
-                                            </p>
+                                            <p className="text-[10px] text-amber-600 mt-2 italic flex items-center gap-1"><FaInfoCircle size={10} /> No more components available to add.</p>
                                         )}
                                     </div>
                                 )}
@@ -1227,9 +1047,8 @@ const AssignSalaryModal = ({ isOpen, onClose, onSuccess, submitDisabled, submitT
                         </div>
                     </form>
 
-                    {/* Footer */}
                     <div className="border-t border-slate-100 bg-slate-50 px-6 py-4 flex justify-end gap-3">
-                        <button type="button" onClick={onClose} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-smdisabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-green-200">Cancel</button>
+                        <button type="button" onClick={onClose} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">Cancel</button>
                         <button onClick={handleSubmit} disabled={submitting || submitDisabled} title={submitDisabled ? submitTitle : ""} className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-green-200">
                             {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
                             {submitting ? 'Assigning...' : 'Assign Salary'}
@@ -1250,40 +1069,27 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, salary, processingId }
             <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex justify-center items-start overflow-y-auto p-4 sm:p-6 pt-8 sm:pt-16 !mt-0" onClick={onClose}>
                 <ModalScrollLock />
                 <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 m-auto flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-                    {/* Header */}
                     <div className="flex items-center justify-between border-b border-slate-100 bg-white px-6 py-4">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 shadow-sm border border-red-100">
-                                <FaTrash className="h-4 w-4" />
-                            </div>
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600 shadow-sm border border-red-100"><FaTrash className="h-4 w-4" /></div>
                             <div>
                                 <h2 className="text-lg font-bold text-slate-900">Delete Salary Record</h2>
                                 <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wider">Confirmation</p>
                             </div>
                         </div>
-                        <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all">
-                            <FaTimes className="h-3.5 w-3.5" />
-                        </button>
+                        <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all"><FaTimes className="h-3.5 w-3.5" /></button>
                     </div>
-
                     <div className="p-6 text-center space-y-4">
                         <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200 }} className="w-16 h-16 bg-gradient-to-br from-red-50 to-rose-50 rounded-full flex items-center justify-center mx-auto border-4 border-white shadow-lg shadow-red-100/50">
                             <FaExclamationCircle className="text-2xl text-red-500" />
                         </motion.div>
-
                         <div className="space-y-1">
                             <h3 className="text-base font-bold text-slate-900">Are you sure?</h3>
-                            <p className="text-xs text-slate-500 leading-relaxed px-4">
-                                Permanently delete the salary record for <span className="font-bold text-slate-900">{salary.employee?.name}</span>?
-                            </p>
+                            <p className="text-xs text-slate-500 leading-relaxed px-4">Permanently delete the salary record for <span className="font-bold text-slate-900">{salary.employee?.name}</span>?</p>
                         </div>
                     </div>
-
-                    {/* Footer */}
                     <div className="border-t border-slate-100 bg-slate-50 px-5 py-3.5 flex gap-3">
-                        <button type="button" onClick={onClose} className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
-                            Keep
-                        </button>
+                        <button type="button" onClick={onClose} className="flex-1 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">Keep</button>
                         <button onClick={onConfirm} disabled={processingId === salary.salary_id} className="flex-1 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-bold text-[10px] uppercase tracking-widest hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-200">
                             {processingId === salary.salary_id ? <FaSpinner className="animate-spin" /> : <FaTrash />}
                             {processingId === salary.salary_id ? 'Deleting...' : 'Delete'}
@@ -1301,14 +1107,13 @@ const SalaryCard = ({ salary, index, onClick, onDelete, activeId, onToggle, onEd
     const navigateToEmployeeProfile = useEmployeeNavigation();
     const status = getStatusBadge(salary.effective_to);
     const StatusIcon = status.icon;
-    const expired = isSalaryExpired(salary);
-    const displayCurrency = getSalaryCurrency(salary, companyCurrency);
 
+    // Use payroll_used flag: false → Edit, true → Revise
     const actions = [
         { label: 'View Details', icon: <FaEye size={13} />, onClick: () => onClick(salary), className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
-        expired
-            ? { label: 'Edit Salary', icon: <FaEdit size={13} />, onClick: () => onEdit(salary), className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50' }
-            : { label: 'Revise Salary', icon: <FaExchangeAlt size={13} />, onClick: () => onRevise(salary), className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50' },
+        salary.payroll_used
+            ? { label: 'Revise Salary', icon: <FaExchangeAlt size={13} />, onClick: () => onRevise(salary), className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50' }
+            : { label: 'Edit Salary', icon: <FaEdit size={13} />, onClick: () => onEdit(salary), className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50' },
         { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => onDelete(salary), className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
     ];
 
@@ -1325,7 +1130,6 @@ const SalaryCard = ({ salary, index, onClick, onDelete, activeId, onToggle, onEd
             hoverable
             title={<span onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(salary.employee?.id); }} className="cursor-pointer hover:underline hover:text-indigo-600 transition-colors">{salary.employee?.name || 'No name'}</span>}
             subtitle={`${salary.employee?.employee_code || 'N/A'} • ${salary.employee?.email || 'N/A'}`}
-            eyebrow={salary.package?.name || 'Salary package'}
             badge={
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}>
                     <StatusIcon size={10} />{status.text}
@@ -1333,7 +1137,7 @@ const SalaryCard = ({ salary, index, onClick, onDelete, activeId, onToggle, onEd
             }
             footer={
                 <div className="flex w-full items-center justify-between gap-3 text-xs text-gray-400">
-                    <span>{formatCurrency(salary.ctc, displayCurrency)} CTC</span>
+                    <span>{formatCurrency(salary.ctc, companyCurrency)} CTC</span>
                     <span>{salary.components?.length || 0} components</span>
                 </div>
             }
@@ -1342,19 +1146,19 @@ const SalaryCard = ({ salary, index, onClick, onDelete, activeId, onToggle, onEd
                 <div className="grid grid-cols-2 gap-2">
                     <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-center">
                         <p className="text-xs text-blue-500 font-bold uppercase tracking-widest mb-1">Gross</p>
-                        <p className="text-sm font-black text-blue-700">{formatCurrency(salary.gross_salary, displayCurrency)}</p>
+                        <p className="text-sm font-black text-blue-700">{formatCurrency(salary.gross_salary, companyCurrency)}</p>
                     </div>
                     <div className="rounded-xl border border-green-100 bg-green-50 p-3 text-center">
                         <p className="text-xs text-green-500 font-bold uppercase tracking-widest mb-1">Net</p>
-                        <p className="text-sm font-black text-green-700">{formatCurrency(salary.net_salary, displayCurrency)}</p>
+                        <p className="text-sm font-black text-green-700">{formatCurrency(salary.net_salary, companyCurrency)}</p>
                     </div>
                     <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
                         <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-1">Base</p>
-                        <p className="text-sm font-black text-slate-700">{formatCurrency(salary.base_amount, displayCurrency)}</p>
+                        <p className="text-sm font-black text-slate-700">{formatCurrency(salary.base_amount, companyCurrency)}</p>
                     </div>
                     <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3 text-center">
                         <p className="text-xs text-indigo-500 font-bold uppercase tracking-widest mb-1">CTC</p>
-                        <p className="text-sm font-black text-indigo-700">{formatCurrency(salary.ctc, displayCurrency)}</p>
+                        <p className="text-sm font-black text-indigo-700">{formatCurrency(salary.ctc, companyCurrency)}</p>
                     </div>
                 </div>
 
@@ -1437,11 +1241,11 @@ const SalaryManagement = () => {
             if (result.success) {
                 setSalaries(result.data || []);
                 setMeta(result);
-                const total = Number(result.pagination?.total ?? result.meta?.total ?? result.total ?? result.data?.length ?? 0);
-                const pageCount = Number(result.pagination?.total_pages ?? result.meta?.total_pages ?? Math.max(1, Math.ceil(total / pagination.limit)));
-                const currentPage = Number(result.pagination?.page ?? result.meta?.page ?? result.page ?? page);
-                const perPage = Number(result.pagination?.limit ?? result.meta?.limit ?? result.limit ?? pagination.limit);
-                updatePagination({ page: currentPage, limit: perPage, total, total_pages: pageCount, is_last_page: result.pagination?.is_last_page ?? result.meta?.is_last_page ?? (currentPage >= pageCount) });
+                const total = Number(result.meta?.total ?? result.data?.length ?? 0);
+                const pageCount = Number(result.meta?.total_pages ?? Math.max(1, Math.ceil(total / pagination.limit)));
+                const currentPage = Number(result.meta?.page ?? page);
+                const perPage = Number(result.meta?.limit ?? pagination.limit);
+                updatePagination({ page: currentPage, limit: perPage, total, total_pages: pageCount, is_last_page: result.meta?.is_last_page ?? (currentPage >= pageCount) });
             } else { throw new Error(result.message || "Failed to fetch salaries"); }
         } catch (e) { toast.error(e.message || "Failed to load salary records."); console.error(e); }
         finally { setLoading(false); fetchInProgress.current = false; setIsInitialLoad(false); }
@@ -1503,23 +1307,20 @@ const SalaryManagement = () => {
     };
 
     const stats = {
-        total: meta?.total || 0,
+        total: meta?.meta?.total || 0,
         avgBase: visibleSalaries.length > 0 ? visibleSalaries.reduce((sum, s) => sum + (s.base_amount || 0), 0) / visibleSalaries.length : 0,
         totalCTC: visibleSalaries.reduce((sum, s) => sum + (s.ctc || 0), 0),
         activeCount: visibleSalaries.filter(s => !s.effective_to || new Date(s.effective_to) > new Date()).length,
-        currency: visibleSalaries[0]?.currency || salaries[0]?.currency || companyCurrency
     };
 
-    const salaryTableActions = (salary) => {
-        const expired = isSalaryExpired(salary);
-        return [
-            { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setSelectedSalary(salary), className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
-            expired
-                ? { label: 'Edit Salary', icon: <FaEdit size={13} />, onClick: () => { setSalaryToEdit(salary); setShowEditModal(true); }, className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50' }
-                : { label: 'Revise Salary', icon: <FaExchangeAlt size={13} />, onClick: () => { setSalaryToRevise(salary); setShowReviseModal(true); }, className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50' },
-            { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => { setSalaryToDelete(salary); setShowDeleteModal(true); }, className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
-        ];
-    };
+    // Use payroll_used: false → Edit, true → Revise
+    const salaryTableActions = (salary) => [
+        { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setSelectedSalary(salary), className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
+        salary.payroll_used
+            ? { label: 'Revise Salary', icon: <FaExchangeAlt size={13} />, onClick: () => { setSalaryToRevise(salary); setShowReviseModal(true); }, className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50' }
+            : { label: 'Edit Salary', icon: <FaEdit size={13} />, onClick: () => { setSalaryToEdit(salary); setShowEditModal(true); }, className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50' },
+        { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => { setSalaryToDelete(salary); setShowDeleteModal(true); }, className: 'text-red-600 hover:text-red-700 hover:bg-red-50' }
+    ];
 
     const salaryTableColumns = [
         visibleColumns.showEmployee && {
@@ -1537,10 +1338,7 @@ const SalaryManagement = () => {
                         {getInitials(salary.employee?.name)}
                     </ProfileAvatar>
                     <div className="min-w-0">
-                        <p
-                            className="font-semibold text-gray-800 truncate cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
-                            onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(salary.employee?.id); }}
-                        >
+                        <p className="font-semibold text-gray-800 truncate cursor-pointer hover:underline hover:text-indigo-600 transition-colors" onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(salary.employee?.id); }}>
                             {salary.employee?.name || 'No name'}
                         </p>
                         <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
@@ -1552,27 +1350,18 @@ const SalaryManagement = () => {
                 </div>
             )
         },
-        visibleColumns.showPackage && {
-            key: 'package',
-            label: 'Package',
-            render: (salary) => (
-                <span className="inline-flex whitespace-nowrap rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700">
-                    {salary.package?.name}
-                </span>
-            )
-        },
         visibleColumns.showBaseAmount && {
             key: 'base_amount',
             label: 'Base Amount',
             className: 'whitespace-nowrap font-semibold text-gray-700',
-            render: (salary) => formatCurrency(salary.base_amount, getSalaryCurrency(salary, companyCurrency))
+            render: (salary) => formatCurrency(salary.base_amount, companyCurrency)
         },
         visibleColumns.showGrossSalary && {
             key: 'gross_salary',
             label: 'Gross Salary',
             render: (salary) => (
                 <span className="inline-flex whitespace-nowrap rounded-lg bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 border border-blue-100">
-                    {formatCurrency(salary.gross_salary, getSalaryCurrency(salary, companyCurrency))}
+                    {formatCurrency(salary.gross_salary, companyCurrency)}
                 </span>
             )
         },
@@ -1581,7 +1370,7 @@ const SalaryManagement = () => {
             label: 'Net Salary',
             render: (salary) => (
                 <span className="inline-flex whitespace-nowrap rounded-lg bg-green-50 px-3 py-1 text-xs font-bold text-green-700 border border-green-100">
-                    {formatCurrency(salary.net_salary, getSalaryCurrency(salary, companyCurrency))}
+                    {formatCurrency(salary.net_salary, companyCurrency)}
                 </span>
             )
         },
@@ -1590,7 +1379,7 @@ const SalaryManagement = () => {
             label: 'Total CTC',
             render: (salary) => (
                 <span className="inline-flex whitespace-nowrap rounded-lg bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 border border-indigo-100">
-                    {formatCurrency(salary.ctc, getSalaryCurrency(salary, companyCurrency))}
+                    {formatCurrency(salary.ctc, companyCurrency)}
                 </span>
             )
         },
@@ -1625,17 +1414,9 @@ const SalaryManagement = () => {
             accent="green"
             onRefresh={() => fetchSalaries(1, "", true)}
             actions={
-                <div className="flex items-center gap-3">
-
-                    <ManagementButton
-                        tone="green"
-                        variant="solid"
-                        leftIcon={<FaPlus />}
-                        onClick={() => setShowAssignModal(true)}
-                    >
-                        Assign Salary
-                    </ManagementButton>
-                </div>
+                <ManagementButton tone="green" variant="solid" leftIcon={<FaPlus />} onClick={() => setShowAssignModal(true)}>
+                    Assign Salary
+                </ManagementButton>
             }
         >
             <div className="space-y-6 p-2 lg:p-0">
@@ -1644,20 +1425,14 @@ const SalaryManagement = () => {
                 {!loading && visibleSalaries.length > 0 && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                         <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl p-4 text-white shadow-lg"><p className="text-xs opacity-80">Total Employees</p><p className="text-2xl font-bold">{stats.total}</p></div>
-                        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg"><p className="text-xs opacity-80">Avg Base Salary</p><p className="text-2xl font-bold">{formatCurrency(stats.avgBase, stats.currency)}</p></div>
-                        <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl p-4 text-white shadow-lg"><p className="text-xs opacity-80">Total CTC</p><p className="text-2xl font-bold">{formatCurrency(stats.totalCTC, stats.currency)}</p></div>
+                        <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg"><p className="text-xs opacity-80">Avg Base Salary</p><p className="text-2xl font-bold">{formatCurrency(stats.avgBase, companyCurrency)}</p></div>
+                        <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-xl p-4 text-white shadow-lg"><p className="text-xs opacity-80">Total CTC</p><p className="text-2xl font-bold">{formatCurrency(stats.totalCTC, companyCurrency)}</p></div>
                         <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-xl p-4 text-white shadow-lg"><p className="text-xs opacity-80">Active Salaries</p><p className="text-2xl font-bold">{stats.activeCount}</p></div>
                     </motion.div>
                 )}
 
-                {/* ─── Consolidated Filter & View Bar ─── */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.05 }}
-                    className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-2"
-                >
-                    {/* Left Section: Search & Result Info */}
+                {/* Filter & View Bar */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="flex flex-col lg:flex-row lg:items-center md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-2">
                     <div className="flex items-center gap-4 flex-1">
                         <div className="relative flex-1 w-full">
                             <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
@@ -1669,15 +1444,11 @@ const SalaryManagement = () => {
                                 className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm min-h-[42px]"
                             />
                             {searchTerm && (
-                                <button
-                                    onClick={() => setSearchTerm('')}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
-                                >
+                                <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
                                     <FaTimes size={14} />
                                 </button>
                             )}
                         </div>
-
                         {!loading && visibleSalaries.length > 0 && (
                             <p className="text-sm text-gray-500 hidden xl:block">
                                 <span className="font-semibold text-gray-800">{visibleSalaries.length}</span> of <span className="font-semibold text-gray-800">{stats.total}</span> records
@@ -1686,10 +1457,7 @@ const SalaryManagement = () => {
                         )}
                     </div>
 
-                    {/* Right Section: Controls */}
                     <div className="flex items-center justify-between gap-2">
-
-                        {/* Date Filter */}
                         <div className="flex items-center gap-2">
                             <AdvancedDateFilter
                                 value={dateFilterValue}
@@ -1699,26 +1467,13 @@ const SalaryManagement = () => {
                                 tabOptions={["date", "month", "range"]}
                             />
                             {dateFilterLabel !== 'Filter by date' && (
-                                <button
-                                    type="button"
-                                    onClick={clearDateFilter}
-                                    className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:bg-red-50 transition-all"
-                                    title="Clear date filter"
-                                >
+                                <button type="button" onClick={clearDateFilter} className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:bg-red-50 transition-all" title="Clear date filter">
                                     <FaTimes size={14} />
                                 </button>
                             )}
                         </div>
-
-                        {/* Vertical Separator */}
                         <div className="h-8 w-px bg-gray-200 hidden lg:block mx-1"></div>
-
-                        {/* View Switcher */}
-                        <ManagementViewSwitcher
-                            viewMode={viewMode}
-                            onChange={setViewMode}
-                            accent="green"
-                        />
+                        <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="green" />
                     </div>
                 </motion.div>
 
@@ -1736,7 +1491,7 @@ const SalaryManagement = () => {
                     </motion.div>
                 )}
 
-                {/* ─── TABLE VIEW ─── */}
+                {/* Table View */}
                 {!loading && visibleSalaries.length > 0 && viewMode === "table" && (
                     <ManagementTable
                         rows={visibleSalaries}
@@ -1750,6 +1505,7 @@ const SalaryManagement = () => {
                         headerClassName="xsm:hidden"
                     />
                 )}
+
                 {/* Card View */}
                 {!loading && visibleSalaries.length > 0 && viewMode === "card" && (
                     <ManagementGrid viewMode={viewMode}>
@@ -1782,23 +1538,19 @@ const SalaryManagement = () => {
                     />
                 )}
 
-                {/* Modals — only mount when needed so API calls don't fire prematurely */}
+                {/* Modals */}
                 {selectedSalary && (
                     <SalaryDetailModal salary={selectedSalary} onClose={() => setSelectedSalary(null)} companyCurrency={companyCurrency} />
                 )}
-
                 {showAssignModal && (
                     <AssignSalaryModal isOpen={showAssignModal} onClose={() => setShowAssignModal(false)} onSuccess={() => { fetchSalaries(1, "", true); setShowAssignModal(false); }} companyCurrency={companyCurrency} />
                 )}
-
                 {showEditModal && salaryToEdit && (
                     <EditSalaryModal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setSalaryToEdit(null); }} onSuccess={() => fetchSalaries(pagination.page, debouncedSearch, false)} salary={salaryToEdit} companyCurrency={companyCurrency} />
                 )}
-
                 {showReviseModal && salaryToRevise && (
                     <ReviseSalaryModal isOpen={showReviseModal} onClose={() => { setShowReviseModal(false); setSalaryToRevise(null); }} onSuccess={() => fetchSalaries(1, "", true)} salary={salaryToRevise} companyCurrency={companyCurrency} />
                 )}
-
                 {showDeleteModal && salaryToDelete && (
                     <DeleteConfirmModal isOpen={showDeleteModal} onClose={() => { setShowDeleteModal(false); setSalaryToDelete(null); }} onConfirm={handleDeleteSalary} salary={salaryToDelete} processingId={processingId} />
                 )}
