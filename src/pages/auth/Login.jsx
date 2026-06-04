@@ -512,17 +512,22 @@ const Login = () => {
                     </div>
                     <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar mb-4">
                       {userCompanies.map((c) => {
-                        const formattedRole = c.role
-                          ? c.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-                          : 'Employee';
-                        const isOwner = c.role === 'company_owner';
+                        const companyName = c?.name || 'No name found';
+                        const roleValue = c?.role || 'No role found';
+                        const formattedRole = roleValue
+                          .split('_')
+                          .filter(Boolean)
+                          .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : ''))
+                          .join(' ') || 'Employee';
+                        const isOwner = roleValue === 'company_owner';
+                        const initial = companyName.charAt(0).toUpperCase() || 'C';
                         return (
                           <button key={c.id} onClick={() => handleCompanySelect(c)} className={`w-full text-left p-3 border rounded-xl transition-all ${selectedCompany?.id === c.id ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-300'}`}>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0">{c.name.charAt(0)}</div>
+                                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-sm flex-shrink-0">{initial}</div>
                                 <div className="min-w-0">
-                                  <p className="font-semibold text-gray-900 text-sm truncate">{c.name}</p>
+                                  <p className="font-semibold text-gray-900 text-sm truncate">{companyName}</p>
                                   <div className="flex items-center gap-1.5 mt-0.5">
                                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${isOwner ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-indigo-50 text-indigo-700 border-indigo-100'}`}>
                                       <FaUserShield size={8} />

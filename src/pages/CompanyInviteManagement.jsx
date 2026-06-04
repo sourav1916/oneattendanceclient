@@ -949,11 +949,9 @@ export default function CompanyInvites() {
                           >
                             <div className="p-3 flex flex-wrap gap-2">
                               {selectedInvite.weekends.map((weekend, idx) => (
-                                <div key={idx} className="flex items-center justify-between gap-4 px-3 py-2 bg-slate-50 rounded-xl border border-slate-100 shadow-sm min-w-[120px]">
-                                  <span className="text-[11px] font-bold text-slate-700 capitalize">{formatWeekendDay(weekend)}</span>
-                                  <span className={`text-[9px] px-2 py-0.5 rounded-lg font-black uppercase ${weekend?.type === "half" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>
-                                    {weekend?.type || "full"}
-                                  </span>
+                                <div key={idx} className="text-center px-3 py-2 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-slate-100 shadow-sm min-w-[120px]">
+                                  <span className="text-sm text-light-500 capitalize">{formatWeekendDay(weekend)}</span>
+                                  
                                 </div>
                               ))}
                             </div>

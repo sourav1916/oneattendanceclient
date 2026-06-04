@@ -351,9 +351,6 @@ const ViewModal = ({ invite, onClose, onAccept, onReject }) => {
                         <motion.div key={`${weekend.day}-${idx}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
                           className="flex items-center justify-between p-2.5 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-indigo-100">
                           <span className="text-sm font-medium text-gray-700 capitalize">{weekend.day}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${weekend.type === "half" ? "bg-blue-100 text-blue-700" : "bg-indigo-100 text-indigo-700"}`}>
-                            {weekend.type || "full"}
-                          </span>
                         </motion.div>
                       ))}
                     </div>
