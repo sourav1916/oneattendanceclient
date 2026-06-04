@@ -1834,7 +1834,13 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedLogItem, setSelectedLogItem] = useState(null);
   const [showCreateSalaryModal, setShowCreateSalaryModal] = useState(false);
+  const [showCreatePayrollModal, setShowCreatePayrollModal] = useState(false);
+  const [payrollMonth, setPayrollMonth] = useState(new Date().getMonth() + 1);
+  const [payrollYear, setPayrollYear] = useState(new Date().getFullYear());
+  const [sendPayrollPdf, setSendPayrollPdf] = useState(true);
   const [subType, setSubType] = useState("attendance");
+  const monthOptions = useMemo(() => Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: new Date(2026, i, 1).toLocaleString('en-US', { month: 'long' }) })), []);
+  const yearOptions = useMemo(() => Array.from({ length: 6 }, (_, i) => ({ value: new Date().getFullYear() - 2 + i, label: String(new Date().getFullYear() - 2 + i) })), []);
   const [downloadingShiftPdf, setDownloadingShiftPdf] = useState(false);
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
   const fetchRef = useRef(false);
@@ -1936,6 +1942,46 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
     toast.info("Create leave modal will be added later.");
   };
 
+  const handleCreatePayrollClick = useCallback(() => {
+    if (!employeeId) {
+      toast.warning("Employee details are not available.");
+      return;
+    }
+    setPayrollMonth(new Date().getMonth() + 1);
+    setPayrollYear(new Date().getFullYear());
+    setSendPayrollPdf(true);
+    setShowCreatePayrollModal(true);
+  }, [employeeId]);
+
+  const handleCreatePayrollSubmit = useCallback(async (e) => {
+    e.preventDefault();
+    if (!employeeId) {
+      toast.warning("Employee details are not available.");
+      return;
+    }
+
+    try {
+      const companyStr = localStorage.getItem("company");
+      const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
+      const payload = {
+        month: Number(payrollMonth),
+        year: Number(payrollYear),
+        employee_id: [Number(employeeId)],
+        send_pdf: Boolean(sendPayrollPdf),
+      };
+
+      const response = await apiCall("/payroll/generate-payroll", "POST", payload, companyId);
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || "Failed to generate payroll");
+
+      toast.success("Payroll generated successfully");
+      setShowCreatePayrollModal(false);
+      fetchData(pagination.page, pagination.limit);
+    } catch (error) {
+      toast.error(error.message || "Failed to generate payroll");
+    }
+  }, [employeeId, fetchData, pagination.limit, pagination.page, payrollMonth, payrollYear, sendPayrollPdf]);
+
   const handleCreateSalarySuccess = useCallback(() => {
     setShowCreateSalaryModal(false);
     fetchData(pagination.page, pagination.limit);
@@ -1949,7 +1995,7 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
 
   const CONFIG_MAP = { permissions: permConfig, attendance: attConfig, salary: salConfig, payroll: payConfig, leaves: leaveConfig, shifts: shiftConfig };
   const { columns, cardRenderer, rowKey } = CONFIG_MAP[normalizedTabKey] || permConfig;
-  const hasToolbarActions = normalizedTabKey === "shifts" || normalizedTabKey === "leaves" || normalizedTabKey === "salary";
+  const hasToolbarActions = normalizedTabKey === "shifts" || normalizedTabKey === "leaves" || normalizedTabKey === "salary" || normalizedTabKey === "payroll";
 
   const getActions = (row) => {
     const base = [{ label: "View Details", icon: <FaEye size={13} />, onClick: () => setSelectedItem(row), className: "text-blue-600 hover:text-blue-700 hover:bg-blue-50" }];
@@ -2003,6 +2049,11 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
                 </button>
               </>
             )}
+            {normalizedTabKey === "payroll" && (
+              <button type="button" onClick={handleCreatePayrollClick} className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 shadow-sm transition-all hover:bg-emerald-100">
+                <FaPlus size={10} /> Create
+              </button>
+            )}
             {rows.length > 0 && normalizedTabKey !== "permissions" && (
               <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent={accent} />
             )}
@@ -2049,6 +2100,66 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
       {!loading && rows.length > 0 && normalizedTabKey !== "permissions" && (
         <Pagination currentPage={pagination.page} totalItems={pagination.total} itemsPerPage={pagination.limit} onPageChange={goToPage} onLimitChange={changeLimit} className="mt-2" />
       )}
+
+      <AnimatePresence>
+        {showCreatePayrollModal && normalizedTabKey === "payroll" && (
+          <Modal
+            isOpen={showCreatePayrollModal}
+            onClose={() => setShowCreatePayrollModal(false)}
+            title="Generate Payroll"
+            subtitle="Create payroll for this employee"
+            icon={<FaMoneyBillWave className="text-emerald-600" />}
+            size="md"
+            footer={
+              <>
+                <button type="button" onClick={() => setShowCreatePayrollModal(false)} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">Cancel</button>
+                <button type="button" onClick={handleCreatePayrollSubmit} className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-emerald-700 hover:to-green-700 transition-all shadow-lg shadow-emerald-200">Generate Payroll</button>
+              </>
+            }
+          >
+            <form onSubmit={handleCreatePayrollSubmit} className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Month</label>
+                  <SelectField
+                    value={monthOptions.find((option) => option.value === payrollMonth) || null}
+                    onChange={(option) => setPayrollMonth(Number(option?.value || 1))}
+                    options={monthOptions}
+                    placeholder="Select month"
+                    menuPortalTarget={document.body}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Year</label>
+                  <SelectField
+                    value={yearOptions.find((option) => option.value === payrollYear) || null}
+                    onChange={(option) => setPayrollYear(Number(option?.value || new Date().getFullYear()))}
+                    options={yearOptions}
+                    placeholder="Select year"
+                    menuPortalTarget={document.body}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+                <div>
+                  <p className="text-sm font-semibold text-emerald-800">Send payslip PDF</p>
+                  <p className="text-xs text-emerald-700/80">Email the generated payslip after payroll creation.</p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={sendPayrollPdf}
+                  onClick={() => setSendPayrollPdf((prev) => !prev)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${sendPayrollPdf ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${sendPayrollPdf ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+            </form>
+          </Modal>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showCreateSalaryModal && normalizedTabKey === "salary" && (
