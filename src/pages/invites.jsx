@@ -19,6 +19,7 @@ import { ManagementHub, ManagementTable, ManagementCard } from '../components/co
 import ProfileAvatar from '../components/common/ProfileAvatar';
 import SelectField from "../components/SelectField";
 import CurrencyIcon from "../components/common/CurrencyIcon";
+
 // ─── Constants & Helpers ─────────────────────────────────────────────────────
 
 const modalVariants = {
@@ -347,10 +348,16 @@ const ViewModal = ({ invite, onClose, onAccept, onReject }) => {
                 {showWeekends && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
                     <div className="p-3 bg-white grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[320px] overflow-y-auto">
+                      {/* ✅ FIX: weekends is array of strings, not objects */}
                       {invite.weekends.map((weekend, idx) => (
-                        <motion.div key={`${weekend.day}-${idx}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                          className="flex items-center justify-between p-2.5 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-indigo-100">
-                          <span className="text-sm font-medium text-gray-700 capitalize">{weekend.day}</span>
+                        <motion.div
+                          key={`${weekend}-${idx}`}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: idx * 0.05 }}
+                          className="flex items-center justify-between p-2.5 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-indigo-100"
+                        >
+                          <span className="text-sm font-medium text-gray-700 capitalize">{weekend}</span>
                         </motion.div>
                       ))}
                     </div>
@@ -407,11 +414,16 @@ const ViewModal = ({ invite, onClose, onAccept, onReject }) => {
                 {showAttendance && (
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden">
                     <div className="p-3 bg-white flex flex-wrap gap-2">
+                      {/* ✅ FIX: attendance_methods is array of strings, not objects */}
                       {invite.attendance_methods.map((method, idx) => (
-                        <motion.div key={`method-${idx}`} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}
-                          className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-50 to-pink-50 rounded-full border border-purple-100">
-                          <span className="text-sm font-medium text-gray-700 capitalize">{method.method}</span>
-                          {method.is_auto && <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Auto</span>}
+                        <motion.div
+                          key={`method-${idx}`}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: idx * 0.05 }}
+                          className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-50 to-pink-50 rounded-full border border-purple-100"
+                        >
+                          <span className="text-sm font-medium text-gray-700 capitalize">{method}</span>
                         </motion.div>
                       ))}
                     </div>
@@ -650,7 +662,7 @@ export default function MyInvites() {
     if (newPage !== pagination.page) goToPage(newPage);
   }, [pagination.page, goToPage]);
 
-  // ─── Table columns config (mirrors MyLeave pattern) ──────────────────────
+  // ─── Table columns config ─────────────────────────────────────────────────
 
   const tableColumns = useMemo(() => [
     {
