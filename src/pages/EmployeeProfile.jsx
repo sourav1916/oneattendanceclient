@@ -1835,6 +1835,11 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
   const [selectedLogItem, setSelectedLogItem] = useState(null);
   const [showCreateSalaryModal, setShowCreateSalaryModal] = useState(false);
   const [showCreatePayrollModal, setShowCreatePayrollModal] = useState(false);
+  const [showCreateLeaveModal, setShowCreateLeaveModal] = useState(false);
+  const [leaveTypeOptions, setLeaveTypeOptions] = useState([]);
+  const [leaveTypeLoading, setLeaveTypeLoading] = useState(false);
+  const [creatingLeave, setCreatingLeave] = useState(false);
+  const [leaveCreateForm, setLeaveCreateForm] = useState({ employee_id: employeeId || "", leave_config_id: "", start_date: "", end_date: "", remarks: "" });
   const [payrollMonth, setPayrollMonth] = useState(new Date().getMonth() + 1);
   const [payrollYear, setPayrollYear] = useState(new Date().getFullYear());
   const [sendPayrollPdf, setSendPayrollPdf] = useState(true);
@@ -1938,9 +1943,96 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
     }
   }, [employeeId]);
 
-  const handleCreateLeaveClick = () => {
-    toast.info("Create leave modal will be added later.");
-  };
+  const fetchLeaveTypes = useCallback(async () => {
+    setLeaveTypeLoading(true);
+    try {
+      const companyStr = localStorage.getItem("company");
+      const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
+      const response = await apiCall("/leave/company", "GET", null, companyId);
+      const result = await response.json();
+
+      if (!response.ok || !result.success) throw new Error(result.message || "Failed to load leave types");
+
+      const options = (result.data || []).map((item) => ({
+        value: String(item.leave_config_id || item.id),
+        label: `${item.name || item.leave_type || "Leave"}${item.code ? ` (${item.code})` : ""}`,
+        ...item,
+      }));
+
+      setLeaveTypeOptions(options);
+    } catch (error) {
+      toast.error(error.message || "Failed to load leave types");
+      setLeaveTypeOptions([]);
+    } finally {
+      setLeaveTypeLoading(false);
+    }
+  }, []);
+
+  const handleCreateLeaveClick = useCallback(() => {
+    if (!employeeId) {
+      toast.warning("Employee details are not available.");
+      return;
+    }
+
+    setLeaveCreateForm({
+      employee_id: String(employeeId),
+      leave_config_id: "",
+      start_date: "",
+      end_date: "",
+      remarks: "",
+    });
+    setShowCreateLeaveModal(true);
+    fetchLeaveTypes();
+  }, [employeeId, fetchLeaveTypes]);
+
+  const handleCreateLeaveSubmit = useCallback(async (e) => {
+    e.preventDefault();
+
+    if (!leaveCreateForm.employee_id) {
+      toast.warning("Employee details are not available.");
+      return;
+    }
+    if (!leaveCreateForm.leave_config_id) {
+      toast.warning("Please select a leave type.");
+      return;
+    }
+    if (!leaveCreateForm.start_date || !leaveCreateForm.end_date) {
+      toast.warning("Please select a leave date range.");
+      return;
+    }
+    if (leaveCreateForm.end_date < leaveCreateForm.start_date) {
+      toast.warning("End date cannot be before start date.");
+      return;
+    }
+
+    setCreatingLeave(true);
+    try {
+      const companyStr = localStorage.getItem("company");
+      const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
+      const payload = {
+        employee_id: Number(leaveCreateForm.employee_id),
+        leave_config_id: String(leaveCreateForm.leave_config_id),
+        start_date: leaveCreateForm.start_date,
+        end_date: leaveCreateForm.end_date,
+        is_half_day: 0,
+        attachments: [],
+        remarks: leaveCreateForm.remarks || "",
+      };
+
+      const response = await apiCall("/leave/management/create/", "POST", payload, companyId);
+      const result = await response.json();
+
+      if (!response.ok || !result.success) throw new Error(result.message || "Failed to create leave");
+
+      toast.success("Leave created successfully");
+      setShowCreateLeaveModal(false);
+      fetchData(pagination.page, pagination.limit);
+    } catch (error) {
+      toast.error(error.message || "Failed to create leave");
+    } finally {
+      setCreatingLeave(false);
+    }
+  }, [fetchData, leaveCreateForm, pagination.limit, pagination.page]);
 
   const handleCreatePayrollClick = useCallback(() => {
     if (!employeeId) {
@@ -2100,6 +2192,69 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
       {!loading && rows.length > 0 && normalizedTabKey !== "permissions" && (
         <Pagination currentPage={pagination.page} totalItems={pagination.total} itemsPerPage={pagination.limit} onPageChange={goToPage} onLimitChange={changeLimit} className="mt-2" />
       )}
+
+      <AnimatePresence>
+        {showCreateLeaveModal && normalizedTabKey === "leaves" && (
+          <Modal
+            isOpen={showCreateLeaveModal}
+            onClose={() => setShowCreateLeaveModal(false)}
+            title="Create Leave"
+            subtitle="Create a leave request for this employee"
+            icon={<FaUmbrellaBeach className="text-amber-600" />}
+            size="lg"
+            footer={
+              <>
+                <button type="button" onClick={() => setShowCreateLeaveModal(false)} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">Cancel</button>
+                <button type="button" onClick={handleCreateLeaveSubmit} disabled={creatingLeave || leaveTypeLoading} className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-200 disabled:opacity-60 disabled:cursor-not-allowed">{creatingLeave ? "Creating..." : "Create Leave"}</button>
+              </>
+            }
+          >
+            <form onSubmit={handleCreateLeaveSubmit} className="space-y-5">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Leave Type</label>
+                <SelectField
+                  value={leaveTypeOptions.find((option) => option.value === leaveCreateForm.leave_config_id) || null}
+                  onChange={(option) => setLeaveCreateForm((prev) => ({ ...prev, leave_config_id: option?.value || "" }))}
+                  options={leaveTypeOptions}
+                  placeholder={leaveTypeLoading ? "Loading leave types..." : "Select leave type"}
+                  isLoading={leaveTypeLoading}
+                  menuPortalTarget={document.body}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Date Range</label>
+                <AdvancedDateFilter
+                  value={{
+                    date: leaveCreateForm.start_date && leaveCreateForm.start_date === leaveCreateForm.end_date ? leaveCreateForm.start_date : "",
+                    from_date: leaveCreateForm.start_date && leaveCreateForm.start_date !== leaveCreateForm.end_date ? leaveCreateForm.start_date : "",
+                    to_date: leaveCreateForm.end_date && leaveCreateForm.start_date !== leaveCreateForm.end_date ? leaveCreateForm.end_date : "",
+                  }}
+                  onChange={(result) => {
+                    const nextStart = result?.date || result?.from_date || "";
+                    const nextEnd = result?.date || result?.to_date || nextStart;
+                    setLeaveCreateForm((prev) => ({ ...prev, start_date: nextStart, end_date: nextEnd }));
+                  }}
+                  tabOptions={["date", "range"]}
+                  placeholder="Select leave date range"
+                  buttonClassName="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm shadow-sm transition hover:border-amber-400 focus:outline-none focus:ring-4 focus:ring-amber-500/10 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Remarks</label>
+                <textarea
+                  rows={4}
+                  placeholder="Add internal remarks for this leave request"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-500/10 resize-none"
+                  value={leaveCreateForm.remarks}
+                  onChange={(e) => setLeaveCreateForm((prev) => ({ ...prev, remarks: e.target.value }))}
+                />
+              </div>
+            </form>
+          </Modal>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showCreatePayrollModal && normalizedTabKey === "payroll" && (
