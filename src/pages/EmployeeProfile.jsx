@@ -2128,7 +2128,7 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
                 onClick={handleCreateLeaveClick}
                 className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 shadow-sm transition-all hover:bg-amber-100"
               >
-                <FaPlus size={10} /> Create Leave
+                <FaPlus size={10} /> Create
               </button>
             )}
             {normalizedTabKey === "salary" && (
