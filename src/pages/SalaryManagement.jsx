@@ -87,6 +87,21 @@ const formatDateFull = (date) => {
     });
 };
 
+const formatMonthYear = (date) => {
+    if (!date) return 'Present';
+
+    const [yearPart, monthPart] = String(date).split('T')[0].split('-');
+    const year = Number(yearPart);
+    const month = Number(monthPart);
+
+    if (!Number.isFinite(year) || !Number.isFinite(month)) return 'Present';
+
+    return new Date(year, month - 1, 1).toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+    });
+};
+
 const getStatusBadge = (effectiveTo) => {
     const isActive = !effectiveTo || new Date(effectiveTo) > new Date();
     if (isActive) {
@@ -242,8 +257,8 @@ const SalaryDetailModal = ({ salary, onClose, companyCurrency }) => {
                         </div>
                         <div className="divide-y divide-slate-50">
                             {[
-                                { label: 'Effective From', value: formatDateFull(salary.effective_from), icon: <FaCalendarAlt className="text-blue-500" /> },
-                                { label: 'Effective To', value: formatDateFull(salary.effective_to), icon: <FaCalendarCheck className="text-amber-500" /> },
+                                { label: 'Effective From', value: formatMonthYear(salary.effective_from), icon: <FaCalendarAlt className="text-blue-500" /> },
+                                { label: 'Effective To', value: formatMonthYear(salary.effective_to), icon: <FaCalendarCheck className="text-amber-500" /> },
                                 { label: 'Base Amount', value: formatCurrency(salary.base_amount, companyCurrency), icon: <CurrencyIcon className="text-emerald-500" /> },
                                 { label: 'Gross Salary', value: formatCurrency(salary.gross_salary, companyCurrency), icon: <FaMoneyBillWave className="text-blue-500" /> },
                                 { label: 'Total Deductions', value: formatCurrency(salary.total_deductions, companyCurrency), icon: <FaChartBar className="text-rose-500" /> },
