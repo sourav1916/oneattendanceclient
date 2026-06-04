@@ -12,7 +12,7 @@ import {
   FaUser, FaUserCheck, FaHourglassEnd, FaExclamationCircle,
   FaComment, FaCog, FaMapPin, FaServer, FaInfoCircle,
   FaSpinner, FaSignInAlt, FaSignOutAlt, FaHourglassHalf,
-  FaChevronLeft, FaFilePdf, FaPlus,
+  FaChevronLeft, FaFilePdf, FaPlus, FaSave,
 } from "react-icons/fa";
 import apiCall from "../utils/api";
 import { toast } from "react-toastify";
@@ -27,6 +27,7 @@ import AttendanceTypeTabs, { getAttendanceTypeConfig } from "../components/Atten
 import ProfileAvatar from "../components/common/ProfileAvatar";
 import AdvancedDateFilter from "../components/AdvancedDateFilter";
 import CategoryPermissionSelector from "../components/common/CategoryPermissionSelector";
+import SelectField from "../components/SelectField";
 import CompanyLedger from "./CompanyLedger";
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
@@ -64,6 +65,11 @@ const formatDays = (value) => {
   const number = Number(value);
   if (!Number.isFinite(number)) return '0';
   return Number.isInteger(number) ? String(number) : number.toFixed(1);
+};
+
+const getCurrentMonthDate = () => {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
 };
 
 const getInitials = (name) =>
@@ -1545,6 +1551,277 @@ function useShiftConfig(onView, width) {
   return { columns, cardRenderer, rowKey: "id" };
 }
 
+// ─── CREATE SALARY MODAL ─────────────────────────────────────────────────────
+
+function CreateSalaryModal({ isOpen, onClose, employeeId, onSuccess }) {
+  const [packages, setPackages] = useState([]);
+  const [availableComponents, setAvailableComponents] = useState([]);
+  const [loadingPackages, setLoadingPackages] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [showOverrideForm, setShowOverrideForm] = useState(false);
+  const [formData, setFormData] = useState({
+    component_package_id: '',
+    base_amount: '',
+    effective_from: getCurrentMonthDate(),
+    effective_to: '',
+    components: [],
+  });
+
+  const existingComponentIds = useMemo(() => formData.components.map((c) => c.component_id), [formData.components]);
+  const filteredAvailableComponents = useMemo(() => availableComponents.filter((c) => !existingComponentIds.includes(c.id)), [availableComponents, existingComponentIds]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    loadSalaryPackages();
+    loadSalaryComponents();
+  }, [isOpen]);
+
+  const loadSalaryPackages = async () => {
+    setLoadingPackages(true);
+    try {
+      const company = JSON.parse(localStorage.getItem('company') || '{}');
+      const response = await apiCall('/salary/components/packages', 'GET', null, company?.id);
+      const result = await response.json();
+      if (result.success) setPackages(result.data || []);
+    } catch (error) {
+      console.error('Failed to load salary packages:', error);
+    } finally {
+      setLoadingPackages(false);
+    }
+  };
+
+  const loadSalaryComponents = async () => {
+    try {
+      const company = JSON.parse(localStorage.getItem('company') || '{}');
+      const response = await apiCall('/salary/components/list', 'GET', null, company?.id);
+      const result = await response.json();
+      if (result.success) setAvailableComponents(result.data || []);
+    } catch (error) {
+      console.error('Failed to load salary components:', error);
+    }
+  };
+
+  const handlePackageChange = (packageId) => {
+    const pkg = packages.find((item) => String(item.id) === String(packageId));
+    if (!pkg) return;
+    const packageComponents = (pkg.items || []).map((item) => ({
+      component_id: item.component_id,
+      calc_type: item.calc_type || 'percentage',
+      calc_value: item.calc_value ?? '',
+      reason: item.reason || '',
+    }));
+    setFormData((prev) => ({ ...prev, component_package_id: packageId, components: packageComponents }));
+  };
+
+  const resetForm = () => {
+    setFormData({ component_package_id: '', base_amount: '', effective_from: getCurrentMonthDate(), effective_to: '', components: [] });
+    setShowOverrideForm(false);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!employeeId) {
+      toast.warning('Employee details are not available.');
+      return;
+    }
+    if (!formData.base_amount || !formData.effective_from) {
+      toast.warning('Base amount and effective from are required.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const company = JSON.parse(localStorage.getItem('company') || '{}');
+      const payload = {
+        employee_id: Number(employeeId),
+        base_amount: Number(formData.base_amount),
+        effective_from: formData.effective_from,
+        effective_to: formData.effective_to || null,
+        components: formData.components.map((item) => ({
+          component_id: Number(item.component_id),
+          calc_type: item.calc_type || 'percentage',
+          calc_value: Number(item.calc_value || 0),
+          reason: item.reason || '',
+        })),
+      };
+
+      const response = await apiCall('/salary/assign-salary', 'POST', payload, company?.id);
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || 'Failed to create salary');
+
+      toast.success('Salary created successfully');
+      onSuccess?.();
+      onClose();
+      resetForm();
+    } catch (error) {
+      toast.error(error.message || 'Failed to create salary');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={() => { resetForm(); onClose(); }}
+      title="Create Salary"
+      subtitle="Assign a new salary profile to this employee"
+      icon={<FaMoneyBillWave className="text-green-600" />}
+      size="4xl"
+      footer={
+        <>
+          <button type="button" onClick={() => { resetForm(); onClose(); }} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">Cancel</button>
+          <button type="button" onClick={handleSubmit} disabled={submitting} className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-green-200">
+            {submitting ? <FaSpinner className="animate-spin" /> : <FaSave />}
+            {submitting ? 'Creating…' : 'Create Salary'}
+          </button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective From *</label>
+            <AdvancedDateFilter
+              tabOptions={['month']}
+              value={formData.effective_from ? { month: Number(formData.effective_from.split('-')[1]), year: Number(formData.effective_from.split('-')[0]) } : null}
+              onChange={(val) => setFormData((prev) => ({ ...prev, effective_from: val && val.month && val.year ? `${val.year}-${String(val.month).padStart(2, '0')}-01` : '' }))}
+              placeholder="Select month"
+              buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-left text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective To</label>
+            <AdvancedDateFilter
+              tabOptions={['month']}
+              value={formData.effective_to ? { month: Number(formData.effective_to.split('-')[1]), year: Number(formData.effective_to.split('-')[0]) } : null}
+              onChange={(val) => setFormData((prev) => ({ ...prev, effective_to: val && val.month && val.year ? `${val.year}-${String(val.month).padStart(2, '0')}-01` : '' }))}
+              placeholder="Optional"
+              buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-left text-sm"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Salary Package (Quick Fill)</label>
+            <SelectField
+              value={formData.component_package_id ? { value: formData.component_package_id, label: packages.find((p) => String(p.id) === String(formData.component_package_id))?.name || 'Custom / Manual' } : null}
+              onChange={(opt) => handlePackageChange(opt?.value || '')}
+              options={packages.map((pkg) => ({ value: pkg.id, label: `${pkg.name} (${pkg.code})` }))}
+              isLoading={loadingPackages}
+              isClearable
+              placeholder={loadingPackages ? 'Loading packages...' : 'Custom / Manual'}
+              menuPortalTarget={document.body}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Base Amount *</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={formData.base_amount}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9.]/g, '');
+                if (value === '' || /^\d*\.?\d*$/.test(value)) setFormData((prev) => ({ ...prev, base_amount: value }));
+              }}
+              placeholder="Enter amount"
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none transition-all text-sm font-semibold"
+            />
+          </div>
+        </div>
+
+        <div className="border-t border-slate-100 pt-5">
+          <div className="flex items-center justify-between mb-3">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+              <FaCalculator className="text-green-500" /> Salary Components
+            </label>
+            <button type="button" onClick={() => setShowOverrideForm(true)} className="text-[10px] px-3 py-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-all font-bold border border-green-200 shadow-sm flex items-center gap-1.5 uppercase tracking-wider">
+              <FaPlus size={8} /> Add Component
+            </button>
+          </div>
+
+          {formData.components.length > 0 && (
+            <div className="space-y-3 mb-3">
+              {formData.components.map((comp, idx) => {
+                const componentData = availableComponents.find((item) => String(item.id) === String(comp.component_id));
+                return (
+                  <div key={`${comp.component_id}-${idx}`} className="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                      <div className="md:col-span-4">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Component</label>
+                        <div className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 truncate">{componentData?.name || `Component ${comp.component_id}`} <span className="text-[10px] text-slate-400 font-mono">({componentData?.code})</span></div>
+                      </div>
+                      <div className="md:col-span-3">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Type</label>
+                        <SelectField
+                          value={comp.calc_type ? { value: comp.calc_type, label: comp.calc_type === 'percentage' ? 'Percentage (%)' : 'Fixed Amount' } : null}
+                          onChange={(opt) => {
+                            const updated = [...formData.components];
+                            updated[idx].calc_type = opt?.value || 'percentage';
+                            setFormData((prev) => ({ ...prev, components: updated, component_package_id: '' }));
+                          }}
+                          options={[{ value: 'percentage', label: 'Percentage (%)' }, { value: 'fixed', label: 'Fixed Amount' }]}
+                          placeholder="Select type"
+                          menuPortalTarget={document.body}
+                        />
+                      </div>
+                      <div className="md:col-span-3">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Value</label>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={comp.calc_value ?? ''}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[^0-9.]/g, '');
+                            if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                              const updated = [...formData.components];
+                              updated[idx].calc_value = value;
+                              setFormData((prev) => ({ ...prev, components: updated, component_package_id: '' }));
+                            }
+                          }}
+                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none text-sm font-bold focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all"
+                        />
+                      </div>
+                      <div className="md:col-span-2 flex justify-end pb-0.5">
+                        <button type="button" onClick={() => { const updated = formData.components.filter((_, index) => index !== idx); setFormData((prev) => ({ ...prev, components: updated, component_package_id: '' })); }} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><FaTimes size={14} /></button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {showOverrideForm && (
+            <div className="mt-4 p-4 bg-green-50/50 rounded-xl border-2 border-dashed border-green-200">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-bold text-green-900 uppercase tracking-widest">Select Component to Add</p>
+                <button type="button" onClick={() => setShowOverrideForm(false)} className="text-slate-400 hover:text-slate-600"><FaTimes size={12} /></button>
+              </div>
+              <SelectField
+                value={null}
+                onChange={(opt) => {
+                  if (!opt) return;
+                  const comp = filteredAvailableComponents.find((item) => String(item.id) === String(opt.value));
+                  if (!comp) return;
+                  setFormData((prev) => ({ ...prev, components: [...prev.components, { component_id: comp.id, calc_type: comp.calc_type || 'percentage', calc_value: comp.calc_value || '', reason: '' }], component_package_id: '' }));
+                  setShowOverrideForm(false);
+                }}
+                options={filteredAvailableComponents.map((comp) => ({ value: comp.id, label: `${comp.name} (${comp.code})` }))}
+                placeholder="Choose a component..."
+                menuPortalTarget={document.body}
+              />
+            </div>
+          )}
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 // ─── GENERIC TAB CONTENT ──────────────────────────────────────────────────────
 
 function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
@@ -1556,6 +1833,7 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
   const [activeMenu, setActiveMenu] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedLogItem, setSelectedLogItem] = useState(null);
+  const [showCreateSalaryModal, setShowCreateSalaryModal] = useState(false);
   const [subType, setSubType] = useState("attendance");
   const [downloadingShiftPdf, setDownloadingShiftPdf] = useState(false);
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
@@ -1657,6 +1935,11 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
   const handleCreateLeaveClick = () => {
     toast.info("Create leave modal will be added later.");
   };
+
+  const handleCreateSalarySuccess = useCallback(() => {
+    setShowCreateSalaryModal(false);
+    fetchData(pagination.page, pagination.limit);
+  }, [fetchData, pagination.limit, pagination.page]);
   const permConfig = usePermissionsConfig(onView, effectiveWidth);
   const attConfig = useAttendanceConfig(onView, onViewLogs, effectiveWidth, subType);
   const salConfig = useSalaryConfig(onView, effectiveWidth);
@@ -1711,9 +1994,14 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
               </button>
             )}
             {normalizedTabKey === "salary" && (
-              <button onClick={() => navigate(`/employee-salary-history/${employeeId}`)} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-all shadow-sm">
-                <FaHistory size={10} /> History
-              </button>
+              <>
+                <button type="button" onClick={() => setShowCreateSalaryModal(true)} className="inline-flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700 shadow-sm transition-all hover:bg-green-100">
+                  <FaPlus size={10} /> Create
+                </button>
+                <button onClick={() => navigate(`/employee-salary-history/${employeeId}`)} className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-all shadow-sm">
+                  <FaHistory size={10} /> History
+                </button>
+              </>
             )}
             {rows.length > 0 && normalizedTabKey !== "permissions" && (
               <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent={accent} />
@@ -1761,6 +2049,17 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
       {!loading && rows.length > 0 && normalizedTabKey !== "permissions" && (
         <Pagination currentPage={pagination.page} totalItems={pagination.total} itemsPerPage={pagination.limit} onPageChange={goToPage} onLimitChange={changeLimit} className="mt-2" />
       )}
+
+      <AnimatePresence>
+        {showCreateSalaryModal && normalizedTabKey === "salary" && (
+          <CreateSalaryModal
+            isOpen={showCreateSalaryModal}
+            onClose={() => setShowCreateSalaryModal(false)}
+            employeeId={employeeId}
+            onSuccess={handleCreateSalarySuccess}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {selectedItem && <DetailModal isOpen={!!selectedItem} onClose={() => setSelectedItem(null)} item={selectedItem} tabKey={tabKey} tabLabel={tabLabel} subType={subType} />}
