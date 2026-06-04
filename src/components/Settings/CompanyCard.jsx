@@ -25,7 +25,7 @@ function CompanyCard({ company, isActive, onSwitch, onEdit, onDelete, canManageC
         </div>
         <div className="flex-col">
         <div className="flex items-center gap-2">
-          <p className="font-medium text-gray-900">{company.name || "Unnamed Company"}</p>
+          <p className="font-medium text-gray-900">{company.name || "No name found"}</p>
           {company.role && (
             <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded capitalize">
               {company.role.replace(/_/g, ' ')}
