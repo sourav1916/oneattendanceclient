@@ -2,14 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaUsers,
-  FaDatabase,
-  FaChartBar,
-  FaCode,
   FaCheckCircle,
   FaArrowRight,
   FaSpinner,
   FaExclamationTriangle,
-  FaCrown,
   FaRocket,
   FaShieldAlt,
   FaClock,
@@ -18,6 +14,10 @@ import {
 } from 'react-icons/fa';
 import apiCall from '../utils/api';
 import { toast } from 'react-toastify';
+import { useNavigate } from "react-router-dom";
+import { initiateLayerPayment } from "../utils/layerPayment";
+import { loadLayerScript } from "../utils/loadLayer";
+
 
 const DURATION_OPTIONS = [
   { key: 'monthly_price', label: 'Monthly', suffix: '/mo', discount: 0 },
@@ -48,17 +48,25 @@ const calculatePricePerUser = (totalPrice, employeeCount) => {
 };
 
 const SubscriptionPage = () => {
+  const navigate = useNavigate();
+
   // State
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [employees, setEmployees] = useState(25);
   const [selectedDuration, setSelectedDuration] = useState(DURATION_OPTIONS[0]);
-  const [hoveredPlan, setHoveredPlan] = useState(null);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
 
   // Guard against double-invocation in React Strict Mode
   const hasFetched = useRef(false);
+
+  useEffect(() => {
+    loadLayerScript().catch((err) => {
+      console.error(err);
+      toast.error("Unable to load payment gateway");
+    });
+  }, []);
 
   // Fetch packages from API
   useEffect(() => {
@@ -136,48 +144,83 @@ const SubscriptionPage = () => {
     setSelectedDuration(duration);
   };
 
-  // Handle plan button click
-  const handlePlanAction = (planName) => {
-    if (planName === 'Current') {
-      alert('This is your current plan');
-    } else {
-      alert(`Selected ${planName} plan for ${employees} employees`);
-    }
-  };
-
   const handlePurchase = async (durationKey) => {
     if (!currentPackage) return;
 
-    // Map durationKey to package_period
     const periodMap = {
-      'monthly_price': 'monthly',
-      'quarterly_price': 'quarterly',
-      'half_yearly_price': 'half_yearly',
-      'yearly_price': 'yearly'
+      monthly_price: "monthly",
+      quarterly_price: "quarterly",
+      half_yearly_price: "half_yearly",
+      yearly_price: "yearly",
     };
 
     try {
       setPurchaseLoading(true);
 
-      const storedCompany = localStorage.getItem('company');
-      const company = storedCompany ? JSON.parse(storedCompany) : null;
+      const storedCompany = localStorage.getItem("company");
+      const company = storedCompany
+        ? JSON.parse(storedCompany)
+        : null;
 
       const payload = {
         package_id: currentPackage.id,
-        package_period: periodMap[durationKey]
+        package_period: periodMap[durationKey],
       };
 
-      const response = await apiCall('/subscriptions/purchase-subscription', 'POST', payload, company?.id);
+      const response = await apiCall(
+        "/subscriptions/purchase-subscription",
+        "POST",
+        payload,
+        company?.id
+      );
+
       const result = await response.json();
 
-      if (result.success) {
-        toast.success(result.message || 'Subscription purchased successfully!');
-      } else {
-        throw new Error(result.message || 'Failed to purchase subscription');
+      if (!result.success) {
+        throw new Error(
+          result.message || "Purchase failed"
+        );
       }
+
+      // --------------------------------
+      // CASE 1
+      // --------------------------------
+
+      if (
+        result.message ===
+        "Subscription purchased successfully."
+      ) {
+        toast.success(result.message);
+
+        setTimeout(() => {
+          navigate("/home");
+        }, 1500);
+
+        return;
+      }
+
+      // --------------------------------
+      // CASE 2
+      // --------------------------------
+
+      if (result.data?.payment_token) {
+        toast.info("Redirecting to payment gateway...");
+
+        await initiateLayerPayment(
+          result.data.payment_token,
+          navigate
+        );
+
+        return;
+      }
+
+      toast.success(result.message);
     } catch (err) {
-      console.error('Purchase error:', err);
-      toast.error(err.message || 'An error occurred during purchase');
+      console.error(err);
+
+      toast.error(
+        err.message || "Something went wrong"
+      );
     } finally {
       setPurchaseLoading(false);
     }
@@ -260,8 +303,8 @@ const SubscriptionPage = () => {
                     whileHover={{ y: -8, transition: { duration: 0.2 } }}
                     onClick={() => handleDurationChange(duration)}
                     className={`relative rounded-2xl w-full max-w-[250px] min-w-[200px] cursor-pointer transition-all duration-300 p-6 ${isSelected
-                        ? 'bg-white shadow-xl border-2 border-indigo-500 scale-105 md:scale-105 z-10'
-                        : 'bg-white shadow-md border border-gray-200 hover:shadow-lg'
+                      ? 'bg-white shadow-xl border-2 border-indigo-500 scale-105 md:scale-105 z-10'
+                      : 'bg-white shadow-md border border-gray-200 hover:shadow-lg'
                       }`}
                   >
                     {duration.discount > 0 && (
@@ -312,10 +355,10 @@ const SubscriptionPage = () => {
                           }
                         }}
                         className={`mt-6 w-full py-2.5 rounded-xl font-semibold transition-all duration-200 flex justify-center items-center gap-2 ${priceValue === null || isNaN(priceValue)
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : isSelected
-                              ? 'bg-indigo-600 text-white shadow-md'
-                              : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : isSelected
+                            ? 'bg-indigo-600 text-white shadow-md'
+                            : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
                           }`}
                       >
                         {purchaseLoading && isSelected && <FaSpinner className="animate-spin" />}
@@ -385,8 +428,8 @@ const SubscriptionPage = () => {
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleDurationChange(duration)}
                         className={`relative px-5 py-2.5 rounded-xl font-medium transition-all ${selectedDuration.key === duration.key
-                            ? 'text-white'
-                            : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
+                          ? 'text-white'
+                          : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
                           }`}
                       >
                         {selectedDuration.key === duration.key && (
@@ -493,8 +536,8 @@ const SubscriptionPage = () => {
                   disabled={!currentPackage || purchaseLoading}
                   onClick={() => handlePurchase(selectedDuration.key)}
                   className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${currentPackage && !purchaseLoading
-                      ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md hover:shadow-lg cursor-pointer'
-                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md hover:shadow-lg cursor-pointer'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     }`}
                 >
                   {purchaseLoading ? <FaSpinner className="animate-spin text-lg" /> : <FaCreditCard />}
