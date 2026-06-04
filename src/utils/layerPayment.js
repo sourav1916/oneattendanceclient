@@ -2,7 +2,7 @@
 
 import { toast } from "react-toastify";
 
-const ACCESS_KEY = "164d87e7-f365-4a8a-9e03-976ea49560e7";
+const ACCESS_KEY = process.env.REACT_APP_LAYER_ACCESS_KEY;
 
 export const initiateLayerPayment = (
   paymentToken,
@@ -19,7 +19,7 @@ export const initiateLayerPayment = (
         token: paymentToken,
         accesskey: ACCESS_KEY,
         theme: {
-          logo: "/logo.png",
+          logo: "/favicon.svg",
           color: "#4F46E5",
           error_color: "#EF4444",
         },
