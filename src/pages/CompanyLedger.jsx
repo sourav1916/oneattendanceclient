@@ -6,6 +6,7 @@ import {
   FaDownload, FaExchangeAlt, FaUser, FaShieldAlt, FaTag, FaInfoCircle,
   FaFileInvoice, FaMoneyBillWave, FaChartBar, FaStar, FaPlus, FaEdit,
   FaTrash, FaCheck, FaUniversity, FaMobileAlt,
+  FaEllipsisV,
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -307,13 +308,13 @@ const MobileTransactionCard = ({ transaction, onView, onEdit, onDelete }) => (
 
 // ─── Field Components ─────────────────────────────────────────────────────────
 
-const NarrowLedgerTable = ({ rows, onView, onEdit, onDelete }) => (
+const NarrowLedgerTable = ({ rows, onView, onEdit, onDelete, tiny = false }) => (
   <motion.div
     initial={{ opacity: 0, y: 18 }}
     animate={{ opacity: 1, y: 0 }}
     className="overflow-hidden rounded-xl bg-white border border-violet-100 shadow-violet-100/50 shadow-sm w-full"
   >
-    <div className="grid grid-cols-[minmax(0,1.15fr)_repeat(3,minmax(0,0.82fr))_2rem] bg-gradient-to-r from-gray-100 to-gray-200 px-2 py-2 text-center text-[9px] font-bold uppercase leading-tight text-gray-600">
+    <div className={`${tiny ? 'grid-cols-[minmax(0,1fr)_repeat(3,minmax(0,0.72fr))_1.75rem] px-1.5 text-[7px]' : 'grid-cols-[minmax(0,1.15fr)_repeat(3,minmax(0,0.82fr))_2rem] px-2 text-[9px]'} grid bg-gradient-to-r from-gray-100 to-gray-200 py-2 text-center font-bold uppercase leading-tight text-gray-600`}>
       <span>Particulars</span>
       <span>Old</span>
       <span>New</span>
@@ -333,19 +334,19 @@ const NarrowLedgerTable = ({ rows, onView, onEdit, onDelete }) => (
           <div
             key={tx.id}
             onClick={clickable ? () => onView(tx) : undefined}
-            className={`px-2 py-2 ${clickable ? 'cursor-pointer hover:bg-slate-50' : ''}`}
+            className={`${tiny ? 'px-1 py-1.5' : 'px-2 py-2'} ${clickable ? 'cursor-pointer hover:bg-slate-50' : ''}`}
           >
-            <div className="grid grid-cols-[minmax(0,1.15fr)_repeat(3,minmax(0,0.82fr))_2rem] items-center gap-1 text-center text-[10px] leading-tight text-gray-700">
+            <div className={`${tiny ? 'grid-cols-[minmax(0,1fr)_repeat(3,minmax(0,0.72fr))_1.75rem] gap-0.5 text-[8px]' : 'grid-cols-[minmax(0,1.15fr)_repeat(3,minmax(0,0.82fr))_2rem] gap-1 text-[10px]'} grid items-center text-center leading-tight text-gray-700`}>
               <div className="flex min-w-0 flex-col items-center gap-0 text-center">
                 {tx.isTotalRow ? (
-                  <span className="text-[9px] font-black text-slate-800">Total</span>
+                  <span className={`${tiny ? 'text-[7px]' : 'text-[9px]'} font-black text-slate-800`}>Total</span>
                 ) : tx.isOpeningBalance ? (
-                  <span className="text-[9px] font-bold text-slate-800">Opening Balance</span>
+                  <span className={`${tiny ? 'text-[7px]' : 'text-[9px]'} font-bold text-slate-800`}>Opening Balance</span>
                 ) : (
                   <>
-                    <span className="text-[8px] font-medium text-slate-400">{formatDate(tx.transaction_date)}</span>
-                    <span className="max-w-full truncate text-[9px] font-bold text-slate-800">{name}</span>
-                    <span className="mt-0.5 origin-top scale-75"><TransactionTypeBadge type={tx.transaction_type} compact /></span>
+                    <span className={`${tiny ? 'text-[6px]' : 'text-[8px]'} font-medium text-slate-400`}>{formatDate(tx.transaction_date)}</span>
+                    <span className={`${tiny ? 'text-[7px]' : 'text-[9px]'} max-w-full truncate font-bold text-slate-800`}>{name}</span>
+                    <span className={`${tiny ? 'scale-[0.62]' : 'scale-75'} mt-0.5 origin-top`}><TransactionTypeBadge type={tx.transaction_type} compact /></span>
                   </>
                 )}
               </div>
@@ -362,6 +363,14 @@ const NarrowLedgerTable = ({ rows, onView, onEdit, onDelete }) => (
                 {clickable ? (
                 <ActionMenu
                   menuId={`narrow-company-ledger-${tx.id}`}
+                  trigger={
+                    <button
+                      type="button"
+                      className={`${tiny ? 'h-5 w-5 rounded-md' : 'h-6 w-6 rounded-lg'} flex items-center justify-center border border-gray-200 bg-white text-gray-500 transition-all hover:border-violet-300 hover:text-violet-600 hover:shadow-sm active:scale-95`}
+                    >
+                      <FaEllipsisV size={tiny ? 8 : 10} />
+                    </button>
+                  }
                   actions={[
                     {
                       label: 'View Details',
@@ -1303,8 +1312,9 @@ const CompanyLedger = ({ employeeId }) => {
 
   // ── Window width for responsive columns ────────────────────────────────────
   const windowWidth = useWindowWidth();
-  const isCompactView = windowWidth <= 1423 && windowWidth >= 480;
-  const isNarrowLedgerView = windowWidth < 662 && windowWidth >= 480;
+  const isCompactView = windowWidth <= 1423 && windowWidth >= 320;
+  const isNarrowLedgerView = windowWidth < 662 && windowWidth >= 320;
+  const isTinyLedgerView = windowWidth < 480 && windowWidth >= 320;
 
   const columns = useMemo(() => {
     // ── Shared financial columns (always shown) ──
@@ -1622,6 +1632,7 @@ const CompanyLedger = ({ employeeId }) => {
             onView={(row) => setViewModal({ open: true, transaction: row })}
             onEdit={(row) => setEditModal({ open: true, transaction: row })}
             onDelete={(row) => setDeleteModal({ open: true, transaction: row })}
+            tiny={isTinyLedgerView}
           />
         ) : viewMode === 'table' ? (
           <>
