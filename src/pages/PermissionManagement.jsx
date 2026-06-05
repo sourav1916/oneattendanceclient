@@ -1373,18 +1373,16 @@ const PermissionManagement = () => {
                               )}
                             </div>
                           </div>
-                        ) : null}
+                        ) : (
+                          <div className="p-4 sm:p-5">
+                            <CategoryPermissionSelector
+                              allPermissions={allPermissions.filter(p => (selectedPackage.permissions || []).some(sp => (sp.permission_id ?? sp.id) === p.id))}
+                              selectedIds={(selectedPackage.permissions || []).map(p => (p.permission_id ?? p.id))}
+                              readOnly={true}
+                            />
+                          </div>
+                        )}
                       </div>
-
-                      {modalType !== MODAL_TYPES.EMPLOYEE_LIST && (
-                        <div className="p-4 sm:p-5">
-                          <CategoryPermissionSelector
-                            allPermissions={allPermissions.filter(p => (selectedPackage.permissions || []).some(sp => (sp.permission_id ?? sp.id) === p.id))}
-                            selectedIds={(selectedPackage.permissions || []).map(p => (p.permission_id ?? p.id))}
-                            readOnly={true}
-                          />
-                        </div>
-                      )}
                     </div>
                   </div>
 

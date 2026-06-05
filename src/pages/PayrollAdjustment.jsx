@@ -872,13 +872,38 @@ export default function PayrollAdjustment() {
                         icon={<FaEye className="h-6 w-6 text-blue-600" />}
                         size="lg"
                         footer={
-                            <div className="flex justify-end w-full">
+                            <div className="flex gap-2 justify-end w-full">
                                 <button
                                     type="button"
                                     onClick={() => setDetailAdjustment(null)}
                                     className="rounded-xl bg-gray-100 py-2.5 px-5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-200"
                                 >
                                     Close
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setAdjustmentToDelete(detailAdjustment);
+                                        setShowDeleteModal(true);
+                                        setDetailAdjustment(null);
+                                    }}
+                                    disabled={deleteAccess.disabled}
+                                    title={deleteAccess.disabled ? getAccessMessage(deleteAccess) : 'Delete adjustment'}
+                                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-rose-200 transition-all hover:from-rose-700 hover:to-red-700 disabled:opacity-50"
+                                >
+                                    <FaTrash size={13} /> Delete
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        openEditModal(detailAdjustment);
+                                        setDetailAdjustment(null);
+                                    }}
+                                    disabled={updateAccess.disabled}
+                                    title={updateAccess.disabled ? getAccessMessage(updateAccess) : 'Edit adjustment'}
+                                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition-all hover:from-indigo-700 hover:to-blue-700 disabled:opacity-50"
+                                >
+                                    <FaEdit size={13} /> Edit
                                 </button>
                             </div>
                         }

@@ -754,18 +754,47 @@ export default function CompanyInvites() {
                 >
                   Close
                 </button>
-                {selectedInvite?.status === "pending" && !isExpired(selectedInvite?.expires_at) && (
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleEditClick(selectedInvite)}
-                    disabled={updateInviteAccess.disabled}
-                    title={updateInviteAccess.disabled ? getAccessMessage(updateInviteAccess) : ""}
-                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition disabled:opacity-50"
-                  >
-                    <FaEdit className="h-4 w-4" />
-                    Edit Invite
-                  </motion.button>
+                {selectedInvite?.status === "pending" && (
+                  <>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleResendInvite(selectedInvite)}
+                      disabled={processingId === `resend-${selectedInvite?.id ?? selectedInvite?.invite_id}` || !(selectedInvite?.id ?? selectedInvite?.invite_id)}
+                      title={!(selectedInvite?.id ?? selectedInvite?.invite_id) ? "Invite ID not found" : ""}
+                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition disabled:opacity-50"
+                    >
+                      {processingId === `resend-${selectedInvite?.id ?? selectedInvite?.invite_id}` ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaEnvelope className="h-4 w-4" />}
+                      {processingId === `resend-${selectedInvite?.id ?? selectedInvite?.invite_id}` ? 'Resending...' : 'Resend Invite'}
+                    </motion.button>
+                    
+                    {!isExpired(selectedInvite?.expires_at) && (
+                      <>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => !cancelInviteAccess.disabled && openModal(selectedInvite, MODAL_TYPES.CANCEL)}
+                          disabled={cancelInviteAccess.disabled}
+                          title={cancelInviteAccess.disabled ? getAccessMessage(cancelInviteAccess) : ""}
+                          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-red-200 transition disabled:opacity-50"
+                        >
+                          <FaBan className="h-4 w-4" />
+                          Cancel Invite
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleEditClick(selectedInvite)}
+                          disabled={updateInviteAccess.disabled}
+                          title={updateInviteAccess.disabled ? getAccessMessage(updateInviteAccess) : ""}
+                          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-green-200 transition disabled:opacity-50"
+                        >
+                          <FaEdit className="h-4 w-4" />
+                          Edit Invite
+                        </motion.button>
+                      </>
+                    )}
+                  </>
                 )}
               </>
             }

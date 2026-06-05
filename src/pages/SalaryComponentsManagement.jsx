@@ -204,11 +204,12 @@ const ComponentDetailModal = ({ component, onClose, onEdit, onDelete }) => {
                         <button onClick={onClose} className="flex px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
                             Close
                         </button>
-                        <div className="flex gap-2">
-                            <button onClick={() => { onEdit(component); onClose(); }} className="flex px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-100">
-                                <FaEdit /> Edit
-                            </button>
-                        </div>
+                        <button onClick={() => { onDelete(component); onClose(); }} className="flex px-5 py-2.5 bg-gradient-to-r from-rose-600 to-red-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-rose-700 hover:to-red-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-100">
+                            <FaTrash /> Delete
+                        </button>
+                        <button onClick={() => { onEdit(component); onClose(); }} className="flex px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-100">
+                            <FaEdit /> Edit
+                        </button>
                     </div>
                 </motion.div>
             </motion.div>

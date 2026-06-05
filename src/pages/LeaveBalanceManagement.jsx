@@ -1072,12 +1072,28 @@ const LeaveBalanceManagement = () => {
               </div>
 
               {/* Footer */}
-              <div className="flex gap-3 px-6 sm:px-8 py-5 bg-slate-50 border-t border-slate-100 shrink-0">
-                <button onClick={closeViewModal} className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
-                  Close Window
+              <div className="shrink-0 border-t border-slate-100 bg-slate-50 p-4 flex justify-end gap-2.5">
+                <button
+                  onClick={closeViewModal}
+                  className="px-5 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 font-semibold text-[13px] hover:bg-slate-100 transition-all shadow-sm"
+                >
+                  Close
                 </button>
-                <button onClick={() => { closeViewModal(); openModal('edit', viewModal.balance); }} className="flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-violet-200 transition-all flex items-center justify-center gap-2">
-                  <FaEdit /> Edit Balances
+                <button
+                  onClick={() => { closeViewModal(); openModal('delete', viewModal.balance); }}
+                  disabled={deleteAccess.disabled}
+                  title={deleteAccess.disabled ? deleteMessage : ""}
+                  className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl font-bold text-[13px] hover:from-red-600 hover:to-rose-700 transition-all shadow-lg shadow-rose-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FaTrash size={12} /> Delete
+                </button>
+                <button
+                  onClick={() => { closeViewModal(); openModal('edit', viewModal.balance); }}
+                  disabled={updateAccess.disabled}
+                  title={updateAccess.disabled ? updateMessage : ""}
+                  className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold text-[13px] hover:from-violet-700 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FaEdit size={12} /> Edit Balances
                 </button>
               </div>
             </motion.div>

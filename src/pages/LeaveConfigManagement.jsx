@@ -218,7 +218,7 @@ const SkeletonLoader = () => (
 
 // ─── View Details Modal ───────────────────────────────────────────────────────
 
-const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editTitle = '' }) => {
+const ViewDetailsModal = ({ record, onClose, onEdit, onDelete, editDisabled = false, deleteDisabled = false, editTitle = '', deleteTitle = '' }) => {
   if (!record) return null;
   return (
     <AnimatePresence>
@@ -277,6 +277,15 @@ const ViewDetailsModal = ({ record, onClose, onEdit, editDisabled = false, editT
           <div className="flex gap-3 px-6 sm:px-8 py-5 border-t justify-end border-gray-100">
             <button type="button" onClick={onClose} className="flex px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">
               Close
+            </button>
+            <button
+              type="button"
+              onClick={() => { onClose(); onDelete(record); }}
+              disabled={deleteDisabled}
+              title={deleteDisabled ? deleteTitle : ''}
+              className="flex px-5 py-2.5 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl font-medium hover:from-red-600 hover:to-rose-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <FaTrash size={14} /> Delete
             </button>
             <button
               type="button"
@@ -1012,8 +1021,11 @@ const LeaveConfigManagement = () => {
             record={viewModal.record}
             onClose={() => setViewModal({ open: false, record: null })}
             onEdit={openEditModal}
+            onDelete={openDeleteModal}
             editDisabled={updateAccess.disabled}
+            deleteDisabled={deleteAccess.disabled}
             editTitle={updateMessage}
+            deleteTitle={deleteMessage}
           />
         )}
         {formModal.open && (

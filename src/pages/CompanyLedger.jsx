@@ -989,7 +989,7 @@ const DeleteModal = ({ open, onClose, onSuccess, transaction }) => {
 
 // ─── View Modal ───────────────────────────────────────────────────────────────
 
-const ViewModal = ({ open, onClose, transaction }) => (
+const ViewModal = ({ open, onClose, transaction, onEdit, onDelete }) => (
   <Modal
     isOpen={open && !!transaction}
     onClose={onClose}
@@ -998,9 +998,27 @@ const ViewModal = ({ open, onClose, transaction }) => (
     icon={<FaInfoCircle size={22} />}
     size="lg"
     footer={
-      <button onClick={onClose} className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
-        Close
-      </button>
+      <div className="flex gap-2 justify-end w-full">
+        <button onClick={onClose} className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm">
+          Close
+        </button>
+        {transaction && (
+          <>
+            <button
+              onClick={() => { onClose(); onDelete(transaction); }}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 text-sm font-bold text-white shadow-lg shadow-rose-200 transition hover:from-rose-700 hover:to-pink-700"
+            >
+              <FaTrash /> Delete
+            </button>
+            <button
+              onClick={() => { onClose(); onEdit(transaction); }}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-sm font-bold text-white shadow-lg shadow-blue-200 transition hover:from-blue-700 hover:to-cyan-700"
+            >
+              <FaEdit /> Edit
+            </button>
+          </>
+        )}
+      </div>
     }
   >
     {transaction && (
@@ -1742,6 +1760,8 @@ const CompanyLedger = ({ employeeId }) => {
         open={viewModal.open}
         onClose={() => setViewModal({ open: false, transaction: null })}
         transaction={viewModal.transaction}
+        onEdit={(tx) => setEditModal({ open: true, transaction: tx })}
+        onDelete={(tx) => setDeleteModal({ open: true, transaction: tx })}
       />
     </ManagementHub>
   );

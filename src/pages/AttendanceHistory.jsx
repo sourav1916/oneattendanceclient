@@ -616,7 +616,11 @@ const AttendanceHistory = () => {
       </div>
 
       {modalOpen && selectedRecord && (
-        <DetailsModal record={selectedRecord} onClose={closeModal} />
+        <DetailsModal 
+            record={selectedRecord} 
+            onClose={closeModal} 
+            onLogs={() => { closeModal(); setLogsModalRecord(selectedRecord); }} 
+        />
       )}
 
       <AnimatePresence>
@@ -632,7 +636,7 @@ const AttendanceHistory = () => {
   );
 };
 
-const DetailsModal = ({ record, onClose }) => {
+const DetailsModal = ({ record, onClose, onLogs }) => {
   const style = getApprovalStyle(record.status);
   const StatusIcon = style.icon;
   const activeType = normalizeAttendanceType(record.record_type || record.activeType || 'attendance');
@@ -666,12 +670,20 @@ const DetailsModal = ({ record, onClose }) => {
       icon={<FaInfoCircle className="h-6 w-6" />}
       size="4xl"
       footer={
-        <button
-          onClick={onClose}
-          className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-100"
-        >
-          Close
-        </button>
+        <div className="flex justify-end gap-2 w-full">
+            <button
+            onClick={onClose}
+            className="rounded-xl border border-slate-200 bg-white px-5 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-100"
+            >
+            Close
+            </button>
+            <button
+            onClick={onLogs}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 shadow-sm"
+            >
+            <FaHistory size={14} className="text-slate-500" /> Logs
+            </button>
+        </div>
       }
     >
       <div className="space-y-6">

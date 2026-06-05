@@ -1970,6 +1970,20 @@ const EmployeeManagement = () => {
                                 Close
                             </button>
                             <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                onClick={() => openDeleteModal(selectedEmployee)}
+                                disabled={deleteEmployeeAccess.disabled}
+                                title={deleteEmployeeAccess.disabled ? getAccessMessage(deleteEmployeeAccess) : ''}
+                                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-red-200 transition disabled:opacity-50">
+                                <FaTrash className="h-4 w-4" />Delete
+                            </motion.button>
+                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                onClick={() => openEmployeeProfile(selectedEmployee)}
+                                disabled={readEmployeeAccess.disabled}
+                                title={readEmployeeAccess.disabled ? getAccessMessage(readEmployeeAccess) : ''}
+                                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition disabled:opacity-50">
+                                <FaUserCircle className="h-4 w-4" />Profile
+                            </motion.button>
+                            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                                 onClick={() => openEditModal(selectedEmployee)}
                                 disabled={updateEmployeeAccess.disabled}
                                 title={updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : ''}

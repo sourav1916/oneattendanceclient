@@ -894,8 +894,17 @@ const BankAccountManagement = () => {
               Close
             </button>
             <button
+              onClick={() => { closeViewModal(); openModal('delete', viewModal.account); }}
+              disabled={deleteAccess.disabled}
+              title={deleteAccess.disabled ? deleteMessage : ''}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 text-sm font-bold text-white shadow-lg shadow-red-200 transition hover:from-red-700 hover:to-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FaTrash /> Delete
+            </button>
+            <button
               onClick={() => { closeViewModal(); openModal('edit', viewModal.account); }}
               disabled={updateAccess.disabled}
+              title={updateAccess.disabled ? updateMessage : ''}
               className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-sm font-bold text-white shadow-lg shadow-violet-200 transition hover:from-violet-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FaEdit /> Edit Account

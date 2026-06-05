@@ -719,7 +719,7 @@ function PackageFormModal({ isOpen, onClose, onSuccess, packageData, isEditing, 
 
 // ─── View Modal ──────────────────────────────────────────────────────────────
 
-function ViewPackageModal({ isOpen, onClose, package: pkg }) {
+function ViewPackageModal({ isOpen, onClose, package: pkg, onEdit, onDelete, onToggleStatus, updateAccess, deleteAccess, getAccessMessage }) {
   const [showWeekends, setShowWeekends] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
   const [showSalaryComponents, setShowSalaryComponents] = useState(false);
@@ -1009,13 +1009,48 @@ function ViewPackageModal({ isOpen, onClose, package: pkg }) {
             </div>
 
             {/* Footer */}
-            <div className="shrink-0 border-t border-slate-100 bg-slate-50 p-4 flex justify-end">
+            <div className="shrink-0 border-t border-slate-100 bg-slate-50 p-3.5 flex justify-end gap-2.5">
               <button
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-100 transition-all shadow-sm"
+                className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 font-semibold text-[13px] hover:bg-slate-100 transition-all shadow-sm"
               >
-                Close Details
+                Close
               </button>
+              {onToggleStatus && (
+                <button
+                  onClick={onToggleStatus}
+                  disabled={updateAccess?.disabled}
+                  title={updateAccess?.disabled ? getAccessMessage?.(updateAccess) : ""}
+                  className={`inline-flex items-center gap-2 px-5 py-2 rounded-xl font-bold text-[13px] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
+                    pkg.is_active 
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-orange-100 hover:from-amber-600 hover:to-orange-700' 
+                      : 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-emerald-100 hover:from-emerald-600 hover:to-green-700'
+                  }`}
+                >
+                  {pkg.is_active ? <FaToggleOff size={12} /> : <FaToggleOn size={12} />}
+                  {pkg.is_active ? "Deactivate" : "Activate"}
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={onDelete}
+                  disabled={deleteAccess?.disabled}
+                  title={deleteAccess?.disabled ? getAccessMessage?.(deleteAccess) : ""}
+                  className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl font-bold text-[13px] hover:from-red-600 hover:to-rose-700 transition-all shadow-lg shadow-rose-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FaTrash size={12} /> Delete
+                </button>
+              )}
+              {onEdit && (
+                <button
+                  onClick={onEdit}
+                  disabled={updateAccess?.disabled}
+                  title={updateAccess?.disabled ? getAccessMessage?.(updateAccess) : ""}
+                  className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-[13px] hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <FaEdit size={12} /> Edit
+                </button>
+              )}
             </div>
           </motion.div>
         </motion.div>
@@ -1776,7 +1811,17 @@ export default function InvitePackageManagement() {
         {/* ── Modals ── */}
         <AnimatePresence>
           {modalType === "view" && selectedPackage && (
-            <ViewPackageModal isOpen={true} onClose={closeModal} package={selectedPackage} />
+            <ViewPackageModal 
+              isOpen={true} 
+              onClose={closeModal} 
+              package={selectedPackage} 
+              onEdit={() => { closeModal(); handleEditClick(selectedPackage); }}
+              onDelete={() => { closeModal(); openModal(selectedPackage, "delete"); }}
+              onToggleStatus={() => { closeModal(); openToggleModal(selectedPackage, !selectedPackage.is_active); }}
+              updateAccess={updateAccess}
+              deleteAccess={deleteAccess}
+              getAccessMessage={getAccessMessage}
+            />
           )}
           {modalType === "delete" && selectedPackage && (
             <DeletePackageModal

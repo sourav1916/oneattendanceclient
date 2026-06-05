@@ -1263,12 +1263,52 @@ const PayrollManagement = () => {
                 icon={<FaFileInvoiceDollar size={18} />}
                 size="4xl"
                 footer={
-                    <button
-                        onClick={closeModal}
-                        className="px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium"
-                    >
-                        Close
-                    </button>
+                    <div className="flex justify-end gap-2 w-full">
+                        <button
+                            onClick={closeModal}
+                            className="px-6 py-2 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 rounded-xl hover:from-gray-200 hover:to-gray-300 transition-all duration-300 font-medium"
+                        >
+                            Close
+                        </button>
+                        {selectedPayroll?.rowType === PAYROLL_ROW_TYPES.PREVIEW ? (
+                            <button
+                                onClick={() => {
+                                    closeModal();
+                                    openPreviewGenerateConfirm(selectedPayroll);
+                                }}
+                                disabled={generatePayrollAccess.disabled}
+                                title={generatePayrollAccess.disabled ? getAccessMessage(generatePayrollAccess) : ''}
+                                className="inline-flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-xl hover:from-emerald-700 hover:to-green-700 transition-all duration-300 font-medium shadow-md shadow-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <FaCalculator size={14} /> Generate Payroll
+                            </button>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        closeModal();
+                                        handleDownloadPdf(selectedPayroll);
+                                    }}
+                                    disabled={downloadPayrollAccess.disabled}
+                                    title={downloadPayrollAccess.disabled ? getAccessMessage(downloadPayrollAccess) : ''}
+                                    className="inline-flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 font-medium shadow-md shadow-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <FaDownload size={14} /> Download PDF
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        closeModal();
+                                        openEmailModal(selectedPayroll);
+                                    }}
+                                    disabled={emailPayrollAccess.disabled}
+                                    title={emailPayrollAccess.disabled ? getAccessMessage(emailPayrollAccess) : ''}
+                                    className="inline-flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 font-medium shadow-md shadow-purple-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <FaEnvelope size={14} /> Send Email
+                                </button>
+                            </>
+                        )}
+                    </div>
                 }
             >
                 {selectedPayroll && (

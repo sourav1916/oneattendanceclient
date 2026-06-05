@@ -879,7 +879,7 @@ const EmployeeBankAccountManagement = () => {
         icon={viewModal.account?.account_type === 'cash' ? <FaMoneyBillWave size={22} /> : viewModal.account?.account_type === 'upi' ? <FaQrcode size={22} /> : <FaUniversity size={22} />}
         size="lg"
         footer={
-          <>
+          <div className="flex gap-2 justify-end w-full">
             <button
               onClick={closeViewModal}
               className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all shadow-sm"
@@ -887,13 +887,22 @@ const EmployeeBankAccountManagement = () => {
               Close
             </button>
             <button
+              onClick={() => { closeViewModal(); openModal('delete', viewModal.account); }}
+              disabled={deleteAccess.disabled}
+              title={deleteAccess.disabled ? deleteMessage : ''}
+              className="px-6 py-2.5 bg-gradient-to-r from-rose-600 to-red-600 text-white rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-rose-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FaTrash /> Delete
+            </button>
+            <button
               onClick={() => { closeViewModal(); openModal('edit', viewModal.account); }}
               disabled={updateAccess.disabled}
+              title={updateAccess.disabled ? updateMessage : ''}
               className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-violet-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FaEdit /> Edit Account
             </button>
-          </>
+          </div>
         }
       >
         <div className="space-y-6">

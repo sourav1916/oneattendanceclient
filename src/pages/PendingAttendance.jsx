@@ -306,7 +306,7 @@ const PunchTypeBadge = ({ type }) => {
     );
 };
 
-const PendingDetailsModal = ({ attendance, onClose }) => {
+const PendingDetailsModal = ({ attendance, onClose, onVerify, onLogs, verifyDisabled = false, verifyTitle = '' }) => {
     if (!attendance) return null;
     const startRecord = attendance.start_record || attendance.punch_in || attendance.break_start;
     const endRecord = attendance.end_record || attendance.punch_out || attendance.break_end;
@@ -321,12 +321,32 @@ const PendingDetailsModal = ({ attendance, onClose }) => {
             icon={<FaInfoCircle className="h-6 w-6" />}
             size="4xl"
             footer={
-                <button
-                    onClick={onClose}
-                    className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-100"
-                >
-                    Close
-                </button>
+                <div className="flex justify-end gap-2 w-full">
+                    <button
+                        onClick={onClose}
+                        className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-100"
+                    >
+                        Close
+                    </button>
+                    {onLogs && (
+                        <button
+                            onClick={() => { onClose(); onLogs(attendance); }}
+                            className="rounded-xl bg-slate-100 px-5 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-200 flex items-center justify-center gap-2"
+                        >
+                            <FaHistory size={14} /> Logs
+                        </button>
+                    )}
+                    {onVerify && (
+                        <button
+                            onClick={() => { onClose(); onVerify(attendance); }}
+                            disabled={verifyDisabled}
+                            title={verifyDisabled ? verifyTitle : ''}
+                            className="rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 px-5 py-2.5 text-sm font-medium text-white transition hover:from-green-600 hover:to-emerald-700 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            <FaCheck size={14} /> Verify
+                        </button>
+                    )}
+                </div>
             }
         >
             <div className="space-y-8">
@@ -1131,6 +1151,10 @@ const PendingAttendance = ({ companyId }) => {
                 <PendingDetailsModal
                     attendance={selectedAttendance}
                     onClose={() => setShowModal(false)}
+                    onVerify={handleEditAttendance}
+                    onLogs={(att) => setLogsModalRecord(att)}
+                    verifyDisabled={approveAccess.disabled}
+                    verifyTitle={pendingReviewMessage}
                 />
             )}
 

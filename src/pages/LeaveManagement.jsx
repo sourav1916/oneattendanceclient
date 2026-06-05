@@ -1385,13 +1385,51 @@ const LeaveManagement = () => {
                         icon={<FaEye className="h-6 w-6" />}
                         size="3xl"
                         footer={
-                            <button
-                                type="button"
-                                onClick={() => setDetailLeave(null)}
-                                className="rounded-xl bg-gray-100 py-2.5  px-5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-200"
-                            >
-                                Close
-                            </button>
+                            <div className="flex gap-2 justify-end w-full">
+                                <button
+                                    type="button"
+                                    onClick={() => setDetailLeave(null)}
+                                    className="rounded-xl bg-gray-100 py-2.5 px-5 text-sm font-medium text-gray-700 transition-all hover:bg-gray-200"
+                                >
+                                    Close
+                                </button>
+                                {detailLeave.status === 'pending' && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setRejectLeave(detailLeave);
+                                                setRejectRemarks('');
+                                                setDetailLeave(null);
+                                            }}
+                                            disabled={rejectAccess.disabled}
+                                            title={rejectAccess.disabled ? reviewMessage : ''}
+                                            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-rose-200 transition-all hover:from-rose-700 hover:to-red-700 disabled:opacity-50"
+                                        >
+                                            <FaTrash size={13} /> Reject
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setApproveLeave(detailLeave);
+                                                setApproveRemarks('');
+                                                setApproveForm({
+                                                    start_date: toDateInputValue(detailLeave.start_date),
+                                                    end_date: toDateInputValue(detailLeave.end_date),
+                                                    is_half_day: Boolean(detailLeave.is_half_day),
+                                                    half_day_type: detailLeave.half_day_type || 'first_half',
+                                                });
+                                                setDetailLeave(null);
+                                            }}
+                                            disabled={approveAccess.disabled}
+                                            title={approveAccess.disabled ? reviewMessage : ''}
+                                            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-emerald-200 transition-all hover:from-emerald-700 hover:to-green-700 disabled:opacity-50"
+                                        >
+                                            <FaCheck size={13} /> Approve / Edit
+                                        </button>
+                                    </>
+                                )}
+                            </div>
                         }
                     >
                         <div className="space-y-4">

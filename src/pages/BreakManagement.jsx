@@ -291,6 +291,10 @@ const BreakDetailModal = ({ record, onClose, onEdit }) => {
 
                     {/* Fixed Footer */}
                     <div className="flex flex-col justify-end sm:flex-row gap-3 px-6 py-4 border-t border-gray-100 bg-white flex-shrink-0">
+                        <button onClick={onClose}
+                            className="flex px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all font-semibold items-center justify-center gap-2">
+                            Close
+                        </button>
                         <button onClick={() => { onEdit(record); onClose(); }}
                             className="flex px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-semibold items-center justify-center gap-2 shadow-sm">
                             <FaEdit size={14} /> Edit Break

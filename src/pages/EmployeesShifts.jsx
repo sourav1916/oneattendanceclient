@@ -255,10 +255,16 @@ const EmployeeDetailModal = ({ employee, onClose }) => {
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
+                    <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50 px-6 py-4 shrink-0">
                         <button onClick={onClose}
-                            className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all">
+                            className="px-5 py-2 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
                             Close
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(employee.employee_id); }}
+                            className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-sm font-bold hover:from-indigo-700 hover:to-blue-700 transition-all shadow-md shadow-indigo-200"
+                        >
+                            <FaUserCircle size={13} /> View Profile
                         </button>
                     </div>
                 </motion.div>

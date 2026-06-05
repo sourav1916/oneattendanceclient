@@ -69,7 +69,7 @@ const formatDate = (s) => {
 
 // ─── Package Detail Modal ─────────────────────────────────────────────────────
 
-const PackageDetailModal = ({ pkg, onClose }) => {
+const PackageDetailModal = ({ pkg, onClose, onEdit, onDelete }) => {
     if (!pkg) return null;
     const earningItems = pkg.items.filter(i => i.type === 'earning');
     const deductionItems = pkg.items.filter(i => i.type === 'deduction');
@@ -88,9 +88,21 @@ const PackageDetailModal = ({ pkg, onClose }) => {
             }
             size="3xl"
             footer={
-                <button onClick={onClose} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
-                    Close
-                </button>
+                <div className="flex gap-2 justify-end w-full">
+                    <button onClick={onClose} className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm">
+                        Close
+                    </button>
+                    {onDelete && (
+                        <button onClick={() => { onDelete(pkg); onClose(); }} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-600 to-red-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-rose-700 hover:to-red-700 transition-all shadow-lg shadow-rose-100">
+                            <FaTrash /> Delete
+                        </button>
+                    )}
+                    {onEdit && (
+                        <button onClick={() => { onEdit(pkg); onClose(); }} className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg shadow-green-100">
+                            <FaEdit /> Edit
+                        </button>
+                    )}
+                </div>
             }
         >
             <div className="space-y-6">
@@ -944,6 +956,8 @@ const SalaryPackages = () => {
                     <PackageDetailModal
                         pkg={selectedPkg}
                         onClose={() => setSelectedPkg(null)}
+                        onEdit={(p) => { setEditPkg(p); setShowForm(true); }}
+                        onDelete={(p) => setDeletePkg(p)}
                     />
                 )}
             </AnimatePresence>

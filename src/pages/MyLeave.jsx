@@ -1303,8 +1303,32 @@ const MyLeave = () => {
                   </div>
                 )}
               </div>
-              <div className="flex gap-3 justify-end px-6 sm:px-8 py-5 border-t border-gray-100 bg-white">
+              <div className="flex gap-3 justify-end w-full px-6 sm:px-8 py-5 border-t border-gray-100 bg-white">
                 <button type="button" onClick={() => setViewLeave(null)} className="flex px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all">Close</button>
+                {viewLeave.status === 'pending' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCancellingLeave(viewLeave);
+                        setViewLeave(null);
+                      }}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-rose-600 to-red-600 text-white rounded-xl font-medium hover:from-rose-700 hover:to-red-700 transition-all"
+                    >
+                      <FaTimes size={14} /> Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditLeave(viewLeave);
+                        setViewLeave(null);
+                      }}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-fuchsia-700 transition-all shadow-lg shadow-purple-200"
+                    >
+                      <FaEdit size={14} /> Edit
+                    </button>
+                  </>
+                )}
               </div>
             </motion.div>
           </motion.div>
