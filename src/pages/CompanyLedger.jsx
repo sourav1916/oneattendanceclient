@@ -1019,6 +1019,17 @@ const ViewModal = ({ open, onClose, transaction }) => (
 const isOpeningBalanceEmpty = (ob) =>
   !ob || (Number(ob.debit) === 0 && Number(ob.credit) === 0 && Number(ob.balance) === 0);
 
+// ─── Window Width Hook (local to this page) ─────────────────────────────────
+const useWindowWidth = () => {
+  const [width, setWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
+  useEffect(() => {
+    const onResize = () => setWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return width;
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const CompanyLedger = ({ employeeId }) => {
@@ -1203,67 +1214,22 @@ const CompanyLedger = ({ employeeId }) => {
   // Determine opening balance button label & behaviour
   const obIsEmpty = isOpeningBalanceEmpty(openingBalance);
 
-  const columns = useMemo(() => [
-    {
-      key: 'row_num',
-      label: '#',
-      render: (tx, idx) => {
-        if (tx.isTotalRow) return <span className="font-black text-slate-800 text-sm">Total</span>;
-        if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
-        const offset = pagination.page === 1 ? -1 : 0;
-        const rowNum = (pagination.page - 1) * pagination.limit + idx + 1 + offset;
-        return <span className="font-medium text-slate-400">{rowNum}</span>;
-      },
-      className: 'w-12 text-center',
-    },
-    {
-      key: 'transaction_date',
-      label: 'Date',
-      render: (tx) => {
-        if (tx.isTotalRow) return null;
-        if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
-        return <span className="whitespace-nowrap font-medium text-slate-600">{formatDate(tx.transaction_date)}</span>;
-      },
-    },
-    {
-      key: 'particulars',
-      label: 'Particulars',
-      render: (tx) => {
-        if (tx.isTotalRow) return null;
-        if (tx.isOpeningBalance) {
-          return <span className="font-bold text-slate-800">Opening Balance</span>;
-        }
-        return renderParticulars(tx);
-      },
-    },
-    {
-      key: 'type',
-      label: 'Type',
-      render: (tx) => {
-        if (tx.isTotalRow) return null;
-        if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
-        return <TransactionTypeBadge type={tx.transaction_type} compact />;
-      },
-    },
-    {
-      key: 'transaction_id',
-      label: 'Voucher No',
-      render: (tx) => {
-        if (tx.isTotalRow) return null;
-        if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
-        return <span className="font-mono text-xs text-slate-500">{tx.transaction_id}</span>;
-      },
-    },
-    {
+  // ── Window width for responsive columns ────────────────────────────────────
+  const windowWidth = useWindowWidth();
+  const isCompactView = windowWidth <= 1423 && windowWidth >= 662;
+
+  const columns = useMemo(() => {
+    // ── Shared financial columns (always shown) ──
+    const oldBalanceCol = {
       key: 'old_balance',
       label: 'Old Balance',
       render: (tx) => {
         if (tx.isTotalRow) return <span className="text-slate-400 font-semibold">—</span>;
         return <span className="font-bold text-slate-600 font-mono">{formatNumber(tx.old_balance)}</span>;
       },
-      className: 'text-right',
-    },
-    {
+      className: 'text-center',
+    };
+    const newBalanceCol = {
       key: 'new_balance',
       label: 'New Balance',
       render: (tx) => {
@@ -1274,9 +1240,9 @@ const CompanyLedger = ({ employeeId }) => {
           </span>
         );
       },
-      className: 'text-right',
-    },
-    {
+      className: 'text-center',
+    };
+    const amountCol = {
       key: 'amount',
       label: 'Amount',
       render: (tx) => {
@@ -1287,9 +1253,90 @@ const CompanyLedger = ({ employeeId }) => {
           </span>
         );
       },
-      className: 'text-right',
-    },
-  ], [pagination.page, pagination.limit]);
+      className: 'text-center',
+    };
+
+    // ── Compact view (662px – 1423px): merge Date+Particulars+Type into one column ──
+    if (isCompactView) {
+      return [
+        {
+          key: 'particulars_merged',
+          label: 'Particulars',
+          render: (tx) => {
+            if (tx.isTotalRow) return <span className="font-black text-slate-800 text-sm">Total</span>;
+            if (tx.isOpeningBalance) return <span className="font-bold text-slate-800 text-sm">Opening Balance</span>;
+            const remark = tx.remark || tx.remarks || '';
+            let name;
+            if (remark) {
+              name = remark;
+            } else {
+              const createdBy = tx.created_by || tx.create_by || {};
+              name = tx.employee?.name || createdBy?.name || '—';
+            }
+            return (
+              <div className="flex flex-col items-center gap-0.5 text-center min-w-0">
+                <span className="text-[10px] text-slate-400 font-medium leading-tight">{formatDate(tx.transaction_date)}</span>
+                <span className="font-bold text-slate-800 text-xs leading-tight truncate">{name}</span>
+                <div className="mt-0.5"><TransactionTypeBadge type={tx.transaction_type} compact /></div>
+              </div>
+            );
+          },
+          className: 'text-center',
+        },
+        oldBalanceCol,
+        newBalanceCol,
+        amountCol,
+      ];
+    }
+
+    // ── Full-width view (>= 1424px): all 7 separate columns ──
+    return [
+      {
+        key: 'row_num',
+        label: '#',
+        render: (tx, idx) => {
+          if (tx.isTotalRow) return <span className="font-black text-slate-800 text-sm">Total</span>;
+          if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
+          const offset = pagination.page === 1 ? -1 : 0;
+          const rowNum = (pagination.page - 1) * pagination.limit + idx + 1 + offset;
+          return <span className="font-medium text-slate-400">{rowNum}</span>;
+        },
+        className: 'w-12 text-center',
+      },
+      {
+        key: 'transaction_date',
+        label: 'Date',
+        render: (tx) => {
+          if (tx.isTotalRow) return null;
+          if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
+          return <span className="whitespace-nowrap font-medium text-slate-600">{formatDate(tx.transaction_date)}</span>;
+        },
+      },
+      {
+        key: 'particulars',
+        label: 'Particulars',
+        render: (tx) => {
+          if (tx.isTotalRow) return null;
+          if (tx.isOpeningBalance) {
+            return <span className="font-bold text-slate-800">Opening Balance</span>;
+          }
+          return renderParticulars(tx);
+        },
+      },
+      {
+        key: 'type',
+        label: 'Type',
+        render: (tx) => {
+          if (tx.isTotalRow) return null;
+          if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
+          return <TransactionTypeBadge type={tx.transaction_type} compact />;
+        },
+      },
+      oldBalanceCol,
+      newBalanceCol,
+      amountCol,
+    ];
+  }, [pagination.page, pagination.limit, isCompactView]);
 
   const tableRows = useMemo(() => {
     let rows = [];
