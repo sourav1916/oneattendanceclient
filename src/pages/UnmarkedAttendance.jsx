@@ -8,6 +8,7 @@ import {
   FaClock,
   FaExclamationTriangle,
   FaFilter,
+  FaHistory,
   FaHourglassHalf,
   FaLayerGroup,
   FaMoneyBillWave,
@@ -32,6 +33,7 @@ import {
   ManagementHub,
 } from '../components/common';
 import useEmployeeNavigation from '../hooks/useEmployeeNavigation';
+import AttendanceLogsModal from '../components/AttendanceLogsModal';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -272,19 +274,14 @@ const FieldLabel = ({ label, children }) => (
 
 /** Compact toggle switch used per-card in bulk mode */
 const ToggleSwitch = ({ isOn, onToggle, size = 'md' }) => {
-  const track = size === 'sm'
-    ? 'h-4 w-8'
-    : 'h-5 w-10';
-  const thumb = size === 'sm'
-    ? 'h-2.5 w-2.5'
-    : 'h-3 w-3';
+  const track = size === 'sm' ? 'h-4 w-8' : 'h-5 w-10';
+  const thumb = size === 'sm' ? 'h-2.5 w-2.5' : 'h-3 w-3';
   const translateX = size === 'sm' ? 16 : 20;
 
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onToggle(); }}
-      className={`flex ${track} cursor-pointer items-center rounded-full p-1 transition-all duration-300 ${isOn ? 'bg-blue-500 shadow-inner' : 'bg-gray-300'
-        }`}
+      className={`flex ${track} cursor-pointer items-center rounded-full p-1 transition-all duration-300 ${isOn ? 'bg-blue-500 shadow-inner' : 'bg-gray-300'}`}
     >
       <motion.div
         className={`${thumb} rounded-full bg-white shadow-md`}
@@ -324,7 +321,7 @@ const Summary = ({ counts }) => {
 };
 
 const EmployeeAvatar = ({ employee, onClick }) => (
-  <div 
+  <div
     className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-100 text-xs font-bold text-slate-600 ${onClick ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
     onClick={onClick}
   >
@@ -341,7 +338,7 @@ const EmployeeAvatar = ({ employee, onClick }) => (
 
 // ─── Employee Row Card ────────────────────────────────────────────────────────
 
-const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, onSelect, isSelectionMode }) => {
+const EmployeeRowCard = ({ employee, onManage, onToggleFlag, onViewLogs, selected = false, onSelect }) => {
   const navigateToEmployeeProfile = useEmployeeNavigation();
   const activeStatus = normalizeStatusForAction(employee.day_status);
   const statusButtonVariant = (s) => (activeStatus === s ? 'solid' : 'soft');
@@ -373,17 +370,17 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, o
       <div className="flex flex-col justify-between gap-4 lg:flex-row">
         <div className="flex min-w-0 items-start gap-3 lg:max-w-[760px] xl:max-w-[840px] pl-10 sm:pl-12">
 
-          <EmployeeAvatar 
-            employee={employee} 
+          <EmployeeAvatar
+            employee={employee}
             onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(employee.employee_id); }}
           />
 
           <div className="min-w-0 flex-1">
-            <p 
-                className="truncate text-sm font-bold text-slate-900 cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
-                onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(employee.employee_id); }}
+            <p
+              className="truncate text-sm font-bold text-slate-900 cursor-pointer hover:underline hover:text-indigo-600 transition-colors"
+              onClick={(e) => { e.stopPropagation(); navigateToEmployeeProfile(employee.employee_id); }}
             >
-                {employee.name}
+              {employee.name}
             </p>
             <p className="truncate text-xs font-medium text-slate-500">
               {employee.employee_code} | {employee.designation?.label || 'No designation'}
@@ -417,6 +414,8 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, o
         </div>
 
         <div className="flex w-full shrink-0 flex-col justify-between gap-3 border-t border-slate-100 pt-3 lg:w-[360px] lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
+
+          {/* Status badges + Log button */}
           <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
             <StatusBadge status={employee.day_status} />
             <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${employee.is_verified
@@ -425,6 +424,17 @@ const EmployeeRowCard = ({ employee, onManage, onToggleFlag, selected = false, o
               }`}>
               {employee.is_verified ? 'Verified' : 'Pending'}
             </span>
+
+            {/* ── Logs button ── */}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onViewLogs(employee); }}
+              title="View attendance logs"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors"
+            >
+              <FaHistory size={11} />
+              Logs
+            </button>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
@@ -649,8 +659,7 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
               <button
                 key={option.value} type="button"
                 onClick={() => handleStatusChange(option.value)}
-                className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition ${isActive ? meta.className : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
+                className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-semibold transition ${isActive ? meta.className : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
               >
                 <Icon size={13} /> {option.label}
               </button>
@@ -679,8 +688,7 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
                 <button
                   key={o.value} type="button"
                   onClick={() => handleHalfDaySessionChange(o.value)}
-                  className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${halfDaySession === o.value ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                    }`}
+                  className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${halfDaySession === o.value ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
                 >
                   {o.label}
                 </button>
@@ -725,6 +733,7 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
                 />
               </label>
             </div>
+
             <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
@@ -835,8 +844,7 @@ const BulkApprovalPanel = ({
                 <button
                   key={o.value} type="button"
                   onClick={() => setBulkHalfDayType(o.value)}
-                  className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${bulkHalfDayType === o.value ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                    }`}
+                  className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${bulkHalfDayType === o.value ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
                 >
                   {o.label}
                 </button>
@@ -951,6 +959,8 @@ export default function UnmarkedAttendance() {
   const [bulkNotes, setBulkNotes] = useState('Bulk approved selected attendance');
   const [modalState, setModalState] = useState(null);
   const [flagConfirm, setFlagConfirm] = useState(null);
+  // ── Logs modal state ── { id: attendance_id, type: 'attendance' } | null
+  const [logsModal, setLogsModal] = useState(null);
 
   const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
   const activeListRequestKey = useRef(null);
@@ -1069,7 +1079,6 @@ export default function UnmarkedAttendance() {
     const companyId = getCompanyId();
     if (!companyId) { toast.error('Company ID not found'); return; }
 
-    // employee_ids is the string "all" when bulkScope === 'all', otherwise the array of selected ids
     const employeeIds = bulkScope === 'all' ? 'all' : selectedEmployeeIds;
 
     if (bulkScope === 'selected' && !selectedEmployeeIds.length) {
@@ -1181,6 +1190,16 @@ export default function UnmarkedAttendance() {
     }
   };
 
+  // ── Logs handler ─────────────────────────────────────────────────────────────
+
+  const handleViewLogs = (employee) => {
+    if (!employee.attendance_id) {
+      toast.info('No attendance record found to view logs for');
+      return;
+    }
+    setLogsModal({ id: employee.attendance_id, type: 'attendance' });
+  };
+
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -1201,22 +1220,12 @@ export default function UnmarkedAttendance() {
           animate={{ opacity: 1, y: 0 }}
           className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
         >
-          {/* 
-    Layout:
-    - lg: all in one row
-    - md/sm:
-        Row 1 -> Search
-        Row 2 -> Employee Select
-        Row 3 -> Status + Date
-  */}
-
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 
             {/* SEARCH */}
             <div className="w-full lg:flex-1">
               <div className="relative">
                 <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-
                 <input
                   type="text"
                   value={search}
@@ -1224,7 +1233,6 @@ export default function UnmarkedAttendance() {
                   placeholder="Search by name, code, or email…"
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-10 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 min-h-[42px]"
                 />
-
                 {search && (
                   <button
                     type="button"
@@ -1255,20 +1263,11 @@ export default function UnmarkedAttendance() {
                   className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-slate-400"
                   size={12}
                 />
-
                 <SelectField
-                  value={
-                    listDayStatusOptions.find((o) => o.value === statusFilter) || null
-                  }
+                  value={listDayStatusOptions.find((o) => o.value === statusFilter) || null}
                   onChange={(o) => setStatusFilter(o?.value || '')}
                   options={listDayStatusOptions}
-                  styles={{
-                    control: (p) => ({
-                      ...p,
-                      paddingLeft: '1.5rem',
-                      minHeight: '42px',
-                    }),
-                  }}
+                  styles={{ control: (p) => ({ ...p, paddingLeft: '1.5rem', minHeight: '42px' }) }}
                 />
               </div>
 
@@ -1301,9 +1300,7 @@ export default function UnmarkedAttendance() {
         ) : (
           <div className="space-y-3 rounded-xl bg-white px-4 shadow-xl">
 
-            {/* ── TOP BULK CONTROL BAR ───────────────────────────────────────
-                Left:  "Select all" button
-            ──────────────────────────────────────────────────────────────── */}
+            {/* ── TOP BULK CONTROL BAR ── */}
             <div className="flex w-full items-center justify-between pt-4">
               <div className="flex items-center gap-3">
                 <button
@@ -1326,6 +1323,7 @@ export default function UnmarkedAttendance() {
                 employee={employee}
                 onManage={handleManage}
                 onToggleFlag={handleToggleFlag}
+                onViewLogs={handleViewLogs}
                 selected={selectedEmployeeIds.includes(employee.employee_id)}
                 onSelect={toggleSelectedEmployee}
               />
@@ -1343,13 +1341,7 @@ export default function UnmarkedAttendance() {
         />
       </div>
 
-      {/* ── FLOATING BOTTOM BAR ─────────────────────────────────────────────────
-          Visible whenever ≥1 employee is selected.
-          Buttons:
-            • Close           — clears selection & exits bulk mode
-            • All             → opens modal with employee_ids: "all"
-            • Continue →      → opens modal with the selected ids
-      ──────────────────────────────────────────────────────────────────────── */}
+      {/* ── FLOATING BOTTOM BAR ── */}
       <AnimatePresence>
         {selectedEmployeeIds.length > 0 && (
           <motion.div
@@ -1375,7 +1367,7 @@ export default function UnmarkedAttendance() {
                 Clear
               </button>
 
-              {/* All — sends employee_ids: "all" */}
+              {/* All */}
               <button
                 type="button"
                 onClick={openBulkModalForAll}
@@ -1384,7 +1376,7 @@ export default function UnmarkedAttendance() {
                   ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100'
                   : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
                   }`}
-                title={allVisibleSelected ? "Apply to all employees across all pages" : "Select all visible employees to enable"}
+                title={allVisibleSelected ? 'Apply to all employees across all pages' : 'Select all visible employees to enable'}
               >
                 <FaLayerGroup size={11} />
                 All
@@ -1404,7 +1396,7 @@ export default function UnmarkedAttendance() {
         )}
       </AnimatePresence>
 
-      {/* ── BULK APPROVE MODAL ────────────────────────────────────────────────── */}
+      {/* ── BULK APPROVE MODAL ── */}
       {showBulkModal && (
         <Modal
           isOpen={showBulkModal}
@@ -1436,7 +1428,6 @@ export default function UnmarkedAttendance() {
           )}
         >
           <div className="space-y-4">
-            {/* Scope info banner */}
             {bulkScope === 'all' ? (
               <p className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-sm font-medium text-amber-700">
                 <span className="font-bold">All employees</span> across all pages will be affected
@@ -1475,6 +1466,15 @@ export default function UnmarkedAttendance() {
         onConfirm={handleConfirmFlagToggle}
         saving={saving}
       />
+
+      {/* ── Attendance logs modal ── */}
+      {logsModal && (
+        <AttendanceLogsModal
+          id={logsModal.id}
+          type={logsModal.type}
+          onClose={() => setLogsModal(null)}
+        />
+      )}
     </ManagementHub>
   );
 }
