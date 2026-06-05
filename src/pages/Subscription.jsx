@@ -359,7 +359,7 @@ const SubscriptionPage = () => {
 
       {/* ── Sticky top bar ── */}
       <header className="sticky top-0 z-20 bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="w-full mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-[16px] font-semibold text-gray-800">Subscription plans</h1>
             <p className="text-[12px] text-gray-400 mt-0.5">Choose the perfect plan for your team</p>
