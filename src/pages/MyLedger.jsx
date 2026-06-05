@@ -40,6 +40,9 @@ const TRANSACTION_TYPES = [
   { value: 'reimbursement', label: 'Reimbursement', icon: FaFileInvoice, color: 'blue' },
   { value: 'deduction', label: 'Deduction', icon: FaArrowDown, color: 'rose' },
   { value: 'advance', label: 'Advance', icon: FaMoneyBillWave, color: 'violet' },
+  { value: 'fine', label: 'Fine', icon: FaTag, color: 'violet' },
+  { value: 'receive', label: 'Receive', icon: FaArrowDown, color: 'blue' },
+  { value: 'payment', label: 'Payment', icon: FaArrowUp, color: 'rose' },
   { value: 'opening_balance', label: 'Opening Balance', icon: FaWallet, color: 'gray' },
   { value: 'other', label: 'Other', icon: FaExchangeAlt, color: 'gray' },
 ];
@@ -192,8 +195,7 @@ const MobileTransactionCard = ({ transaction, onView }) => (
   <motion.div
     initial={{ opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
-    className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 cursor-pointer hover:shadow-md transition-all duration-300 group"
-    onClick={() => onView(transaction)}
+    className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 hover:shadow-md transition-all duration-300 group"
   >
     <div className="flex items-center justify-between mb-3">
       <div className="flex items-center gap-3">
@@ -201,7 +203,7 @@ const MobileTransactionCard = ({ transaction, onView }) => (
           {transaction.entry_type === 'debit' ? <FaArrowUp size={16} /> : <FaArrowDown size={16} />}
         </div>
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <TransactionTypeBadge type={transaction.transaction_type} compact />
             <EntryTypeBadge entryType={transaction.entry_type} compact />
           </div>
@@ -212,16 +214,42 @@ const MobileTransactionCard = ({ transaction, onView }) => (
         <p className={`text-base font-black ${transaction.entry_type === 'debit' ? 'text-rose-600' : 'text-emerald-600'}`}>
           {transaction.entry_type === 'debit' ? '-' : '+'}{formatCurrency(transaction.amount)}
         </p>
-        <p className={`text-xs font-mono font-bold mt-0.5 ${Number(transaction.balance) >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
-          Bal: {formatNumber(transaction.balance)}
-        </p>
+        <p className="text-[10px] text-slate-400 font-mono mt-0.5">{transaction.transaction_id || `#${transaction.id}`}</p>
       </div>
     </div>
-    {transaction.remark && (
-      <div className="border-t border-slate-50 pt-2 mt-1">
-        <p className="text-xs text-slate-500 line-clamp-1">{transaction.remark}</p>
+
+    <div className="border-t border-slate-50 pt-3 mt-1">
+      <div className="grid grid-cols-3 gap-2 text-right text-xs mb-3">
+        <div>
+          <p className="font-bold uppercase tracking-wide text-slate-400">Old Balance</p>
+          <p className="font-mono font-bold text-slate-600">{formatNumber(transaction.old_balance)}</p>
+        </div>
+        <div>
+          <p className="font-bold uppercase tracking-wide text-slate-400">New Balance</p>
+          <p className={`font-mono font-bold ${Number(transaction.new_balance) >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>{formatNumber(transaction.new_balance)}</p>
+        </div>
+        <div>
+          <p className="font-bold uppercase tracking-wide text-slate-400">Amount</p>
+          <p className={`font-mono font-bold ${transaction.entry_type === 'debit' ? 'text-rose-600' : 'text-emerald-600'}`}>{formatNumber(transaction.amount)}</p>
+        </div>
       </div>
-    )}
+      <div className="flex items-center justify-between">
+        <div>
+          {transaction.employee ? (
+            <p className="text-[10px] text-slate-400 flex items-center gap-1">
+              <FaUser size={8} /> {transaction.employee.name}
+            </p>
+          ) : transaction.remark ? (
+            <p className="text-xs text-slate-500 line-clamp-1">{transaction.remark}</p>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => onView(transaction)} className="w-7 h-7 rounded-lg bg-slate-50 hover:bg-violet-50 hover:text-violet-600 text-slate-400 flex items-center justify-center transition-all">
+            <FaEye size={12} />
+          </button>
+        </div>
+      </div>
+    </div>
   </motion.div>
 );
 
@@ -458,8 +486,8 @@ const MyLedger = () => {
             <span className="font-bold text-slate-800">{tx.remark}</span>
           </div>
         );
-        const name = tx.created_by?.name || '—';
-        const email = tx.created_by?.email || '';
+        const name = tx.employee?.name || tx.created_by?.name || '—';
+        const email = tx.employee?.email || tx.created_by?.email || '';
         return (
           <div className="flex flex-col">
             <span className="font-bold text-slate-800">{name}</span>
@@ -474,43 +502,50 @@ const MyLedger = () => {
       render: (tx) => {
         if (tx.isTotalRow) return null;
         if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
+        return <TransactionTypeBadge type={tx.transaction_type} compact />;
+      },
+    },
+    {
+      key: 'transaction_id',
+      label: 'Voucher No',
+      render: (tx) => {
+        if (tx.isTotalRow) return null;
+        if (tx.isOpeningBalance) return <span className="text-slate-400 font-semibold">—</span>;
+        return <span className="font-mono text-xs text-slate-500">{tx.transaction_id || `#${tx.id}`}</span>;
+      },
+    },
+    {
+      key: 'old_balance',
+      label: 'Old Balance',
+      render: (tx) => {
+        if (tx.isTotalRow) return <span className="text-slate-400 font-semibold">—</span>;
+        return <span className="font-bold text-slate-600 font-mono">{formatNumber(tx.old_balance)}</span>;
+      },
+      className: 'text-right',
+    },
+    {
+      key: 'new_balance',
+      label: 'New Balance',
+      render: (tx) => {
+        if (tx.isTotalRow) return <span className={`font-mono font-bold text-sm ${tx.balance >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>{formatNumber(tx.balance)}</span>;
         return (
-          <div className="flex flex-col gap-1">
-            <TransactionTypeBadge type={tx.transaction_type} compact />
-            <EntryTypeBadge entryType={tx.entry_type} compact />
-          </div>
+          <span className={`font-mono font-bold ${tx.new_balance >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
+            {formatNumber(tx.new_balance)}
+          </span>
         );
       },
-    },
-    {
-      key: 'debit',
-      label: 'Debit',
-      render: (tx) => {
-        if (tx.isTotalRow) return <span className="font-bold text-blue-600 font-mono text-sm">{formatNumber(tx.debit)}</span>;
-        return tx.debit > 0
-          ? <span className="font-bold text-blue-600 font-mono">{formatNumber(tx.debit)}</span>
-          : <span className="text-slate-400 font-mono">0.00</span>;
-      },
       className: 'text-right',
     },
     {
-      key: 'credit',
-      label: 'Credit',
+      key: 'amount',
+      label: 'Amount',
       render: (tx) => {
-        if (tx.isTotalRow) return <span className="font-bold text-amber-600 font-mono text-sm">{formatNumber(tx.credit)}</span>;
-        return tx.credit > 0
-          ? <span className="font-bold text-amber-600 font-mono">{formatNumber(tx.credit)}</span>
-          : <span className="text-slate-400 font-mono">0.00</span>;
-      },
-      className: 'text-right',
-    },
-    {
-      key: 'balance',
-      label: 'Balance',
-      render: (tx) => {
-        const cls = `font-mono font-bold ${tx.balance >= 0 ? 'text-blue-600' : 'text-rose-600'}`;
-        if (tx.isTotalRow) return <span className={`text-sm ${cls}`}>{formatNumber(tx.balance)}</span>;
-        return <span className={cls}>{formatNumber(tx.balance)}</span>;
+        if (tx.isTotalRow) return <span className="font-bold text-slate-800 font-mono text-sm">{formatNumber((tx.debit || 0) + (tx.credit || 0))}</span>;
+        return (
+          <span className={`font-mono font-bold ${tx.entry_type === 'debit' ? 'text-rose-600' : 'text-emerald-600'}`}>
+            {formatNumber(tx.amount)}
+          </span>
+        );
       },
       className: 'text-right',
     },
@@ -529,6 +564,8 @@ const MyLedger = () => {
         transaction_type: 'opening_balance',
         entry_type: openingBalance.debit > 0 ? 'debit' : 'credit',
         amount: Math.abs(openingBalance.balance || 0),
+        old_balance: 0,
+        new_balance: openingBalance.balance || 0,
         debit:  openingBalance.debit  || 0,
         credit: openingBalance.credit || 0,
         balance: openingBalance.balance || 0,
