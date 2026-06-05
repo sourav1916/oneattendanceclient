@@ -11,6 +11,7 @@ import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import Modal from '../components/Modal';
 import { ManagementHub, ManagementTable, RefreshButton } from '../components/common';
+import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 
@@ -255,6 +256,78 @@ const MobileTransactionCard = ({ transaction, onView }) => (
 
 // ─── View Modal ───────────────────────────────────────────────────────────────
 
+const NarrowLedgerTable = ({ rows, onView }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 18 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="overflow-hidden rounded-xl bg-white border border-violet-100 shadow-violet-100/50 shadow-sm w-full"
+  >
+    <div className="grid grid-cols-[minmax(0,1.15fr)_repeat(3,minmax(0,0.82fr))_2rem] bg-gradient-to-r from-gray-100 to-gray-200 px-2 py-2 text-center text-[9px] font-bold uppercase leading-tight text-gray-600">
+      <span>Particulars</span>
+      <span>Old</span>
+      <span>New</span>
+      <span>Amount</span>
+      <span />
+    </div>
+    <div className="divide-y divide-gray-100">
+      {rows.map((tx) => {
+        const clickable = !tx.isOpeningBalance && !tx.isTotalRow;
+        const name = tx.remark || tx.employee?.name || tx.created_by?.name || '—';
+        const displayedBalance = tx.isTotalRow ? tx.balance : tx.new_balance;
+        const displayedAmount = tx.isTotalRow ? (tx.debit || 0) + (tx.credit || 0) : tx.amount;
+
+        return (
+          <div
+            key={tx.id}
+            onClick={clickable ? () => onView(tx) : undefined}
+            className={`px-2 py-2 ${clickable ? 'cursor-pointer hover:bg-slate-50' : ''}`}
+          >
+            <div className="grid grid-cols-[minmax(0,1.15fr)_repeat(3,minmax(0,0.82fr))_2rem] items-center gap-1 text-center text-[10px] leading-tight text-gray-700">
+              <div className="flex min-w-0 flex-col items-center gap-0 text-center">
+                {tx.isTotalRow ? (
+                  <span className="text-[9px] font-black text-slate-800">Total</span>
+                ) : tx.isOpeningBalance ? (
+                  <span className="text-[9px] font-bold text-slate-800">Opening Balance</span>
+                ) : (
+                  <>
+                    <span className="text-[8px] font-medium text-slate-400">{formatDate(tx.transaction_date)}</span>
+                    <span className="max-w-full truncate text-[9px] font-bold text-slate-800">{name}</span>
+                    <span className="mt-0.5 origin-top scale-75"><TransactionTypeBadge type={tx.transaction_type} compact /></span>
+                  </>
+                )}
+              </div>
+              <span className="break-all font-mono font-bold text-slate-600">
+                {tx.isTotalRow ? '—' : formatNumber(tx.old_balance)}
+              </span>
+              <span className={`break-all font-mono font-bold ${Number(displayedBalance) >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
+                {formatNumber(displayedBalance)}
+              </span>
+              <span className={`break-all font-mono font-bold ${tx.entry_type === 'debit' ? 'text-rose-600' : 'text-emerald-600'}`}>
+                {formatNumber(displayedAmount)}
+              </span>
+              <div className="flex justify-end">
+                {clickable ? (
+                <ActionMenu
+                  menuId={`narrow-my-ledger-${tx.id}`}
+                  actions={[
+                    {
+                      label: 'View Details',
+                      icon: <FaEye size={13} />,
+                      onClick: () => onView(tx),
+                      className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50',
+                    },
+                  ]}
+                />
+                ) : null}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </motion.div>
+);
+
 const ViewModal = ({ open, onClose, transaction: tx }) => {
   if (!tx) return null;
   return (
@@ -465,7 +538,8 @@ const MyLedger = () => {
 
   // ── Window width for responsive columns ────────────────────────────────────
   const windowWidth = useWindowWidth();
-  const isCompactView = windowWidth <= 1423 && windowWidth >= 662;
+  const isCompactView = windowWidth <= 1423 && windowWidth >= 480;
+  const isNarrowLedgerView = windowWidth < 662 && windowWidth >= 480;
 
   // ── Table Columns ──────────────────────────────────────────────────────────
 
@@ -736,6 +810,11 @@ const MyLedger = () => {
               {searchTerm ? 'No matches for your search' : 'No transactions recorded yet'}
             </p>
           </motion.div>
+        ) : viewMode === 'table' && isNarrowLedgerView ? (
+          <NarrowLedgerTable
+            rows={tableRows}
+            onView={(row) => setViewModal({ open: true, transaction: row })}
+          />
         ) : viewMode === 'table' ? (
           <ManagementTable
             rows={tableRows}

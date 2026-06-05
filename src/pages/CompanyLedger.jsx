@@ -12,6 +12,7 @@ import apiCall from '../utils/api';
 import Pagination, { usePagination } from '../components/PaginationComponent';
 import Modal from '../components/Modal';
 import { ManagementButton, ManagementHub, ManagementTable, RefreshButton } from '../components/common';
+import ActionMenu from '../components/ActionMenu';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
 import SelectField from '../components/SelectField';
@@ -305,6 +306,92 @@ const MobileTransactionCard = ({ transaction, onView, onEdit, onDelete }) => (
 );
 
 // ─── Field Components ─────────────────────────────────────────────────────────
+
+const NarrowLedgerTable = ({ rows, onView, onEdit, onDelete }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 18 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="overflow-hidden rounded-xl bg-white border border-violet-100 shadow-violet-100/50 shadow-sm w-full"
+  >
+    <div className="grid grid-cols-[minmax(0,1.15fr)_repeat(3,minmax(0,0.82fr))_2rem] bg-gradient-to-r from-gray-100 to-gray-200 px-2 py-2 text-center text-[9px] font-bold uppercase leading-tight text-gray-600">
+      <span>Particulars</span>
+      <span>Old</span>
+      <span>New</span>
+      <span>Amount</span>
+      <span />
+    </div>
+    <div className="divide-y divide-gray-100">
+      {rows.map((tx) => {
+        const clickable = !tx.isOpeningBalance && !tx.isTotalRow;
+        const remark = tx.remark || tx.remarks || '';
+        const createdBy = tx.created_by || tx.create_by || {};
+        const name = remark || tx.employee?.name || createdBy?.name || '—';
+        const displayedBalance = tx.isTotalRow ? tx.balance : tx.new_balance;
+        const displayedAmount = tx.isTotalRow ? (tx.debit || 0) + (tx.credit || 0) : tx.amount;
+
+        return (
+          <div
+            key={tx.id}
+            onClick={clickable ? () => onView(tx) : undefined}
+            className={`px-2 py-2 ${clickable ? 'cursor-pointer hover:bg-slate-50' : ''}`}
+          >
+            <div className="grid grid-cols-[minmax(0,1.15fr)_repeat(3,minmax(0,0.82fr))_2rem] items-center gap-1 text-center text-[10px] leading-tight text-gray-700">
+              <div className="flex min-w-0 flex-col items-center gap-0 text-center">
+                {tx.isTotalRow ? (
+                  <span className="text-[9px] font-black text-slate-800">Total</span>
+                ) : tx.isOpeningBalance ? (
+                  <span className="text-[9px] font-bold text-slate-800">Opening Balance</span>
+                ) : (
+                  <>
+                    <span className="text-[8px] font-medium text-slate-400">{formatDate(tx.transaction_date)}</span>
+                    <span className="max-w-full truncate text-[9px] font-bold text-slate-800">{name}</span>
+                    <span className="mt-0.5 origin-top scale-75"><TransactionTypeBadge type={tx.transaction_type} compact /></span>
+                  </>
+                )}
+              </div>
+              <span className="break-all font-mono font-bold text-slate-600">
+                {tx.isTotalRow ? '—' : formatNumber(tx.old_balance)}
+              </span>
+              <span className={`break-all font-mono font-bold ${Number(displayedBalance) >= 0 ? 'text-blue-600' : 'text-rose-600'}`}>
+                {formatNumber(displayedBalance)}
+              </span>
+              <span className={`break-all font-mono font-bold ${tx.entry_type === 'debit' ? 'text-rose-600' : 'text-emerald-600'}`}>
+                {formatNumber(displayedAmount)}
+              </span>
+              <div className="flex justify-end">
+                {clickable ? (
+                <ActionMenu
+                  menuId={`narrow-company-ledger-${tx.id}`}
+                  actions={[
+                    {
+                      label: 'View Details',
+                      icon: <FaEye size={13} />,
+                      onClick: () => onView(tx),
+                      className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50',
+                    },
+                    {
+                      label: 'Edit',
+                      icon: <FaEdit size={13} />,
+                      onClick: () => onEdit(tx),
+                      className: 'text-gray-700 hover:text-blue-600 hover:bg-blue-50',
+                    },
+                    {
+                      label: 'Delete',
+                      icon: <FaTrash size={13} />,
+                      onClick: () => onDelete(tx),
+                      className: 'text-gray-700 hover:text-rose-600 hover:bg-rose-50',
+                    },
+                  ]}
+                />
+                ) : null}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </motion.div>
+);
 
 const FormField = ({ label, children, required }) => (
   <div className="flex flex-col gap-1.5">
@@ -1216,7 +1303,8 @@ const CompanyLedger = ({ employeeId }) => {
 
   // ── Window width for responsive columns ────────────────────────────────────
   const windowWidth = useWindowWidth();
-  const isCompactView = windowWidth <= 1423 && windowWidth >= 662;
+  const isCompactView = windowWidth <= 1423 && windowWidth >= 480;
+  const isNarrowLedgerView = windowWidth < 662 && windowWidth >= 480;
 
   const columns = useMemo(() => {
     // ── Shared financial columns (always shown) ──
@@ -1227,7 +1315,7 @@ const CompanyLedger = ({ employeeId }) => {
         if (tx.isTotalRow) return <span className="text-slate-400 font-semibold">—</span>;
         return <span className="font-bold text-slate-600 font-mono">{formatNumber(tx.old_balance)}</span>;
       },
-      className: 'text-center',
+      className: isNarrowLedgerView ? 'text-center text-[10px] leading-tight' : 'text-center',
     };
     const newBalanceCol = {
       key: 'new_balance',
@@ -1240,7 +1328,7 @@ const CompanyLedger = ({ employeeId }) => {
           </span>
         );
       },
-      className: 'text-center',
+      className: isNarrowLedgerView ? 'text-center text-[10px] leading-tight' : 'text-center',
     };
     const amountCol = {
       key: 'amount',
@@ -1253,7 +1341,7 @@ const CompanyLedger = ({ employeeId }) => {
           </span>
         );
       },
-      className: 'text-center',
+      className: isNarrowLedgerView ? 'text-center text-[10px] leading-tight' : 'text-center',
     };
 
     // ── Compact view (662px – 1423px): merge Date+Particulars+Type into one column ──
@@ -1274,9 +1362,9 @@ const CompanyLedger = ({ employeeId }) => {
               name = tx.employee?.name || createdBy?.name || '—';
             }
             return (
-              <div className="flex flex-col items-center gap-0.5 text-center min-w-0">
-                <span className="text-[10px] text-slate-400 font-medium leading-tight">{formatDate(tx.transaction_date)}</span>
-                <span className="font-bold text-slate-800 text-xs leading-tight truncate">{name}</span>
+              <div className={`flex flex-col items-center text-center min-w-0 ${isNarrowLedgerView ? 'gap-0' : 'gap-0.5'}`}>
+                <span className={`${isNarrowLedgerView ? 'text-[9px]' : 'text-[10px]'} text-slate-400 font-medium leading-tight`}>{formatDate(tx.transaction_date)}</span>
+                <span className={`${isNarrowLedgerView ? 'text-[10px]' : 'text-xs'} font-bold text-slate-800 leading-tight truncate max-w-full`}>{name}</span>
                 <div className="mt-0.5"><TransactionTypeBadge type={tx.transaction_type} compact /></div>
               </div>
             );
@@ -1336,7 +1424,7 @@ const CompanyLedger = ({ employeeId }) => {
       newBalanceCol,
       amountCol,
     ];
-  }, [pagination.page, pagination.limit, isCompactView]);
+  }, [pagination.page, pagination.limit, isCompactView, isNarrowLedgerView]);
 
   const tableRows = useMemo(() => {
     let rows = [];
@@ -1528,6 +1616,13 @@ const CompanyLedger = ({ employeeId }) => {
               <FaPlus size={12} /> Add First Transaction
             </button>
           </motion.div>
+        ) : viewMode === 'table' && isNarrowLedgerView ? (
+          <NarrowLedgerTable
+            rows={tableRows}
+            onView={(row) => setViewModal({ open: true, transaction: row })}
+            onEdit={(row) => setEditModal({ open: true, transaction: row })}
+            onDelete={(row) => setDeleteModal({ open: true, transaction: row })}
+          />
         ) : viewMode === 'table' ? (
           <>
             <ManagementTable
