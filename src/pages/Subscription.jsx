@@ -1,562 +1,577 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FaUsers,
-  FaCheckCircle,
-  FaArrowRight,
-  FaSpinner,
-  FaExclamationTriangle,
-  FaRocket,
-  FaShieldAlt,
-  FaClock,
-  FaCalculator,
-  FaCreditCard
+  FaUsers, FaCheckCircle, FaArrowRight, FaSpinner,
+  FaExclamationTriangle, FaRocket, FaShieldAlt, FaClock,
+  FaCalculator, FaCreditCard, FaBuilding, FaCalendarAlt,
+  FaCalendarCheck, FaInfoCircle, FaLock,
 } from 'react-icons/fa';
 import apiCall from '../utils/api';
 import { toast } from 'react-toastify';
-import { useNavigate } from "react-router-dom";
-import { initiateLayerPayment } from "../utils/layerPayment";
-import { loadLayerScript } from "../utils/loadLayer";
+import { useNavigate } from 'react-router-dom';
+import { initiateLayerPayment } from '../utils/layerPayment';
+import { loadLayerScript } from '../utils/loadLayer';
 
-
+// ─── Constants ───────────────────────────────────────────────
 const DURATION_OPTIONS = [
-  { key: 'monthly_price', label: 'Monthly', suffix: '/mo', discount: 0 },
-  { key: 'quarterly_price', label: 'Quarterly', suffix: '/qtr', discount: 10 },
-  { key: 'half_yearly_price', label: 'Half-Yearly', suffix: '/half-yr', discount: 15 },
-  { key: 'yearly_price', label: 'Yearly', suffix: '/yr', discount: 20 },
+  { key: 'monthly_price',     label: 'Monthly',     suffix: '/mo',      billedLabel: 'billed monthly',           discount: 0  },
+  { key: 'quarterly_price',   label: 'Quarterly',   suffix: '/qtr',     billedLabel: 'billed quarterly',         discount: 10 },
+  { key: 'half_yearly_price', label: 'Half-yearly', suffix: '/6 mo',    billedLabel: 'billed every 6 months',    discount: 15 },
+  { key: 'yearly_price',      label: 'Yearly',      suffix: '/yr',      billedLabel: 'billed yearly',            discount: 20 },
 ];
 
+const PERIOD_MAP = {
+  monthly_price:     'monthly',
+  quarterly_price:   'quarterly',
+  half_yearly_price: 'half_yearly',
+  yearly_price:      'yearly',
+};
 
-
-// Helper: Format currency
-const formatCurrency = (value) => {
+// ─── Helpers ─────────────────────────────────────────────────
+const fmt = (value) => {
   if (!value && value !== 0) return '—';
   const num = parseFloat(value);
   if (isNaN(num)) return '—';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency', currency: 'INR',
+    minimumFractionDigits: 0, maximumFractionDigits: 0,
   }).format(num);
 };
 
-// Helper: Calculate price per user
-const calculatePricePerUser = (totalPrice, employeeCount) => {
-  if (!totalPrice || !employeeCount || employeeCount === 0) return null;
-  return totalPrice / employeeCount;
+const fmtDate = (dateStr) => {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('en-IN', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  });
 };
 
+// ─── Sub-components ──────────────────────────────────────────
+
+/** Single stat cell used in the top stats strip */
+const StatCell = ({ label, value, sub, last }) => (
+  <div className={`px-5 py-4 ${!last ? 'border-r border-gray-100' : ''}`}>
+    <p className="text-[11px] uppercase tracking-widest text-gray-400 mb-1">{label}</p>
+    <p className="text-[22px] font-semibold text-gray-800 leading-none">{value ?? '—'}</p>
+    {sub && <p className="text-[11px] text-gray-400 mt-1">{sub}</p>}
+  </div>
+);
+
+/** Compact subscription plan card (current or upcoming) */
+const PlanCard = ({ plan, variant }) => {
+  const isCurrent = variant === 'current';
+  const progressPct = isCurrent && plan.days_remaining != null
+    ? Math.max(0, Math.min(100, Math.round(((30 - plan.days_remaining) / 30) * 100)))
+    : 0;
+
+  return (
+    <div className={`rounded-xl p-5 bg-white ${
+      isCurrent
+        ? 'border-2 border-blue-500'
+        : 'border border-gray-200'
+    }`}>
+      {/* Header row */}
+      <div className="flex items-center justify-between mb-3">
+        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
+          isCurrent
+            ? 'bg-blue-50 text-blue-700'
+            : 'bg-amber-50 text-amber-700'
+        }`}>
+          {isCurrent ? 'Current' : 'Upcoming'}
+        </span>
+        <span className="text-[11px] text-gray-400 capitalize bg-gray-50 px-2.5 py-1 rounded-full">
+          {plan.subscription_type} billing
+        </span>
+      </div>
+
+      <p className="text-sm font-semibold text-gray-800 mb-3">{plan.package_name}</p>
+
+      {/* Detail rows */}
+      <div className="space-y-2">
+        {[
+          { icon: <FaUsers className="text-[11px]" />, label: 'Employees', val: `${plan.employee_limit} limit` },
+          { icon: <FaCalendarAlt className="text-[11px]" />, label: isCurrent ? 'Started' : 'Starts', val: fmtDate(plan.starts_at) },
+          { icon: <FaCalendarCheck className="text-[11px]" />, label: 'Expires', val: fmtDate(plan.expires_at) },
+          { icon: <FaCreditCard className="text-[11px]" />, label: 'Amount paid', val: fmt(plan.amount_paid) },
+        ].map(({ icon, label, val }) => (
+          <div key={label} className="flex justify-between items-center text-[12px]">
+            <span className={`flex items-center gap-1.5 ${isCurrent ? 'text-blue-400' : 'text-amber-400'}`}>
+              {icon}
+              <span className="text-gray-500">{label}</span>
+            </span>
+            <span className="font-medium text-gray-800">{val}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Progress bar */}
+      <div className="mt-4">
+        <div className="flex justify-between text-[11px] text-gray-400 mb-1.5">
+          <span>{isCurrent ? 'Period progress' : 'Starts in'}</span>
+          <span>{isCurrent ? `${plan.days_remaining} days left` : `${plan.until_start} days`}</span>
+        </div>
+        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-700 ${isCurrent ? 'bg-blue-500' : 'bg-amber-400'}`}
+            style={{ width: isCurrent ? `${progressPct}%` : '0%' }}
+          />
+        </div>
+      </div>
+
+      <p className="text-[10px] text-gray-300 font-mono mt-3 truncate"># {plan.payment_reference}</p>
+    </div>
+  );
+};
+
+/** Top section showing company info + current/upcoming subscriptions */
+const SubscriptionDetailsCard = ({ details, detailsLoading, detailsError }) => {
+  if (detailsLoading) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5 flex items-center gap-3 text-gray-400 text-sm">
+        <FaSpinner className="animate-spin text-gray-400" />
+        Loading subscription details…
+      </div>
+    );
+  }
+  if (detailsError || !details) return null;
+
+  const { company, subscriptions } = details;
+  const current  = subscriptions?.find(s => s.type === 'current');
+  const upcoming = subscriptions?.find(s => s.type === 'upcoming');
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-5 shadow-sm"
+    >
+      {/* Company header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          {company.logo_url ? (
+            <img src={company.logo_url} alt={company.name} className="w-9 h-9 rounded-lg object-cover border border-gray-200" />
+          ) : (
+            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500">
+              <FaBuilding className="text-sm" />
+            </div>
+          )}
+          <div>
+            <p className="text-sm font-semibold text-gray-800 leading-tight">{company.name}</p>
+            <p className="text-[11px] text-gray-400">{company.legal_name}</p>
+          </div>
+        </div>
+        {company.active_subscription && (
+          <span className="flex items-center gap-1.5 bg-green-50 text-green-700 text-[11px] font-semibold px-2.5 py-1 rounded-full border border-green-100">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+            Active
+          </span>
+        )}
+      </div>
+
+      {/* Stats strip */}
+      <div className={`grid border-b border-gray-100 ${
+        current && upcoming ? 'grid-cols-4' : 'grid-cols-3'
+      }`}>
+        <StatCell label="Employees"    value={company.employee_count}       sub={`of ${current?.employee_limit ?? '—'} in plan`} />
+        <StatCell label="Seats free"   value={company.employee_available}   sub="remaining" />
+        <StatCell label="Days left"    value={current?.days_remaining ?? '—'} sub="in current plan" />
+        <StatCell label="Queued"       value={company.queued_subscriptions}  sub="plans" last />
+      </div>
+
+      {/* Plan cards */}
+      <div className="p-5">
+        {(current || upcoming) && (
+          <div className={`grid gap-4 ${current && upcoming ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {current  && <PlanCard plan={current}  variant="current"  />}
+            {upcoming && <PlanCard plan={upcoming} variant="upcoming" />}
+          </div>
+        )}
+
+        {/* Queued notice */}
+        {company.queued_subscriptions > 0 && upcoming && (
+          <div className="mt-4 flex items-start gap-2.5 text-[12px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-4 py-3">
+            <FaInfoCircle className="mt-0.5 flex-shrink-0 text-amber-500" />
+            <span>
+              <strong>{upcoming.package_name}</strong> activates automatically when your current plan expires.
+            </span>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+/** Duration tab button */
+const DurButton = ({ duration, isSelected, price, employees, onClick }) => {
+  const priceNum = price != null ? parseFloat(price) : null;
+
+  return (
+    <motion.div
+      whileHover={{ y: -2 }}
+      onClick={onClick}
+      className={`relative flex-1 min-w-[110px] cursor-pointer rounded-xl p-4 text-center transition-all duration-200 select-none ${
+        isSelected
+          ? 'bg-white border-2 border-blue-500 shadow-sm'
+          : 'bg-white border border-gray-200 hover:border-gray-300'
+      }`}
+    >
+      {duration.discount > 0 && (
+        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-semibold bg-green-500 text-white px-2 py-0.5 rounded-full whitespace-nowrap">
+          Save {duration.discount}%
+        </span>
+      )}
+      <p className={`text-[12px] font-semibold mb-1 ${isSelected ? 'text-blue-600' : 'text-gray-500'}`}>
+        {duration.label}
+      </p>
+      <p className="text-[17px] font-semibold text-gray-800">
+        {priceNum != null && !isNaN(priceNum) ? fmt(priceNum) : '—'}
+      </p>
+      {priceNum != null && !isNaN(priceNum) && employees > 0 && (
+        <p className="text-[11px] text-gray-400 mt-0.5">
+          {fmt(priceNum / employees)}{duration.suffix}
+        </p>
+      )}
+    </motion.div>
+  );
+};
+
+// ─── Main Page ────────────────────────────────────────────────
 const SubscriptionPage = () => {
   const navigate = useNavigate();
 
-  // State
-  const [packages, setPackages] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [employees, setEmployees] = useState(25);
-  const [selectedDuration, setSelectedDuration] = useState(DURATION_OPTIONS[0]);
+  const [packages,        setPackages]        = useState([]);
+  const [loading,         setLoading]         = useState(true);
+  const [error,           setError]           = useState(null);
+  const [employees,       setEmployees]       = useState(25);
+  const [selectedDur,     setSelectedDur]     = useState(DURATION_OPTIONS[0]);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
 
-  // Guard against double-invocation in React Strict Mode
-  const hasFetched = useRef(false);
+  const [details,        setDetails]        = useState(null);
+  const [detailsLoading, setDetailsLoading] = useState(true);
+  const [detailsError,   setDetailsError]   = useState(null);
 
+  const hasFetched        = useRef(false);
+  const hasFetchedDetails = useRef(false);
+
+  // Load payment gateway script
   useEffect(() => {
     loadLayerScript().catch((err) => {
       console.error(err);
-      toast.error("Unable to load payment gateway");
+      toast.error('Unable to load payment gateway');
     });
   }, []);
 
-  // Fetch packages from API
+  // Fetch subscription details
+  useEffect(() => {
+    if (hasFetchedDetails.current) return;
+    hasFetchedDetails.current = true;
+
+    (async () => {
+      try {
+        setDetailsLoading(true);
+        const company  = JSON.parse(localStorage.getItem('company'));
+        const response = await apiCall('/subscriptions/details', 'GET', null, company?.id);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = await response.json();
+        if (result.success && result.data) setDetails(result.data);
+        else throw new Error(result.message || 'Invalid response');
+      } catch (err) {
+        console.error('Details fetch error:', err);
+        setDetailsError(err.message);
+      } finally {
+        setDetailsLoading(false);
+      }
+    })();
+  }, []);
+
+  // Fetch packages
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
 
-    const fetchPackages = async () => {
+    (async () => {
       try {
         setLoading(true);
-        setError(null);
         const response = await apiCall('/subscriptions/packages', 'GET');
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         const result = await response.json();
-
-        if (result.success && Array.isArray(result.data)) {
-          setPackages(result.data);
-        } else {
-          throw new Error(result.message || 'Invalid API response');
-        }
+        if (result.success && Array.isArray(result.data)) setPackages(result.data);
+        else throw new Error(result.message || 'Invalid API response');
       } catch (err) {
         console.error('API Error:', err);
         setError(err.message);
-        // Fallback to empty array
-        setPackages([]);
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchPackages();
+    })();
   }, []);
 
-  // Find package matching employee count
-  const findMatchingPackage = () => {
-    if (!packages.length) return null;
+  // Derived values
+  const currentPackage = packages.find(
+    (pkg) => employees >= pkg.min_employee_count && employees <= pkg.max_employee_count
+  ) ?? null;
 
-    return packages.find(pkg =>
-      employees >= pkg.min_employee_count &&
-      employees <= pkg.max_employee_count
-    );
-  };
+  const currentPrice = currentPackage
+    ? parseFloat(currentPackage[selectedDur.key]) || null
+    : null;
 
-  const currentPackage = findMatchingPackage();
+  const pricePerUser = currentPrice && employees > 0
+    ? currentPrice / employees
+    : null;
 
-  // Calculate current price based on selected duration
-  const getCurrentPrice = () => {
-    if (!currentPackage) return null;
-    const priceValue = currentPackage[selectedDuration.key];
-    return priceValue ? parseFloat(priceValue) : null;
-  };
+  const maxEmployees = packages.length ? Math.max(...packages.map(p => p.max_employee_count)) : 200;
+  const minEmployees = packages.length ? Math.min(...packages.map(p => p.min_employee_count)) : 1;
 
-  const currentPrice = getCurrentPrice();
-  const pricePerUser = calculatePricePerUser(currentPrice, employees);
-
-  // Get max employee range from packages
-  const maxEmployees = packages.length > 0
-    ? Math.max(...packages.map(p => p.max_employee_count))
-    : 200;
-
-  const minEmployees = packages.length > 0
-    ? Math.min(...packages.map(p => p.min_employee_count))
-    : 1;
-
-  // Handle slider change
-  const handleEmployeesChange = (e) => {
-    setEmployees(parseInt(e.target.value));
-  };
-
-  // Handle duration change
-  const handleDurationChange = (duration) => {
-    setSelectedDuration(duration);
-  };
-
-  const handlePurchase = async (durationKey) => {
-    if (!currentPackage) return;
-
-    const periodMap = {
-      monthly_price: "monthly",
-      quarterly_price: "quarterly",
-      half_yearly_price: "half_yearly",
-      yearly_price: "yearly",
-    };
-
+  const handlePurchase = async () => {
+    if (!currentPackage || purchaseLoading) return;
     try {
       setPurchaseLoading(true);
-
-      const storedCompany = localStorage.getItem("company");
-      const company = storedCompany
-        ? JSON.parse(storedCompany)
-        : null;
-
-      const payload = {
-        package_id: currentPackage.id,
-        package_period: periodMap[durationKey],
-      };
-
+      const company  = JSON.parse(localStorage.getItem('company') || 'null');
       const response = await apiCall(
-        "/subscriptions/purchase-subscription",
-        "POST",
-        payload,
-        company?.id
+        '/subscriptions/purchase-subscription', 'POST',
+        { package_id: currentPackage.id, package_period: PERIOD_MAP[selectedDur.key] },
+        company?.id,
       );
-
       const result = await response.json();
+      if (!result.success) throw new Error(result.message || 'Purchase failed');
 
-      if (!result.success) {
-        throw new Error(
-          result.message || "Purchase failed"
-        );
-      }
-
-      // --------------------------------
-      // CASE 1
-      // --------------------------------
-
-      if (
-        result.message ===
-        "Subscription purchased successfully."
-      ) {
+      if (result.message === 'Subscription purchased successfully.') {
         toast.success(result.message);
-
-        setTimeout(() => {
-          navigate("/home");
-        }, 1500);
-
+        setTimeout(() => navigate('/home'), 1500);
         return;
       }
-
-      // --------------------------------
-      // CASE 2
-      // --------------------------------
-
       if (result.data?.payment_token) {
-        toast.info("Redirecting to payment gateway...");
-
-        await initiateLayerPayment(
-          result.data.payment_token,
-          navigate
-        );
-
+        toast.info('Redirecting to payment gateway…');
+        await initiateLayerPayment(result.data.payment_token, navigate);
         return;
       }
-
       toast.success(result.message);
     } catch (err) {
       console.error(err);
-
-      toast.error(
-        err.message || "Something went wrong"
-      );
+      toast.error(err.message || 'Something went wrong');
     } finally {
       setPurchaseLoading(false);
     }
   };
 
-  // Animation variants
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
-  };
-
-  const staggerContainer = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">Subscription Plans</h1>
-              <p className="text-sm text-gray-500 mt-1">Choose the perfect plan for your team</p>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <FaShieldAlt className="text-green-500" />
-              <span>Secure payment</span>
-            </div>
+    <div className="min-h-screen bg-gray-50">
+
+      {/* ── Sticky top bar ── */}
+      <header className="sticky top-0 z-20 bg-white border-b border-gray-200">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-[16px] font-semibold text-gray-800">Subscription plans</h1>
+            <p className="text-[12px] text-gray-400 mt-0.5">Choose the perfect plan for your team</p>
+          </div>
+          <div className="flex items-center gap-1.5 text-[12px] text-gray-400">
+            <FaShieldAlt className="text-green-500" />
+            Secure payment
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Loading State */}
+      <div className="w-full mx-auto px-4 sm:px-6 py-6">
+
+        {/* ── Subscription details ── */}
+        <SubscriptionDetailsCard
+          details={details}
+          detailsLoading={detailsLoading}
+          detailsError={detailsError}
+        />
+
+        {/* ── Loading ── */}
         {loading && (
-          <div className="flex flex-col items-center justify-center py-20">
-            <FaSpinner className="animate-spin text-4xl text-indigo-500 mb-4" />
-            <p className="text-gray-500">Loading subscription packages...</p>
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
+            <FaSpinner className="animate-spin text-3xl text-blue-400" />
+            <p className="text-sm">Loading subscription packages…</p>
           </div>
         )}
 
-        {/* Error State */}
+        {/* ── Error ── */}
         {error && !loading && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-            <FaExclamationTriangle className="text-4xl text-red-500 mx-auto mb-3" />
-            <p className="text-red-600 font-medium">Failed to load packages</p>
-            <p className="text-sm text-red-400 mt-1">{error}</p>
+            <FaExclamationTriangle className="text-3xl text-red-400 mx-auto mb-3" />
+            <p className="text-sm font-medium text-red-600 mb-1">Failed to load packages</p>
+            <p className="text-xs text-red-400 mb-4">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600"
+              className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors"
             >
               Retry
             </button>
           </div>
         )}
 
-        {/* Main Content */}
+        {/* ── Main content ── */}
         {!loading && !error && (
-          <>
-            {/* Duration Cards Row */}
-            <motion.div
-              variants={staggerContainer}
-              initial="hidden"
-              animate="visible"
-              className="flex justify-center items-center flex-wrap gap-6 mb-10"
-            >
-              {DURATION_OPTIONS.map((duration) => {
-                const priceValue = currentPackage ? parseFloat(currentPackage[duration.key]) : null;
-                const isSelected = selectedDuration.key === duration.key;
-
-                return (
-                  <motion.div
-                    key={duration.key}
-                    variants={fadeInUp}
-                    whileHover={{ y: -8, transition: { duration: 0.2 } }}
-                    onClick={() => handleDurationChange(duration)}
-                    className={`relative rounded-2xl w-full max-w-[250px] min-w-[200px] cursor-pointer transition-all duration-300 p-6 ${isSelected
-                      ? 'bg-white shadow-xl border-2 border-indigo-500 scale-105 md:scale-105 z-10'
-                      : 'bg-white shadow-md border border-gray-200 hover:shadow-lg'
-                      }`}
-                  >
-                    {duration.discount > 0 && (
-                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                        <span className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md whitespace-nowrap">
-                          SAVE {duration.discount}%
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="text-center">
-                      <h3 className={`text-xl font-bold ${isSelected ? 'text-indigo-600' : 'text-gray-800'}`}>
-                        {duration.label}
-                      </h3>
-                      <div className="mt-4 mb-2 flex justify-center items-baseline">
-                        <span className="text-4xl font-extrabold text-gray-900">
-                          {priceValue !== null ? formatCurrency(priceValue) : '—'}
-                        </span>
-                      </div>
-
-                      {priceValue !== null && !isNaN(priceValue) && employees > 0 ? (
-                        <p className="text-sm text-gray-500 font-medium">
-                          {formatCurrency(priceValue / employees)} <span className="font-normal text-gray-400">/ user{duration.suffix}</span>
-                        </p>
-                      ) : (
-                        <p className="text-sm text-gray-400">—</p>
-                      )}
-
-                      <div className="mt-6 space-y-3 text-left">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <FaUsers className="text-indigo-500 text-xs" />
-                          <span>Up to {currentPackage ? currentPackage.max_employee_count : 10} Users</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <FaCheckCircle className="text-green-500 text-xs" />
-                          <span>All Pro Features</span>
-                        </div>
-                      </div>
-
-                      <button
-                        disabled={priceValue === null || isNaN(priceValue) || purchaseLoading}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isSelected) {
-                            handlePurchase(duration.key);
-                          } else {
-                            handleDurationChange(duration);
-                          }
-                        }}
-                        className={`mt-6 w-full py-2.5 rounded-xl font-semibold transition-all duration-200 flex justify-center items-center gap-2 ${priceValue === null || isNaN(priceValue)
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : isSelected
-                            ? 'bg-indigo-600 text-white shadow-md'
-                            : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
-                          }`}
-                      >
-                        {purchaseLoading && isSelected && <FaSpinner className="animate-spin" />}
-                        {isSelected ? 'Buy Now' : 'Choose Plan'}
-                      </button>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
-
-            {/* Price Calculator Section - Right side as in image */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-              className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden w-full mx-auto"
-            >
-              <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-4">
-                <div className="flex items-center gap-3">
-                  <FaCalculator className="text-white text-xl" />
-                  <h2 className="text-xl font-bold text-white">Price calculator</h2>
-                </div>
-                <p className="text-indigo-100 text-sm mt-1">Calculate your exact subscription cost</p>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm"
+          >
+            {/* ── Duration selector ── */}
+            <div className="p-5 border-b border-gray-100">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-3">Billing period</p>
+              <div className="flex gap-3 flex-wrap">
+                {DURATION_OPTIONS.map((dur) => (
+                  <DurButton
+                    key={dur.key}
+                    duration={dur}
+                    isSelected={selectedDur.key === dur.key}
+                    price={currentPackage ? currentPackage[dur.key] : null}
+                    employees={employees}
+                    onClick={() => setSelectedDur(dur)}
+                  />
+                ))}
               </div>
+            </div>
 
-              <div className="p-6">
-                {/* Employees Slider */}
-                <div className="mb-8">
-                  <div className="flex justify-between items-center mb-3">
-                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                      <FaUsers className="text-indigo-500" />
-                      Employees
-                    </label>
+            {/* ── Price calculator ── */}
+            <div className="p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-4">Price calculator</p>
+
+              {/* Employees slider */}
+              <div className="mb-5">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[13px] text-gray-600 flex items-center gap-1.5">
+                    <FaUsers className="text-blue-400 text-[11px]" />
+                    Employees
+                  </label>
+                  <AnimatePresence mode="wait">
                     <motion.span
                       key={employees}
-                      initial={{ scale: 1.2, color: '#6366f1' }}
-                      animate={{ scale: 1, color: '#1f2937' }}
-                      className="text-2xl font-bold text-gray-800"
+                      initial={{ scale: 1.15, color: '#3b82f6' }}
+                      animate={{ scale: 1,    color: '#1f2937' }}
+                      transition={{ duration: 0.2 }}
+                      className="text-[18px] font-semibold text-gray-800"
                     >
                       {employees}
                     </motion.span>
-                  </div>
-                  <input
-                    type="range"
-                    min={minEmployees}
-                    max={maxEmployees}
-                    value={employees}
-                    onChange={handleEmployeesChange}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                  />
-                  <div className="flex justify-between text-xs text-gray-400 mt-2">
-                    <span>{minEmployees}</span>
-                    <span>{Math.floor(maxEmployees / 2)}</span>
-                    <span>{maxEmployees}+</span>
-                  </div>
+                  </AnimatePresence>
                 </div>
-
-                {/* Duration Tabs */}
-                <div className="mb-8">
-                  <label className="text-sm font-semibold text-gray-700 block mb-3">Duration</label>
-                  <div className="flex gap-3 flex-wrap">
-                    {DURATION_OPTIONS.map((duration) => (
-                      <motion.button
-                        key={duration.key}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleDurationChange(duration)}
-                        className={`relative px-5 py-2.5 rounded-xl font-medium transition-all ${selectedDuration.key === duration.key
-                          ? 'text-white'
-                          : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
-                          }`}
-                      >
-                        {selectedDuration.key === duration.key && (
-                          <motion.div
-                            layoutId="durationBg"
-                            className="absolute inset-0 bg-indigo-600 rounded-xl"
-                            transition={{ type: "spring", duration: 0.4 }}
-                          />
-                        )}
-                        <span className="relative z-10 flex items-center gap-2">
-                          {duration.label}
-                          {duration.discount > 0 && (
-                            <span className="text-xs font-bold bg-green-500 text-white px-1.5 py-0.5 rounded-full">
-                              -{duration.discount}%
-                            </span>
-                          )}
-                        </span>
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Package Info */}
-                <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Your package</span>
-                    {currentPackage ? (
-                      <motion.span
-                        key={currentPackage.name}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="px-3 py-1 bg-indigo-100 text-indigo-700 text-sm font-semibold rounded-full"
-                      >
-                        {currentPackage.name}
-                      </motion.span>
-                    ) : (
-                      <span className="text-sm text-gray-400">Select employee range</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Price Breakdown */}
-                <div className="space-y-3 mb-6">
-                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                    <span className="text-gray-600">Base price</span>
-                    <AnimatePresence mode="wait">
-                      <motion.span
-                        key={currentPrice}
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="font-semibold text-gray-800"
-                      >
-                        {currentPrice ? formatCurrency(currentPrice) : '—'}
-                      </motion.span>
-                    </AnimatePresence>
-                  </div>
-
-                  {pricePerUser && (
-                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <span className="text-gray-600">Per employee</span>
-                      <span className="text-gray-700">
-                        {formatCurrency(pricePerUser)}{selectedDuration.suffix}
-                      </span>
-                    </div>
-                  )}
-
-                  {selectedDuration.discount > 0 && currentPrice && (
-                    <div className="flex justify-between items-center py-2 text-green-600">
-                      <span className="flex items-center gap-1">
-                        <FaRocket className="text-xs" />
-                        You save
-                      </span>
-                      <span className="font-medium">
-                        {formatCurrency(currentPrice * selectedDuration.discount / 100)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Total */}
-                <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-xl p-4 mb-6">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold text-gray-800">Estimated total</span>
-                    <AnimatePresence mode="wait">
-                      <motion.span
-                        key={currentPrice}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="text-3xl font-extrabold text-indigo-600"
-                      >
-                        {currentPrice ? formatCurrency(currentPrice) : '—'}
-                      </motion.span>
-                    </AnimatePresence>
-                  </div>
-                  {selectedDuration.suffix && currentPrice && (
-                    <p className="text-xs text-gray-500 mt-1">billed {selectedDuration.label.toLowerCase()}</p>
-                  )}
-                </div>
-
-                {/* Action Button */}
-                <motion.button
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
-                  disabled={!currentPackage || purchaseLoading}
-                  onClick={() => handlePurchase(selectedDuration.key)}
-                  className={`w-full py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${currentPackage && !purchaseLoading
-                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md hover:shadow-lg cursor-pointer'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
-                >
-                  {purchaseLoading ? <FaSpinner className="animate-spin text-lg" /> : <FaCreditCard />}
-                  {purchaseLoading ? 'Processing...' : 'Buy Now'}
-                  {!purchaseLoading && <FaArrowRight className="text-sm" />}
-                </motion.button>
-
-                {/* Trust Badges */}
-                <div className="flex items-center justify-center gap-4 mt-6 text-xs text-gray-400">
-                  <span className="flex items-center gap-1">
-                    <FaShieldAlt /> Secure checkout
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <FaClock /> Cancel anytime
-                  </span>
+                <input
+                  type="range"
+                  min={minEmployees}
+                  max={maxEmployees}
+                  value={employees}
+                  step={1}
+                  onChange={(e) => setEmployees(parseInt(e.target.value))}
+                  className="w-full h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer accent-blue-500"
+                />
+                <div className="flex justify-between text-[11px] text-gray-400 mt-1.5">
+                  <span>{minEmployees}</span>
+                  <span>{Math.floor(maxEmployees / 2)}</span>
+                  <span>{maxEmployees}+</span>
                 </div>
               </div>
-            </motion.div>
-          </>
+
+              {/* Package badge */}
+              <div className="flex justify-between items-center bg-gray-50 rounded-lg px-4 py-3 mb-5 text-[13px]">
+                <span className="text-gray-500">Your package</span>
+                <AnimatePresence mode="wait">
+                  {currentPackage ? (
+                    <motion.span
+                      key={currentPackage.name}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      className="bg-blue-50 text-blue-700 text-[12px] font-semibold px-3 py-1 rounded-full"
+                    >
+                      {currentPackage.name}
+                    </motion.span>
+                  ) : (
+                    <span className="text-gray-400 text-[12px]">Select employee range</span>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Breakdown */}
+              <div className="space-y-0 border-y border-gray-100 mb-5">
+                {[
+                  {
+                    label: 'Base price',
+                    value: currentPrice ? fmt(currentPrice) : '—',
+                    valueClass: 'text-gray-800 font-medium',
+                  },
+                  {
+                    label: 'Per employee',
+                    value: pricePerUser ? `${fmt(pricePerUser)}${selectedDur.suffix}` : '—',
+                    valueClass: 'text-gray-600',
+                  },
+                  ...(selectedDur.discount > 0 && currentPrice ? [{
+                    label: (
+                      <span className="flex items-center gap-1 text-green-600">
+                        <FaRocket className="text-[10px]" /> You save
+                      </span>
+                    ),
+                    value: fmt(currentPrice * selectedDur.discount / 100),
+                    valueClass: 'text-green-600 font-medium',
+                  }] : []),
+                ].map((row, i) => (
+                  <div key={i} className="flex justify-between items-center py-2.5 border-b border-gray-100 last:border-0 text-[13px]">
+                    <span className="text-gray-500">{row.label}</span>
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={String(row.value)}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={row.valueClass}
+                      >
+                        {row.value}
+                      </motion.span>
+                    </AnimatePresence>
+                  </div>
+                ))}
+              </div>
+
+              {/* Total */}
+              <div className="flex justify-between items-baseline bg-gray-50 rounded-xl px-4 py-4 mb-5">
+                <div>
+                  <p className="text-[13px] text-gray-500 font-medium">Estimated total</p>
+                  {currentPrice && (
+                    <p className="text-[11px] text-gray-400 mt-0.5">{selectedDur.billedLabel}</p>
+                  )}
+                </div>
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={currentPrice}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-[28px] font-semibold text-gray-800"
+                  >
+                    {currentPrice ? fmt(currentPrice) : '—'}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
+
+              {/* Buy button */}
+              <motion.button
+                whileHover={{ scale: 1.005 }}
+                whileTap={{ scale: 0.98 }}
+                disabled={!currentPackage || purchaseLoading}
+                onClick={handlePurchase}
+                className={`w-full py-3 rounded-xl font-semibold text-[14px] flex items-center justify-center gap-2 transition-all ${
+                  currentPackage && !purchaseLoading
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {purchaseLoading
+                  ? <><FaSpinner className="animate-spin" /> Processing…</>
+                  : <><FaCreditCard /> Buy now <FaArrowRight className="text-[11px]" /></>
+                }
+              </motion.button>
+
+              {/* Trust badges */}
+              <div className="flex items-center justify-center gap-5 mt-4 text-[11px] text-gray-400">
+                <span className="flex items-center gap-1"><FaShieldAlt /> Secure checkout</span>
+                <span className="flex items-center gap-1"><FaLock /> 256-bit SSL</span>
+                <span className="flex items-center gap-1"><FaClock /> Cancel anytime</span>
+              </div>
+            </div>
+          </motion.div>
         )}
       </div>
     </div>
