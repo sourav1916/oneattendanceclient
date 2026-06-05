@@ -49,16 +49,40 @@ function formatMinutes(mins) {
   return `${h}h ${m}m`;
 }
 
+function pairActivities(rawActivities) {
+  const activities = [];
+  if (!Array.isArray(rawActivities)) return activities;
+  for (let i = 0; i < rawActivities.length; i++) {
+    if (rawActivities[i].type === 'PUNCH_IN') {
+      const inAct = rawActivities[i];
+      let outAct = null;
+      if (i + 1 < rawActivities.length && rawActivities[i+1].type === 'PUNCH_OUT') {
+        outAct = rawActivities[i+1];
+        i++; 
+      }
+      activities.push([inAct, outAct]);
+    } else if (rawActivities[i].type === 'PUNCH_OUT') {
+      activities.push([null, rawActivities[i]]);
+    } else if (Array.isArray(rawActivities[i])) {
+      // Handle legacy format if still pairs
+      activities.push(rawActivities[i]);
+    } else {
+      activities.push([rawActivities[i], null]);
+    }
+  }
+  return activities;
+}
+
 /**
  * Compute worked minutes and break minutes from the day's API data.
- * activities: array of [punch_in_obj, punch_out_obj] pairs
+ * activities: array of flat activity objects or pairs
  * breaks: array of [break_start_obj, break_end_obj] pairs
  * Returns { workedMinutes, breakMinutes, firstIn, lastOut }
  */
 function computeWorkStats(dayData) {
   if (!dayData) return null;
 
-  const activities = dayData.activities || [];
+  const activities = pairActivities(dayData.activities);
   const breaks = dayData.breaks || [];
 
   let totalWork = 0;
@@ -465,8 +489,9 @@ const DayDetailsModal = ({ cell, onClose, shift }) => {
   );
 
   // Build activity timeline
-  const activities = data?.activities || [];
+  const activities = data?.activities ? pairActivities(data.activities) : [];
   const breaks = data?.breaks || [];
+  const logs = data?.logs || [];
 
   return (
     <motion.div
@@ -526,7 +551,12 @@ const DayDetailsModal = ({ cell, onClose, shift }) => {
               {data?.is_approved === true && (
                 <div className="flex items-center gap-2 p-2.5 bg-emerald-50 border border-emerald-100 rounded-xl">
                   <FaCheckCircle size={12} className="text-emerald-500" />
-                  <span className="text-[11px] font-bold text-emerald-600">Attendance approved</span>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-bold text-emerald-600">Attendance approved</span>
+                    {data.verified_by?.name && (
+                      <span className="text-[9px] text-emerald-500">Verified by {data.verified_by.name}</span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -537,16 +567,58 @@ const DayDetailsModal = ({ cell, onClose, shift }) => {
             <div>
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Sessions</p>
               <div className="space-y-1.5">
-                {activities.map((pair, i) => (
-                  <div key={i} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-xl border border-gray-100 text-xs">
-                    <div className="flex items-center gap-1.5 text-emerald-600">
-                      <FaSignInAlt size={11} />
-                      <span className="font-bold">{pair[0]?.time || '—'}</span>
+                {activities.map((pair, i) => {
+                  const inAct = pair[0];
+                  const outAct = pair[1];
+                  return (
+                    <div key={i} className="flex flex-col gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100 text-xs">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5 text-emerald-600">
+                          <FaSignInAlt size={11} />
+                          <span className="font-bold">{inAct?.time || '—'}</span>
+                        </div>
+                        <div className="flex-1 h-px bg-gray-200" />
+                        <div className="flex items-center gap-1.5 text-rose-500">
+                          <span className="font-bold">{outAct?.time || <span className="text-indigo-400 animate-pulse">Active</span>}</span>
+                          <FaSignOutAlt size={11} />
+                        </div>
+                      </div>
+                      {(inAct?.attendance_method || inAct?.created_by?.name || outAct?.attendance_method || outAct?.created_by?.name) && (
+                        <div className="flex items-center justify-between text-[10px] text-gray-500 pt-1 border-t border-gray-100">
+                          <span className="flex items-center gap-1 truncate">
+                            {inAct?.attendance_method && <span className="capitalize">{inAct.attendance_method}</span>}
+                            {inAct?.created_by?.name ? ` • In by ${inAct.created_by.name}` : ''}
+                          </span>
+                          <span className="flex items-center gap-1 truncate">
+                            {outAct?.created_by?.name ? `Out by ${outAct.created_by.name}` : ''}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex-1 h-px bg-gray-200" />
-                    <div className="flex items-center gap-1.5 text-rose-500">
-                      <span className="font-bold">{pair[1]?.time || <span className="text-indigo-400 animate-pulse">Active</span>}</span>
-                      <FaSignOutAlt size={11} />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Logs */}
+          {logs.length > 0 && (
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 mt-4">Activity Logs</p>
+              <div className="space-y-2">
+                {logs.map((log, i) => (
+                  <div key={i} className="flex items-start gap-2 text-[11px] p-2 bg-slate-50 border border-slate-100 rounded-lg">
+                    <FaClock className="mt-0.5 text-slate-400" size={10} />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-slate-700 capitalize">{log.log_type?.replace(/_/g, ' ')}</span>
+                        <span className="text-slate-500">{log.time}</span>
+                      </div>
+                      <div className="text-slate-500 mt-0.5 flex flex-wrap gap-x-3 gap-y-1">
+                        {log.created_by?.name && <span><span className="font-medium text-slate-600">By:</span> {log.created_by.name}</span>}
+                        {log.day_status && <span><span className="font-medium text-slate-600">Status:</span> {log.day_status}</span>}
+                        {log.attendance_method && <span><span className="font-medium text-slate-600">Method:</span> <span className="capitalize">{log.attendance_method}</span></span>}
+                      </div>
                     </div>
                   </div>
                 ))}
