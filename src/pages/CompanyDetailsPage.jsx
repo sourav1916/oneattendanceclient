@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiCall, { uploadFile } from '../utils/api';
 import { getPreciseLocation } from '../utils/geolocation';
-import SelectField from './SelectField';
+import SelectField from '../components/SelectField';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   FaArrowLeft, FaBuilding, FaGlobe, FaMapMarkerAlt, FaRoad, FaCity, FaEnvelope, FaCrosshairs,
   FaCheck, FaTimes, FaSpinner, FaMapPin,FaPlus, FaTrash, FaLink, FaWifi, FaLocationArrow, FaCamera, FaQrcode, FaFingerprint, FaUserCheck, FaChevronDown, FaChevronUp, FaSave, FaInfoCircle, FaUndo
@@ -180,7 +181,13 @@ function MethodTabButton({ tab, active, enabled, disabled, onClick, onExpand, on
   );
 }
 
-export default function CompanyDetailsView({ company, onBack, onUpdate }) {
+export default function CompanyDetailsPage() {
+  const { companyId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const [company, setCompany] = useState(location.state?.company || null);
+  const [isLoadingCompany, setIsLoadingCompany] = useState(!location.state?.company);
   const [formData, setFormData] = useState({
     name: "", legal_name: "", logo_url: "", address_line1: "", address_line2: "",
     city: "", state: "", postal_code: "", country: "India", latitude: "", longitude: "",
@@ -206,6 +213,28 @@ export default function CompanyDetailsView({ company, onBack, onUpdate }) {
   const [ips, setIps] = useState([]);
   const [ipInput, setIpInput] = useState('');
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+
+  useEffect(() => {
+    if (!company && companyId) {
+      const fetchCompany = async () => {
+        setIsLoadingCompany(true);
+        try {
+          const res = await apiCall(`/company/list`, 'GET', null, companyId);
+          const data = await res.json();
+          if (data.success && data.data) {
+            const found = data.data.find(c => c.id === parseInt(companyId));
+            if (found) setCompany(found);
+            else toast.error("Company not found");
+          }
+        } catch (e) {
+          toast.error("Failed to load company details");
+        } finally {
+          setIsLoadingCompany(false);
+        }
+      };
+      fetchCompany();
+    }
+  }, [companyId, company]);
 
   useEffect(() => {
     if (company) {
@@ -381,7 +410,7 @@ export default function CompanyDetailsView({ company, onBack, onUpdate }) {
       const result = await response.json();
       if (!result.success) throw new Error(result.message || 'Failed to update company');
       toast.success('Company IP auto-detected successfully');
-      onUpdate && onUpdate(payload);
+      setCompany(prev => ({ ...prev, company_ips: payload.company_ips }));
     } catch (error) { toast.error(error.message || 'Failed to auto-detect IP'); }
     finally { setIsSubmitting(false); }
   };
@@ -437,9 +466,7 @@ export default function CompanyDetailsView({ company, onBack, onUpdate }) {
       if (!result.success) throw new Error(result.message || 'Update failed');
 
       toast.success('Company updated successfully!');
-      if (onUpdate) {
-          onUpdate(changedFields);
-      }
+      setCompany(prev => ({ ...prev, ...changedFields }));
       setOriginalData(prev => ({ ...prev, ...formData }));
       setLogoFile(null);
     } catch (error) {
@@ -535,12 +562,25 @@ export default function CompanyDetailsView({ company, onBack, onUpdate }) {
     );
   };
 
+  if (isLoadingCompany) {
+    return <div className="p-12 flex justify-center"><FaSpinner className="animate-spin text-indigo-500 text-3xl" /></div>;
+  }
+
+  if (!company) {
+    return (
+      <div className="p-12 text-center">
+        <h2 className="text-xl font-bold text-gray-800">Company not found</h2>
+        <button onClick={() => navigate('/company-settings')} className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-xl">Back to Companies</button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 relative pb-20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={onBack} className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-600 shadow-sm flex items-center justify-center">
+          <button onClick={() => navigate('/company-settings')} className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-600 shadow-sm flex items-center justify-center">
             <FaArrowLeft />
           </button>
           <div>

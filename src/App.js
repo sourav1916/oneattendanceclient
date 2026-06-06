@@ -40,6 +40,7 @@ import PayrollAdjustment from "./pages/PayrollAdjustment";
 import BankAccountManagement from "./pages/BankAccountManagement";
 import EmployeeBankAccountManagement from "./pages/EmployeeBankAccountManagement";
 import CompanySettings from "./pages/CompanySettings";
+import CompanyDetailsPage from "./pages/CompanyDetailsPage";
 import EmployeesShifts from "./pages/EmployeesShifts";
 import GlobalSkeleton from "./components/GlobalSkeletonComponent";
 import ScrollToTop from "./components/ScrollToTop";
@@ -431,6 +432,7 @@ function AppContent() {
           accessDeniedIcon={FaInfoCircle}
         /></MainLayout></ProtectedRoute>} />
         <Route path="/company-settings" element={<ProtectedRoute pageKey="companySettings"><MainLayout><CompanySettings /></MainLayout></ProtectedRoute>} />
+        <Route path="/company-settings/:companyId" element={<ProtectedRoute pageKey="companySettings"><MainLayout><CompanyDetailsPage /></MainLayout></ProtectedRoute>} />
         {isCompanyOwner && (
           <Route path="/subscription" element={<ProtectedRoute><MainLayout><Subscription /></MainLayout></ProtectedRoute>} />
         )}
