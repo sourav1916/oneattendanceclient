@@ -6,7 +6,7 @@ import {
     FaBuilding, FaMapMarkerAlt, FaGlobe, FaSearch,
     FaClock, FaNetworkWired, FaUserCheck, FaRoad,
     FaHistory, FaMapPin,
-    FaChevronDown, FaCog
+    FaChevronDown, FaEye
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -16,8 +16,10 @@ import SkeletonComponent from '../components/SkeletonComponent';
 import { ManagementHub, RefreshButton } from '../components/common';
 import ModalScrollLock from '../components/ModalScrollLock';
 import CreateCompanyModal from '../components/CompanyModals/CreateCompanyModal';
-import EditCompanyModal from '../components/CompanyModals/EditCompanyModal';
-import ManageMoreCompanyModal from '../components/CompanyModals/ManageMoreCompanyModal';
+import CompanyDetailsView from '../components/CompanyDetailsView';
+import ManagementGrid from '../components/ManagementGrid';
+import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
+import { ManagementTable, ManagementCard } from '../components/common';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -317,111 +319,6 @@ const SystemPanel = ({ company }) => (
     </div>
 );
 
-// ─── Accordion Item ───────────────────────────────────────────────────────────
-
-const CompanyAccordionItem = ({ company, index, onEdit, onDelete, onManageMore }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('address');
-
-    const idx = company.id % 5;
-    const pal = avatarPalette[idx];
-    const ips = parseIPs(company.company_ips || []);
-
-    const summaryParts = [
-        [company.city, company.state].filter(Boolean).join(', '),
-        ips.length > 0 ? `${ips.length} IP${ips.length > 1 ? 's' : ''}` : null,
-        formatAttendanceMethods(company.attendance_methods) !== '—'
-            ? formatAttendanceMethods(company.attendance_methods)
-            : null,
-    ].filter(Boolean).join(' · ');
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.04 }}
-            className={`bg-white rounded-xl border transition-all duration-200
-                ${isOpen
-                    ? 'border-indigo-200 shadow-md shadow-indigo-50/60'
-                    : 'border-gray-100 shadow-sm hover:border-gray-200 hover:shadow-md'}
-                ${!company.is_active ? 'opacity-70' : ''}`}>
-
-            {/* Header */}
-            <button
-                onClick={() => setIsOpen(prev => !prev)}
-                className="w-full flex items-center gap-3 px-5 py-4 text-left">
-                <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden
-                    ${pal.bg} ${pal.text}`}>
-                    {company.logo_url
-                        ? <img src={company.logo_url} alt="" className="w-full h-full object-cover"
-                            onError={e => { e.target.style.display = 'none'; }} />
-                        : getInitials(company.name)}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-gray-800 text-sm">{company.name}</span>
-                        <span className="text-xs text-gray-300 font-mono">#{company.id}</span>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-0.5 truncate">{summaryParts || company.legal_name || '—'}</p>
-                </div>
-
-                <div className="flex items-center gap-3 flex-shrink-0">
-                    <StatusBadge isActive={company.is_active} />
-                    <span className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
-                        <FaChevronDown size={12} />
-                    </span>
-                </div>
-            </button>
-
-            {/* Expanded body */}
-            <AnimatePresence initial={false}>
-                {isOpen && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.22, ease: 'easeInOut' }}>
-                        <div className="border-t border-gray-100">
-
-                            {/* Action bar */}
-                            <div className="flex items-center justify-between px-5 py-2.5">
-                                <p className="text-xs text-gray-400 truncate max-w-xs">{company.legal_name || '—'}</p>
-                                <div className="flex items-center gap-1">
-                                    <button
-                                        onClick={() => onEdit(company)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-emerald-600 hover:bg-emerald-50 transition-colors">
-                                        <FaEdit size={12} /> Edit
-                                    </button>
-                                    <button
-                                        onClick={() => onManageMore(company)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
-                                        <FaCog size={12} /> More
-                                    </button>
-                                    <button
-                                        onClick={() => onDelete(company)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors">
-                                        <FaTrash size={12} /> Delete
-                                    </button>
-                                </div>
-                            </div>
-
-                            <SectionTabs active={activeTab} onChange={setActiveTab} />
-
-                            <div className="bg-gray-50/50">
-                                {activeTab === 'address' && <AddressPanel company={company} />}
-                                {activeTab === 'network' && <NetworkPanel company={company} />}
-                                {activeTab === 'attendance' && <AttendancePanel company={company} />}
-                                {activeTab === 'system' && <SystemPanel company={company} />}
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </motion.div>
-    );
-};
-
 // ─── Delete Modal ─────────────────────────────────────────────────────────────
 
 const backdropVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 }, exit: { opacity: 0 } };
@@ -515,8 +412,9 @@ const CompanyManagement = () => {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [createModalOpen, setCreateModalOpen] = useState(false);
-    const [editModalTarget, setEditModalTarget] = useState(null);
-    const [manageMoreTarget, setManageMoreTarget] = useState(null);
+    const [selectedCompany, setSelectedCompany] = useState(null);
+    const [viewMode, setViewMode] = useState('table');
+    const [activeActionMenu, setActiveActionMenu] = useState(null);
 
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 10);
     const fetchInProgress = useRef(false);
@@ -539,13 +437,14 @@ const CompanyManagement = () => {
             const result = await res.json();
             if (result.success) {
                 setCompanies(result.data || []);
-                const currentPage = Number(result.pagination?.page ?? result.current_page ?? page);
-                const perPage = Number(result.pagination?.limit ?? result.per_page ?? pagination.limit);
-                const total = Number(result.pagination?.total ?? result.total ?? 0);
-                const totalPages = Number(result.pagination?.total_pages ?? result.last_page ?? Math.max(1, Math.ceil(total / perPage)));
+                const meta = result.pagination || result.meta || {};
+                const currentPage = Number(meta.page ?? result.current_page ?? page);
+                const perPage = Number(meta.limit ?? result.per_page ?? pagination.limit);
+                const total = Number(meta.total ?? result.total ?? 0);
+                const totalPages = Number(meta.total_pages ?? result.last_page ?? Math.max(1, Math.ceil(total / perPage)));
                 updatePagination({
                     page: currentPage, limit: perPage, total, total_pages: totalPages,
-                    is_last_page: result.pagination?.is_last_page ?? (currentPage >= totalPages),
+                    is_last_page: meta.is_last_page ?? (currentPage >= totalPages),
                 });
             } else throw new Error(result.message || 'Failed to fetch companies');
         } catch (e) {
@@ -586,36 +485,9 @@ const CompanyManagement = () => {
         }
     };
 
-    const handleEditSuccess = async (id, changedFields) => {
-        try {
-            const res = await apiCall('/company/update', 'PUT', { id, ...changedFields });
-            const result = await res.json();
-            if (result.success) {
-                const updated = result.data || { id, ...changedFields };
-                setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
-                toast.success('Company updated successfully!');
-                setEditModalTarget(null);
-                fetchCompanies(pagination.page, debouncedSearch, true);
-            } else throw new Error(result.message || 'Update failed');
-        } catch (e) {
-            toast.error(e.message || 'Failed to update company');
-        }
-    };
-
-    const handleManageMoreSuccess = async (payload) => {
-        try {
-            if (payload?.id) {
-                try {
-                    const stored = JSON.parse(localStorage.getItem('company'));
-                    if (stored?.id === payload.id) localStorage.setItem('company', JSON.stringify({ ...stored, ...payload }));
-                } catch { }
-                setCompanies(prev => prev.map(c => c.id === payload.id ? { ...c, ...payload } : c));
-            }
-            setManageMoreTarget(null);
-            fetchCompanies(pagination.page, debouncedSearch, true);
-        } catch (e) {
-            toast.error(e.message || 'Failed to refresh company data');
-        }
+    const handleCompanyUpdate = (updatedData) => {
+        setCompanies(prev => prev.map(c => c.id === updatedData.id ? { ...c, ...updatedData } : c));
+        fetchCompanies(pagination.page, debouncedSearch, false);
     };
 
     const stats = {
@@ -626,8 +498,49 @@ const CompanyManagement = () => {
     };
 
     const currentDeleteTarget = deleteTarget ? companies.find(c => c.id === deleteTarget.id) || deleteTarget : null;
-    const currentEditTarget = editModalTarget ? companies.find(c => c.id === editModalTarget.id) || editModalTarget : null;
-    const currentManageMoreTarget = manageMoreTarget ? companies.find(c => c.id === manageMoreTarget.id) || manageMoreTarget : null;
+
+    const tableColumns = [
+        {
+            key: 'name', label: 'Company Name', render: (row) => {
+                const palIndex = (row.id && !isNaN(row.id)) ? row.id % 5 : 0;
+                const pal = avatarPalette[palIndex] || avatarPalette[0];
+                return (
+                <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold overflow-hidden ${pal.bg} ${pal.text} border border-white/20 shadow-sm`}>
+                        {row.logo_url ? <img src={row.logo_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} /> : getInitials(row.name)}
+                    </div>
+                    <div>
+                        <p className="font-semibold text-slate-800 text-sm">{row.name}</p>
+                        <p className="text-xs text-slate-400 font-mono mt-0.5">#{row.id}</p>
+                    </div>
+                </div>
+            )}
+        },
+        {
+            key: 'location', label: 'Location', render: (row) => (
+                <div className="text-sm text-slate-600 font-medium">
+                    {[row.city, row.state].filter(Boolean).join(', ') || '—'}
+                </div>
+            )
+        },
+        { key: 'status', label: 'Status', render: (row) => <StatusBadge isActive={row.is_active} /> },
+        {
+            key: 'methods', label: 'Attendance', render: (row) => (
+                <span className="text-sm text-slate-600 font-medium">{formatAttendanceMethods(row.attendance_methods)}</span>
+            )
+        },
+        {
+            key: 'ips', label: 'Network', render: (row) => {
+                const ips = parseIPs(row.company_ips || []);
+                return <span className="text-sm text-slate-600 font-medium">{ips.length} IPs</span>;
+            }
+        }
+    ];
+
+    const getRowActions = (company) => [
+        { label: 'View Details', icon: <FaEye />, onClick: () => setSelectedCompany(company), className: 'text-blue-600 hover:bg-blue-50' },
+        { label: 'Delete', icon: <FaTrash />, onClick: () => setDeleteTarget(company), className: 'text-red-600 hover:bg-red-50' }
+    ];
 
     if (isInitialLoad && loading) return <SkeletonComponent />;
 
@@ -663,80 +576,149 @@ const CompanyManagement = () => {
         >
             <div className="space-y-6">
 
-                {/* Stats */}
-                <StatsBar stats={stats} />
-
-                {/* Search */}
-                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-                    className="relative">
-                    <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
-                    <input
-                        type="text"
-                        placeholder="Search by company name, city, or state..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm font-medium outline-none shadow-sm transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 min-h-[42px]"
+                {selectedCompany ? (
+                    <CompanyDetailsView
+                        company={selectedCompany}
+                        onBack={() => setSelectedCompany(null)}
+                        onUpdate={(data) => {
+                            handleCompanyUpdate(data);
+                            setSelectedCompany(prev => ({ ...prev, ...data }));
+                        }}
                     />
-                    {searchTerm && (
-                        <button onClick={() => setSearchTerm('')}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                            <FaTimes size={13} />
-                        </button>
-                    )}
-                </motion.div>
+                ) : (
+                    <>
+                        {/* Stats */}
+                        <StatsBar stats={stats} />
 
-                {/* Loading */}
-                {loading && !companies.length && <SkeletonComponent />}
-
-                {/* Empty state */}
-                {!loading && companies.length === 0 && (
-                    <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white rounded-xl shadow-sm border border-gray-100 p-16 text-center">
-                        <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <FaBuilding className="text-3xl text-blue-200" />
+                        {/* Search & View Switcher */}
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="relative flex-1 w-full">
+                                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+                                <input
+                                    type="text"
+                                    placeholder="Search by company name, city, or state..."
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm font-medium outline-none shadow-sm transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 min-h-[42px]"
+                                />
+                                {searchTerm && (
+                                    <button onClick={() => setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                        <FaTimes size={13} />
+                                    </button>
+                                )}
+                            </motion.div>
+                            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="w-full sm:w-auto">
+                                <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
+                            </motion.div>
                         </div>
-                        <p className="text-lg font-bold text-gray-600 mb-1">No companies found</p>
-                        <p className="text-gray-400 text-sm mb-4">
-                            {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Click "Add Company" to get started'}
-                        </p>
-                        {debouncedSearch
-                            ? <button onClick={() => setSearchTerm('')}
-                                className="px-5 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 text-sm font-semibold">
-                                Clear Search
-                              </button>
-                            : <button onClick={() => setCreateModalOpen(true)}
-                                className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl text-sm font-semibold shadow-md">
-                                Add Company
-                              </button>}
-                    </motion.div>
-                )}
 
-                {/* Accordion list */}
-                {!loading && companies.length > 0 && (
-                    <div className="space-y-3">
-                        {companies.map((company, i) => (
-                            <CompanyAccordionItem
-                                key={company.id}
-                                company={company}
-                                index={i}
-                                onEdit={setEditModalTarget}
-                                onDelete={setDeleteTarget}
-                                onManageMore={setManageMoreTarget}
-                            />
-                        ))}
-                    </div>
-                )}
+                        {/* Loading */}
+                        {loading && !companies.length && <SkeletonComponent />}
 
-                {/* Pagination */}
-                {!loading && (companies.length > 0 || pagination.total > 0) && (
-                    <Pagination
-                        currentPage={pagination.page}
-                        totalItems={pagination.total}
-                        itemsPerPage={pagination.limit}
-                        onPageChange={p => { if (p !== pagination.page) goToPage(p); }}
-                        showInfo={true}
-                        onLimitChange={changeLimit}
-                    />
+                        {/* Empty state */}
+                        {!loading && companies.length === 0 && (
+                            <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
+                                className="bg-white rounded-xl shadow-sm border border-gray-100 p-16 text-center">
+                                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <FaBuilding className="text-3xl text-blue-200" />
+                                </div>
+                                <p className="text-lg font-bold text-gray-600 mb-1">No companies found</p>
+                                <p className="text-gray-400 text-sm mb-4">
+                                    {debouncedSearch ? `No results for "${debouncedSearch}"` : 'Click "Add Company" to get started'}
+                                </p>
+                                {debouncedSearch
+                                    ? <button onClick={() => setSearchTerm('')}
+                                        className="px-5 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 text-sm font-semibold">
+                                        Clear Search
+                                      </button>
+                                    : <button onClick={() => setCreateModalOpen(true)}
+                                        className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl text-sm font-semibold shadow-md">
+                                        Add Company
+                                      </button>}
+                            </motion.div>
+                        )}
+
+                        {/* Table / Grid views */}
+                        {!loading && companies.length > 0 && (
+                            <>
+                                {viewMode === 'table' && (
+                                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+                                        <ManagementTable
+                                            rows={companies}
+                                            columns={tableColumns}
+                                            rowKey="id"
+                                            onRowClick={setSelectedCompany}
+                                            getActions={getRowActions}
+                                            activeId={activeActionMenu}
+                                            onToggleAction={(e, id) => setActiveActionMenu(cur => cur === id ? null : id)}
+                                            accent="blue"
+                                            emptyState={
+                                                <div className="text-center py-16">
+                                                    <FaBuilding className="text-6xl text-gray-300 mx-auto mb-3" />
+                                                    <p className="text-gray-500">No companies found</p>
+                                                </div>
+                                            }
+                                        />
+                                    </motion.div>
+                                )}
+
+                                {viewMode === 'card' && (
+                                    <ManagementGrid viewMode={viewMode}>
+                                        {companies.map((company, index) => (
+                                            <ManagementCard
+                                                key={company.id}
+                                                delay={index * 0.04}
+                                                accent="blue"
+                                                hoverable
+                                                onClick={() => setSelectedCompany(company)}
+                                                menuId={`company-card-${company.id}`}
+                                                activeId={activeActionMenu}
+                                                onToggle={(e, id) => { e.stopPropagation(); setActiveActionMenu(cur => cur === id ? null : id); }}
+                                                actions={getRowActions(company)}
+                                                eyebrow={`#${company.id}`}
+                                                icon={
+                                                    (() => {
+                                                        const palIndex = (company.id && !isNaN(company.id)) ? company.id % 5 : 0;
+                                                        const pal = avatarPalette[palIndex] || avatarPalette[0];
+                                                        return (
+                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold overflow-hidden ${pal.bg} ${pal.text}`}>
+                                                            {company.logo_url ? <img src={company.logo_url} alt="" className="w-full h-full object-cover" onError={e => { e.target.style.display = 'none'; }} /> : getInitials(company.name)}
+                                                        </div>
+                                                        );
+                                                    })()
+                                                }
+                                                title={company.name}
+                                                subtitle={[company.city, company.state].filter(Boolean).join(', ') || company.legal_name || 'No location set'}
+                                                badge={<StatusBadge isActive={company.is_active} />}
+                                                footer={
+                                                    <>
+                                                        <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                                                            <FaUserCheck className="text-purple-400" />
+                                                            {formatAttendanceMethods(company.attendance_methods)}
+                                                        </span>
+                                                        <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                                                            <FaNetworkWired className="text-emerald-400" />
+                                                            {parseIPs(company.company_ips).length} IPs
+                                                        </span>
+                                                    </>
+                                                }
+                                            />
+                                        ))}
+                                    </ManagementGrid>
+                                )}
+
+                                {/* Pagination */}
+                                <Pagination
+                                    currentPage={pagination.page}
+                                    totalItems={pagination.total}
+                                    itemsPerPage={pagination.limit}
+                                    onPageChange={p => { if (p !== pagination.page) goToPage(p); }}
+                                    showInfo={true}
+                                    onLimitChange={changeLimit}
+                                />
+                            </>
+                        )}
+                    </>
                 )}
             </div>
 
@@ -757,20 +739,6 @@ const CompanyManagement = () => {
                 onClose={() => setCreateModalOpen(false)}
                 onSuccess={() => { setCreateModalOpen(false); fetchCompanies(1, debouncedSearch, true); }}
                 onCompanyCreated={() => fetchCompanies(1, debouncedSearch, true)}
-            />
-
-            <EditCompanyModal
-                isOpen={!!currentEditTarget}
-                company={currentEditTarget}
-                onClose={() => setEditModalTarget(null)}
-                onSuccess={handleEditSuccess}
-            />
-
-            <ManageMoreCompanyModal
-                isOpen={!!currentManageMoreTarget}
-                company={currentManageMoreTarget}
-                onClose={() => setManageMoreTarget(null)}
-                onSuccess={handleManageMoreSuccess}
             />
         </ManagementHub>
     );
