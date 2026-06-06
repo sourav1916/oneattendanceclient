@@ -576,7 +576,7 @@ export default function CompanyDetailsPage() {
   }
 
   return (
-    <div className="space-y-6 relative pb-20">
+    <div className="mx-auto max-w-[1600px] space-y-6 relative pb-20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

@@ -606,7 +606,7 @@ export default function CompanySettings() {
                 </>
             }
         >
-            <div className="max-w-7xl mx-auto pb-12 space-y-6">
+            <div className="w-full mx-auto pb-12 space-y-6">
                 {/* Stats */}
                 <StatsBar stats={stats} />
 
