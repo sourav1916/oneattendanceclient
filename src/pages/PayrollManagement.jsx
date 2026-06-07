@@ -34,6 +34,7 @@ const MODAL_TYPES = {
     GENERATE: 'GENERATE',
     CONFIRM_GENERATE: 'CONFIRM_GENERATE',
     SEND_EMAIL: 'SEND_EMAIL',
+    CONFIRM_DOWNLOAD: 'CONFIRM_DOWNLOAD',
 };
 
 const modalVariants = {
@@ -163,6 +164,7 @@ const PayrollManagement = () => {
     const [selectedSearch, setSelectedSearch] = useState('');
     const [isDownloading, setIsDownloading] = useState(false);
     const [isEmailing, setIsEmailing] = useState(false);
+    const [isSummary, setIsSummary] = useState(true);
     const [emailOverride, setEmailOverride] = useState('');
     const [previewGenerateSendPdf, setPreviewGenerateSendPdf] = useState(true);
 
@@ -520,20 +522,28 @@ const PayrollManagement = () => {
         return `${normalizedMonth}_${normalizedYear}_payroll.pdf`;
     };
 
-    const handleDownloadPdf = async (payrollItem) => {
+    const handleDownloadPdf = (payrollItem) => {
         if (downloadPayrollAccess.disabled) return;
-
         const payrollEntryId = payrollItem?.payroll?.id;
         if (!payrollEntryId) {
             toast.error('Payroll entry ID not found');
             return;
         }
+        setSelectedPayroll(payrollItem);
+        setIsSummary(true);
+        setModalType(MODAL_TYPES.CONFIRM_DOWNLOAD);
+        setActiveActionMenu(null);
+    };
 
+    const handleConfirmDownload = async () => {
+        if (!selectedPayroll) return;
+        closeModal();
         setIsDownloading(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
             const companyId = company?.id ?? null;
-            const response = await apiCall('/payroll/download', 'POST', { payroll_entry_id: payrollEntryId }, companyId);
+            const payrollEntryId = selectedPayroll.payroll.id;
+            const response = await apiCall('/payroll/download', 'POST', { payroll_entry_id: payrollEntryId, type: isSummary ? 'summary' : 'details' }, companyId);
 
             if (!response.ok) {
                 let errorMessage = 'Failed to download payslip';
@@ -546,7 +556,7 @@ const PayrollManagement = () => {
                 throw new Error(errorMessage);
             }
 
-            const filename = getPayrollPdfFilename(payrollItem);
+            const filename = getPayrollPdfFilename(selectedPayroll);
             const contentType = response.headers.get('content-type') || '';
 
             if (contentType.includes('application/json')) {
@@ -581,15 +591,15 @@ const PayrollManagement = () => {
         if (e) e.preventDefault();
         const payrollIds = selectedPayroll ? [selectedPayroll.payroll.id] : selectedIds;
         if (!payrollIds.length) return;
-        
+
         setIsEmailing(true);
         const isBulkEmail = !selectedPayroll;
         closeModal();
-        
+
         try {
             const company = JSON.parse(localStorage.getItem('company'));
             const companyId = company?.id ?? null;
-            const payload = { payroll_entry_id: payrollIds };
+            const payload = { payroll_entry_id: payrollIds, type: isSummary ? 'summary' : 'details' };
             if (emailOverride && emailOverride.trim()) {
                 payload.email = emailOverride.trim();
             }
@@ -835,11 +845,7 @@ const PayrollManagement = () => {
                 </div>
 
                 {/* Right Section: Controls */}
-                <div className="flex gap-4">
-
-                    {/* Vertical Separator */}
-                    <div className="h-8 w-px bg-gray-200 hidden lg:block"></div>
-
+                <div className="flex items-center gap-4">
                     {/* View Switcher */}
                     <div>
                         <ManagementViewSwitcher
@@ -1842,6 +1848,101 @@ const PayrollManagement = () => {
                             <p className="text-xs text-gray-500 mt-2 ml-1">
                                 If provided, the payslip will be sent to this email instead of the employee's default registered email.
                             </p>
+                        </div>
+
+                        {/* Document Type Toggle */}
+                        <div className="flex items-center justify-between p-4 rounded-xl border border-purple-100 bg-purple-50">
+                            <div>
+                                <div className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                    <FaFileInvoiceDollar className="text-purple-500" size={13} />
+                                    Payslip Type
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {isSummary ? 'Summary — key totals only.' : 'Details — full breakdown with all components.'}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className={`text-xs font-semibold select-none cursor-pointer transition-colors ${!isSummary ? 'text-gray-800' : 'text-gray-400'}`} onClick={() => setIsSummary(false)}>Details</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSummary(v => !v)}
+                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isSummary ? 'bg-purple-500' : 'bg-gray-300'}`}
+                                >
+                                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isSummary ? 'translate-x-5' : 'translate-x-0'}`} />
+                                </button>
+                                <span className={`text-xs font-semibold select-none cursor-pointer transition-colors ${isSummary ? 'text-purple-700' : 'text-gray-400'}`} onClick={() => setIsSummary(true)}>Summary</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
+            {/* Download Confirm Modal */}
+            <Modal
+                isOpen={modalType === MODAL_TYPES.CONFIRM_DOWNLOAD && !!selectedPayroll}
+                onClose={closeModal}
+                title="Download Payslip"
+                subtitle="Choose format before downloading."
+                icon={<FaDownload size={18} />}
+                size="sm"
+                footer={
+                    <div className="flex justify-end gap-3 w-full">
+                        <button
+                            type="button"
+                            onClick={closeModal}
+                            className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white hover:border-gray-300 transition-all duration-200 text-sm"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleConfirmDownload}
+                            disabled={downloadPayrollAccess.disabled}
+                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg shadow-blue-200 hover:shadow-xl text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                            <FaDownload className="w-4 h-4" />
+                            Download PDF
+                        </button>
+                    </div>
+                }
+            >
+                {selectedPayroll && (
+                    <div className="space-y-4 pb-2">
+                        <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-4">
+                            <div className="bg-white p-3 rounded-xl shadow-sm text-blue-500 mt-0.5">
+                                <FaFileInvoiceDollar size={24} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-800 text-base truncate">{selectedPayroll.employee?.name}</h4>
+                                <p className="text-sm text-gray-600 mb-1">
+                                    Payslip for <span className="font-medium text-gray-800">{getMonthName(selectedPayroll.payroll?.month ?? selectedMonth)} {selectedPayroll.payroll?.year ?? selectedYear}</span>
+                                </p>
+                                <p className="text-xs text-gray-500 font-mono">Net: <span className="font-medium text-gray-700">{formatCurrency(selectedPayroll.payroll?.net_salary)}</span></p>
+                            </div>
+                        </div>
+
+                        {/* Type Toggle */}
+                        <div className="flex items-center justify-between p-4 rounded-xl border border-blue-100 bg-blue-50">
+                            <div>
+                                <div className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                                    <FaFileInvoiceDollar className="text-blue-500" size={13} />
+                                    Payslip Format
+                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {isSummary ? 'Summary — key totals only.' : 'Details — full breakdown with all components.'}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className={`text-xs font-semibold select-none cursor-pointer transition-colors ${!isSummary ? 'text-gray-800' : 'text-gray-400'}`} onClick={() => setIsSummary(false)}>Details</span>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSummary(v => !v)}
+                                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isSummary ? 'bg-blue-500' : 'bg-gray-300'}`}
+                                >
+                                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isSummary ? 'translate-x-5' : 'translate-x-0'}`} />
+                                </button>
+                                <span className={`text-xs font-semibold select-none cursor-pointer transition-colors ${isSummary ? 'text-blue-700' : 'text-gray-400'}`} onClick={() => setIsSummary(true)}>Summary</span>
+                            </div>
                         </div>
                     </div>
                 )}

@@ -22,7 +22,23 @@ import usePermissionAccess from '../hooks/usePermissionAccess';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-const MODAL_TYPES = { NONE: 'NONE', VIEW: 'VIEW' };
+const triggerFileDownload = (url, filename) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+const downloadBlob = (blob, filename) => {
+    const downloadUrl = URL.createObjectURL(blob);
+    triggerFileDownload(downloadUrl, filename);
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+};
+
+const MODAL_TYPES = { NONE: 'NONE', VIEW: 'VIEW', CONFIRM_DOWNLOAD: 'CONFIRM_DOWNLOAD' };
 
 const MONTHS = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -238,6 +254,7 @@ const MyPayroll = () => {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [activeActionMenu, setActiveActionMenu] = useState(null);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isSummary, setIsSummary] = useState(true);
 
     const { pagination, updatePagination, goToPage, changeLimit } = usePagination(1, 12);
     const fetchInProgress = useRef(false);
@@ -389,23 +406,72 @@ const MyPayroll = () => {
         if (newPage !== pagination.page) goToPage(newPage);
     }, [pagination.page, goToPage]);
 
-    const handleDownloadPdf = async (payrollEntryId) => {
+    const getPayrollPdfFilename = (payrollItem) => {
+        const month = Number(payrollItem?.payroll?.month);
+        const year = Number(payrollItem?.payroll?.year);
+        const normalizedMonth = Number.isFinite(month) ? String(month).padStart(2, '0') : 'month';
+        const normalizedYear = Number.isFinite(year) ? String(year) : 'year';
+        return `${normalizedMonth}_${normalizedYear}_payroll.pdf`;
+    };
+
+    const handleDownloadPdf = (item) => {
         if (!downloadAccess.allowed) {
             toast.error(getAccessMessage(downloadAccess));
             return;
         }
+        const payrollEntryId = item?.payroll?.id;
+        if (!payrollEntryId) {
+            toast.error('Payroll entry ID not found');
+            return;
+        }
+        setSelectedPayroll(item);
+        setIsSummary(true);
+        setModalType(MODAL_TYPES.CONFIRM_DOWNLOAD);
+        setActiveActionMenu(null);
+    };
 
+    const handleConfirmDownload = async () => {
+        if (!selectedPayroll) return;
+        closeModal();
         setIsDownloading(true);
         try {
             const company = JSON.parse(localStorage.getItem('company'));
             const companyId = company?.id ?? null;
-            const response = await apiCall('/payroll/download', 'POST', { payroll_entry_id: payrollEntryId }, companyId);
-            const result = await response.json();
-            if (result.success && result.url) {
-                toast.success(result.message || 'Payslip generated successfully');
-                window.open(result.url, '_blank');
+            const payrollEntryId = selectedPayroll.payroll.id;
+            const filename = getPayrollPdfFilename(selectedPayroll);
+
+            const response = await apiCall('/payroll/download', 'POST', { payroll_entry_id: payrollEntryId, type: isSummary ? 'summary' : 'details' }, companyId);
+
+            if (!response.ok) {
+                let errorMessage = 'Failed to download payslip';
+                try {
+                    const errorResult = await response.json();
+                    errorMessage = errorResult?.message || errorMessage;
+                } catch { /* keep fallback */ }
+                throw new Error(errorMessage);
+            }
+
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                const result = await response.json();
+                const fileUrl = result.url || result.file_url || result.data?.url || result.data?.file_url;
+                if (result.success && fileUrl) {
+                    try {
+                        const fileResponse = await fetch(fileUrl);
+                        if (!fileResponse.ok) throw new Error('Unable to fetch PDF file');
+                        const fileBlob = await fileResponse.blob();
+                        downloadBlob(fileBlob, filename);
+                    } catch {
+                        triggerFileDownload(fileUrl, filename);
+                    }
+                    toast.success(result.message || 'Payslip downloaded successfully');
+                } else {
+                    throw new Error(result.message || 'Failed to download payslip');
+                }
             } else {
-                throw new Error(result.message || 'Failed to download payslip');
+                const blob = await response.blob();
+                downloadBlob(blob, filename);
+                toast.success('Payslip downloaded successfully');
             }
         } catch (e) {
             toast.error(e.message || 'Failed to download payslip');
@@ -543,7 +609,7 @@ const MyPayroll = () => {
                     )}
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-3 flex-shrink-0">
                     <ManagementViewSwitcher viewMode={viewMode} onChange={setViewMode} accent="blue" />
                 </div>
             </motion.div>
@@ -678,7 +744,7 @@ const MyPayroll = () => {
                                                                 {
                                                                     label: 'Download PDF',
                                                                     icon: <FaDownload />,
-                                                                    onClick: () => handleDownloadPdf(item.payroll.id)
+                                                                    onClick: () => handleDownloadPdf(item)
                                                                 }
                                                             ]}
                                                         />
@@ -789,7 +855,7 @@ const MyPayroll = () => {
                                                     {
                                                         label: 'Download PDF',
                                                         icon: <FaDownload />,
-                                                        onClick: () => handleDownloadPdf(item.payroll.id)
+                                                        onClick: () => handleDownloadPdf(item)
                                                     }
                                                 ]}
                                             />
@@ -812,9 +878,92 @@ const MyPayroll = () => {
                 </>
             )}
 
+            {/* Download Confirm Modal */}
+            <AnimatePresence>
+                {modalType === MODAL_TYPES.CONFIRM_DOWNLOAD && selectedPayroll && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                        onClick={closeModal}
+                    >
+                        <ModalScrollLock />
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            {/* Header */}
+                            <div className="flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md">
+                                        <FaDownload className="text-white text-sm" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-base font-bold text-slate-900">Download Payslip</h2>
+                                        <p className="text-xs text-slate-500 mt-0.5">Choose format before downloading</p>
+                                    </div>
+                                </div>
+                                <button type="button" onClick={closeModal} className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-slate-600 hover:bg-gray-100 transition-all">
+                                    <FaTimes className="h-4 w-4" />
+                                </button>
+                            </div>
+
+                            {/* Body */}
+                            <div className="p-6 space-y-4">
+                                <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-3">
+                                    <div className="bg-white p-2.5 rounded-xl shadow-sm text-blue-500">
+                                        <FaFileInvoiceDollar size={20} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-gray-800 text-sm">{MONTHS[selectedPayroll.payroll?.month - 1]} {selectedPayroll.payroll?.year}</p>
+                                        <p className="text-xs text-gray-500 mt-0.5 font-mono">#{selectedPayroll.payroll?.id}</p>
+                                    </div>
+                                </div>
+
+                                {/* Type Toggle */}
+                                <div className="flex items-center justify-between p-4 rounded-xl border border-blue-100 bg-blue-50">
+                                    <div>
+                                        <div className="text-sm font-semibold text-gray-800">Payslip Format</div>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {isSummary ? 'Summary — key totals only.' : 'Details — full breakdown.'}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-xs font-semibold select-none cursor-pointer transition-colors ${!isSummary ? 'text-gray-800' : 'text-gray-400'}`} onClick={() => setIsSummary(false)}>Details</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsSummary(v => !v)}
+                                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isSummary ? 'bg-blue-500' : 'bg-gray-300'}`}
+                                        >
+                                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isSummary ? 'translate-x-5' : 'translate-x-0'}`} />
+                                        </button>
+                                        <span className={`text-xs font-semibold select-none cursor-pointer transition-colors ${isSummary ? 'text-blue-700' : 'text-gray-400'}`} onClick={() => setIsSummary(true)}>Summary</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-100 flex justify-end gap-3">
+                                <button onClick={closeModal} className="px-5 py-2 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-white transition-all text-sm">Cancel</button>
+                                <button
+                                    onClick={handleConfirmDownload}
+                                    disabled={!downloadAccess.allowed}
+                                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                >
+                                    <FaDownload size={13} /> Download PDF
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* View Modal */}
             <AnimatePresence>
-                {modalType !== MODAL_TYPES.NONE && (
+                {modalType === MODAL_TYPES.VIEW && (
                     <motion.div variants={mySalaryBackdropVariants} initial="hidden" animate="visible" exit="exit"
                         className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4"
                         onClick={closeModal}
@@ -828,9 +977,7 @@ const MyPayroll = () => {
                             className="relative w-full max-w-4xl max-h-[80vh] m-auto flex flex-col bg-white rounded-xl shadow-2xl overflow-hidden"
                             onClick={e => e.stopPropagation()}
                         >
-                            {modalType === MODAL_TYPES.VIEW && (
-                                <PayrollViewModal payroll={selectedPayroll} employee={employee} onClose={closeModal} />
-                            )}
+                            <PayrollViewModal payroll={selectedPayroll} employee={employee} onClose={closeModal} />
                         </motion.div>
                     </motion.div>
                 )}
