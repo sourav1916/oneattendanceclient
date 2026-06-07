@@ -2605,7 +2605,7 @@ function TabContent({ tabKey, tabLabel, tabIcon, employeeId, refreshKey = 0 }) {
       const response = await apiCall(
         "/payroll/download",
         "POST",
-        { payroll_entry_id: currentPayroll.id, type: payrollPdfIsSummary ? "summary" : "details" },
+        { payroll_entry_id: currentPayroll.id, type: payrollPdfIsSummary ? "summary" : "detailed" },
         companyId
       );
 

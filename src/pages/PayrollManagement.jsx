@@ -543,7 +543,7 @@ const PayrollManagement = () => {
             const company = JSON.parse(localStorage.getItem('company'));
             const companyId = company?.id ?? null;
             const payrollEntryId = selectedPayroll.payroll.id;
-            const response = await apiCall('/payroll/download', 'POST', { payroll_entry_id: payrollEntryId, type: isSummary ? 'summary' : 'details' }, companyId);
+            const response = await apiCall('/payroll/download', 'POST', { payroll_entry_id: payrollEntryId, type: isSummary ? 'summary' : 'detailed' }, companyId);
 
             if (!response.ok) {
                 let errorMessage = 'Failed to download payslip';
