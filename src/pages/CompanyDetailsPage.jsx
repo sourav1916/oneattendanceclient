@@ -1,16 +1,31 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiCall, { uploadFile } from '../utils/api';
 import { getPreciseLocation } from '../utils/geolocation';
 import SelectField from '../components/SelectField';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { RefreshButton } from '../components/common';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   FaArrowLeft, FaBuilding, FaGlobe, FaMapMarkerAlt, FaRoad, FaCity, FaEnvelope, FaCrosshairs,
   FaCheck, FaTimes, FaSpinner, FaMapPin,FaPlus, FaTrash, FaLink, FaWifi, FaLocationArrow, FaCamera, FaQrcode, FaFingerprint, FaUserCheck, FaChevronDown, FaChevronUp, FaSave, FaInfoCircle, FaUndo
 } from 'react-icons/fa';
 
 const GEOCODING_API = "https://nominatim.openstreetmap.org/search";
+
+const COMPANY_TABS = [
+  { key: 'basic', label: 'Basic Information', icon: <FaBuilding size={12} /> },
+  { key: 'preferences', label: 'Preferences', icon: <FaGlobe size={12} /> },
+  { key: 'address', label: 'Address & Location', icon: <FaMapMarkerAlt size={12} /> },
+  { key: 'attendance', label: 'Attendance Config', icon: <FaUserCheck size={12} /> },
+];
+
+const BASIC_UPDATE_FIELDS = [
+  'name', 'legal_name', 'logo_url', 'address_line1', 'address_line2',
+  'city', 'state', 'postal_code', 'country', 'transaction_currency', 'gst_no',
+];
+
+const ATTENDANCE_UPDATE_FIELDS = ['latitude', 'longitude', 'max_distance'];
 
 const DEFAULT_CURRENCY_OPTIONS = [
   { value: "inr", label: "Indian Rupee (₹)" },
@@ -184,14 +199,15 @@ function MethodTabButton({ tab, active, enabled, disabled, onClick, onExpand, on
 export default function CompanyDetailsPage() {
   const { companyId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
   
-  const [company, setCompany] = useState(location.state?.company || null);
-  const [isLoadingCompany, setIsLoadingCompany] = useState(!location.state?.company);
+  const [company, setCompany] = useState(null);
+  const [isLoadingCompany, setIsLoadingCompany] = useState(true);
+  const [isRefreshingCompany, setIsRefreshingCompany] = useState(false);
+  const [activeTab, setActiveTab] = useState('basic');
   const [formData, setFormData] = useState({
     name: "", legal_name: "", logo_url: "", address_line1: "", address_line2: "",
     city: "", state: "", postal_code: "", country: "India", latitude: "", longitude: "",
-    transaction_currency: "inr", max_distance: ""
+    transaction_currency: "inr", gst_no: "", max_distance: ""
   });
   const [originalData, setOriginalData] = useState({});
   const [currencyOptions, setCurrencyOptions] = useState(DEFAULT_CURRENCY_OPTIONS);
@@ -204,6 +220,11 @@ export default function CompanyDetailsPage() {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
+  const companyDetailsRequestRef = useRef({ key: null, promise: null });
+  const currencyConstantsRequestRef = useRef(null);
+  const currencyConstantsLoadedRef = useRef(false);
+  const attendanceMethodsRequestRef = useRef(new Map());
+  const attendanceMethodsCacheRef = useRef(new Map());
 
   // Advanced settings state
   const [availableMethods, setAvailableMethods] = useState([]);
@@ -214,27 +235,49 @@ export default function CompanyDetailsPage() {
   const [ipInput, setIpInput] = useState('');
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 
-  useEffect(() => {
-    if (!company && companyId) {
-      const fetchCompany = async () => {
-        setIsLoadingCompany(true);
-        try {
-          const res = await apiCall(`/company/list`, 'GET', null, companyId);
-          const data = await res.json();
-          if (data.success && data.data) {
-            const found = data.data.find(c => c.id === parseInt(companyId));
-            if (found) setCompany(found);
-            else toast.error("Company not found");
-          }
-        } catch (e) {
-          toast.error("Failed to load company details");
-        } finally {
-          setIsLoadingCompany(false);
-        }
-      };
-      fetchCompany();
+  const fetchCompanyDetails = useCallback(async ({ showInitialLoader = false, showToast = false, force = false } = {}) => {
+    if (!companyId) {
+      setCompany(null);
+      setIsLoadingCompany(false);
+      return;
     }
-  }, [companyId, company]);
+
+    if (showInitialLoader) setIsLoadingCompany(true);
+    else setIsRefreshingCompany(true);
+
+    try {
+      const requestKey = String(companyId);
+      if (force || companyDetailsRequestRef.current.key !== requestKey || !companyDetailsRequestRef.current.promise) {
+        companyDetailsRequestRef.current = {
+          key: requestKey,
+          promise: apiCall(`/company/details?company_id=${encodeURIComponent(companyId)}`, 'GET', null, companyId)
+            .then(async (response) => ({ response, result: await response.json() })),
+        };
+      }
+      const { response, result } = await companyDetailsRequestRef.current.promise;
+      if (!response.ok || !result.success || !result.data) {
+        companyDetailsRequestRef.current = { key: null, promise: null };
+        throw new Error(result.message || 'Failed to load company details');
+      }
+      setCompany(result.data);
+      if (showToast) toast.success('Company details refreshed');
+    } catch (error) {
+      companyDetailsRequestRef.current = { key: null, promise: null };
+      toast.error(error.message || 'Failed to load company details');
+      if (showInitialLoader) setCompany(null);
+    } finally {
+      if (showInitialLoader) setIsLoadingCompany(false);
+      else setIsRefreshingCompany(false);
+    }
+  }, [companyId]);
+
+  useEffect(() => {
+    fetchCompanyDetails({ showInitialLoader: true });
+  }, [fetchCompanyDetails]);
+
+  const handleRefreshCompany = () => {
+    fetchCompanyDetails({ showToast: true, force: true });
+  };
 
   useEffect(() => {
     if (company) {
@@ -244,6 +287,7 @@ export default function CompanyDetailsPage() {
         city: company.city || "", state: company.state || "", postal_code: company.postal_code || "",
         country: company.country || "India", latitude: company.latitude || "", longitude: company.longitude || "",
         transaction_currency: normalizeCurrencyValue(company.transaction_currency),
+        gst_no: company.gst_no || "",
         max_distance: company.max_distance ?? ""
       };
       setFormData(data);
@@ -261,14 +305,23 @@ export default function CompanyDetailsPage() {
   useEffect(() => {
     let ignore = false;
     const loadCurrencies = async () => {
+      if (currencyConstantsLoadedRef.current) return;
       setLoadingCurrencies(true);
       try {
-        const response = await apiCall('/constants/?type=currency', 'GET');
-        const result = await response.json();
-        if (response.ok && result.success && !ignore) {
-          setCurrencyOptions(normalizeCurrencyOptions(result.data?.currency_types || []));
+        if (!currencyConstantsRequestRef.current) {
+          currencyConstantsRequestRef.current = apiCall('/constants/?type=currency', 'GET')
+            .then(async (response) => ({ response, result: await response.json() }));
+        }
+        const { response, result } = await currencyConstantsRequestRef.current;
+        if (response.ok && result.success) {
+          const options = normalizeCurrencyOptions(result.data?.currency_types || []);
+          currencyConstantsLoadedRef.current = true;
+          if (!ignore) setCurrencyOptions(options);
+        } else {
+          currencyConstantsRequestRef.current = null;
         }
       } catch (error) {
+        currencyConstantsRequestRef.current = null;
         if (!ignore) setCurrencyOptions(DEFAULT_CURRENCY_OPTIONS);
       } finally {
         if (!ignore) setLoadingCurrencies(false);
@@ -282,17 +335,36 @@ export default function CompanyDetailsPage() {
     if (!company?.id) return;
     let ignore = false;
     const loadAttendanceMethods = async () => {
+      const cacheKey = String(company.id);
+      const cachedOptions = attendanceMethodsCacheRef.current.get(cacheKey);
+      if (cachedOptions) {
+        setAvailableMethods(cachedOptions);
+        const preferred = cachedOptions.find((option) => option.value === 'manual') || cachedOptions[0];
+        if (preferred) setActiveMethod((current) => (current && cachedOptions.some((option) => option.value === current) ? current : preferred.value));
+        return;
+      }
+
       setLoadingMethods(true);
       try {
-        const response = await apiCall('/constants/?type=attendance_method', 'GET', null, company.id);
-        const result = await response.json();
+        if (!attendanceMethodsRequestRef.current.has(cacheKey)) {
+          attendanceMethodsRequestRef.current.set(
+            cacheKey,
+            apiCall('/constants/?type=attendance_method', 'GET', null, company.id)
+              .then(async (response) => ({ response, result: await response.json() }))
+          );
+        }
+        const { response, result } = await attendanceMethodsRequestRef.current.get(cacheKey);
         if (response.ok && result.success && !ignore) {
           const options = normalizeMethodOptions(result.data?.attendance_methods || []);
+          attendanceMethodsCacheRef.current.set(cacheKey, options);
           setAvailableMethods(options);
           const preferred = options.find((option) => option.value === 'manual') || options[0];
           if (preferred) setActiveMethod((current) => (current && options.some((option) => option.value === current) ? current : preferred.value));
+        } else if (!response.ok || !result.success) {
+          attendanceMethodsRequestRef.current.delete(cacheKey);
         }
       } catch (error) {
+        attendanceMethodsRequestRef.current.delete(cacheKey);
         if (!ignore) toast.error(error.message || 'Failed to load attendance methods');
       } finally {
         if (!ignore) setLoadingMethods(false);
@@ -406,7 +478,7 @@ export default function CompanyDetailsPage() {
     setIsSubmitting(true);
     try {
       const payload = { id: company.id, company_ips: [] };
-      const response = await apiCall('/company/update', 'PUT', payload, company.id);
+      const response = await apiCall('/company/update-attendance-settings', 'PUT', payload, company.id);
       const result = await response.json();
       if (!result.success) throw new Error(result.message || 'Failed to update company');
       toast.success('Company IP auto-detected successfully');
@@ -442,31 +514,63 @@ export default function CompanyDetailsPage() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const changedFields = {};
-      Object.keys(formData).forEach(key => {
-        if (key !== 'logo_url' && formData[key] !== originalData[key]) {
-          if (formData[key] || originalData[key]) {
-            changedFields[key] = key === 'max_distance' && formData[key] !== '' ? Number(formData[key]) : formData[key];
+      const basicPayload = { id: company.id };
+      const attendancePayload = { id: company.id };
+
+      BASIC_UPDATE_FIELDS.forEach((key) => {
+        const hasLogoChange = key === 'logo_url' && logoFile;
+        if (hasLogoChange || formData[key] !== originalData[key]) {
+          if (formData[key] || originalData[key] || hasLogoChange) {
+            basicPayload[key] = formData[key];
           }
         }
       });
-      if (logoFile) changedFields['logo_url'] = formData.logo_url;
+
+      ATTENDANCE_UPDATE_FIELDS.forEach((key) => {
+        if (formData[key] !== originalData[key]) {
+          if (formData[key] || originalData[key]) {
+            attendancePayload[key] = key === 'max_distance' && formData[key] !== '' ? Number(formData[key]) : formData[key];
+          }
+        }
+      });
 
       const normalizedIps = ips.map((ip) => ip.trim()).filter(Boolean);
       const normalizedMethods = enabledMethods.map((method) => method.trim().toLowerCase()).filter(Boolean);
-      
-      changedFields.company_ips = normalizedIps;
-      changedFields.attendance_methods = normalizedMethods;
-      if (normalizedIps.length === 0) changedFields.clear_ips = true;
 
-      changedFields.id = company.id;
+      const originalIps = parseIPs(company?.company_ips || []);
+      const ipsChanged = ips.length !== originalIps.length || ips.some((ip) => !originalIps.includes(ip));
+      if (ipsChanged) {
+        attendancePayload.company_ips = normalizedIps;
+        if (normalizedIps.length === 0) attendancePayload.clear_ips = true;
+      }
 
-      const response = await apiCall('/company/update', 'PUT', changedFields, company.id);
-      const result = await response.json();
-      if (!result.success) throw new Error(result.message || 'Update failed');
+      const originalMethods = parseMethods(company?.attendance_methods || []);
+      const methodsChanged = enabledMethods.length !== originalMethods.length || enabledMethods.some((method) => !originalMethods.includes(method));
+      if (methodsChanged) attendancePayload.attendance_methods = normalizedMethods;
+
+      const shouldUpdateBasic = Object.keys(basicPayload).length > 1;
+      const shouldUpdateAttendance = Object.keys(attendancePayload).length > 1;
+      if (!shouldUpdateBasic && !shouldUpdateAttendance) return;
+
+      const updatedCompany = {};
+
+      if (shouldUpdateBasic) {
+        const response = await apiCall('/company/update-basic', 'PUT', basicPayload, company.id);
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message || 'Basic information update failed');
+        Object.assign(updatedCompany, basicPayload);
+      }
+
+      if (shouldUpdateAttendance) {
+        const response = await apiCall('/company/update-attendance-settings', 'PUT', attendancePayload, company.id);
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message || 'Attendance settings update failed');
+        Object.assign(updatedCompany, attendancePayload);
+        if (attendancePayload.clear_ips) updatedCompany.company_ips = [];
+      }
 
       toast.success('Company updated successfully!');
-      setCompany(prev => ({ ...prev, ...changedFields }));
+      setCompany(prev => ({ ...prev, ...updatedCompany }));
       setOriginalData(prev => ({ ...prev, ...formData }));
       setLogoFile(null);
     } catch (error) {
@@ -575,186 +679,274 @@ export default function CompanyDetailsPage() {
     );
   }
 
-  return (
-    <div className="mx-auto max-w-[1600px] space-y-6 relative pb-20">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/company-settings')} className="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-600 shadow-sm flex items-center justify-center">
-            <FaArrowLeft />
-          </button>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 tracking-tight">{company.name}</h2>
-            <p className="text-sm text-gray-500 font-medium">{company.legal_name || 'No legal name provided'}</p>
+  const fullAddress = [formData.address_line1, formData.address_line2, formData.city, formData.state, formData.postal_code, formData.country].filter(Boolean).join(', ');
+
+  const renderBasicInformation = () => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
+        <div className="p-2 bg-blue-50 text-blue-500 rounded-lg"><FaBuilding /></div>
+        <h3 className="text-base font-bold text-gray-800">Basic Information</h3>
+      </div>
+      <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="space-y-1.5">
+          <label className="text-sm font-semibold text-gray-700">Company Name</label>
+          <input name="name" value={formData.name} onChange={handleChange} className={inputClass} placeholder="Company Name" />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-semibold text-gray-700">Legal Name</label>
+          <input name="legal_name" value={formData.legal_name} onChange={handleChange} className={inputClass} placeholder="Legal Name" />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-semibold text-gray-700">GST Number</label>
+          <input name="gst_no" value={formData.gst_no} onChange={handleChange} className={inputClass} placeholder="GST Number" />
+        </div>
+        <div className="md:col-span-2 space-y-2 pt-2">
+          <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <FaLink className="text-indigo-400" /> Company Logo
+          </label>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+            <div className="flex-1 flex items-center gap-3 min-w-0">
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} disabled={isUploadingLogo} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 disabled:opacity-50" />
+              {isUploadingLogo && <FaSpinner className="w-5 h-5 text-indigo-600 animate-spin" />}
+            </div>
+            {(logoPreview || formData.logo_url) && !isUploadingLogo && (
+              <div className="flex items-center gap-3 sm:pl-4 sm:border-l border-gray-200">
+                <img src={logoPreview || formData.logo_url} alt="Logo" className="w-12 h-12 rounded-lg object-contain bg-white border border-gray-200 shadow-sm" />
+                <button type="button" onClick={handleRemoveLogo} className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 transition-colors" title="Remove Logo"><FaTrash size={14} /></button>
+              </div>
+            )}
           </div>
         </div>
       </div>
+    </div>
+  );
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Column */}
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* Basic Info */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
-              <div className="p-2 bg-blue-50 text-blue-500 rounded-lg"><FaBuilding /></div>
-              <h3 className="text-lg font-bold text-gray-800">Basic Information</h3>
-            </div>
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="space-y-1.5 md:col-span-2">
-                <label className="text-sm font-semibold text-gray-700">Company Name</label>
-                <input name="name" value={formData.name} onChange={handleChange} className={inputClass} placeholder="Company Name" />
-              </div>
-              <div className="space-y-1.5 md:col-span-2">
-                <label className="text-sm font-semibold text-gray-700">Legal Name</label>
-                <input name="legal_name" value={formData.legal_name} onChange={handleChange} className={inputClass} placeholder="Legal Name" />
-              </div>
-              <div className="md:col-span-2 space-y-2 pt-2">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <FaLink className="text-indigo-400" /> Company Logo
-                </label>
-                <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                  <div className="flex-1 flex items-center gap-3">
-                    <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} disabled={isUploadingLogo} className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 disabled:opacity-50" />
-                    {isUploadingLogo && <FaSpinner className="w-5 h-5 text-indigo-600 animate-spin" />}
-                  </div>
-                  {(logoPreview || formData.logo_url) && !isUploadingLogo && (
-                    <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
-                       <img src={logoPreview || formData.logo_url} alt="Logo" className="w-12 h-12 rounded-lg object-contain bg-white border border-gray-200 shadow-sm" />
-                       <button type="button" onClick={handleRemoveLogo} className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 transition-colors" title="Remove Logo"><FaTrash size={14} /></button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+  const renderPreferences = () => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
+        <div className="p-2 bg-emerald-50 text-emerald-500 rounded-lg"><FaGlobe /></div>
+        <h3 className="text-base font-bold text-gray-800">Preferences</h3>
+      </div>
+      <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="space-y-1.5">
+          <label className="text-sm font-semibold text-gray-700">Transaction Currency</label>
+          <SelectField isLoading={loadingCurrencies} options={currencyOptions} value={currencyOptions.find(o => o.value === formData.transaction_currency) || null} onChange={handleCurrencyChange} placeholder="Select currency" />
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAddress = () => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
+        <div className="p-2 bg-indigo-50 text-indigo-500 rounded-lg"><FaMapMarkerAlt /></div>
+        <h3 className="text-base font-bold text-gray-800">Address & Location Details</h3>
+      </div>
+      <div className="p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/50">
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="addressMode" value="auto" checked={addressMode === 'auto'} onChange={() => handleAddressModeChange('auto')} className="text-indigo-600 w-4 h-4" />
+              <span className="text-sm text-indigo-900 font-semibold">Auto-detect Location</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="addressMode" value="manual" checked={addressMode === 'manual'} onChange={() => handleAddressModeChange('manual')} className="text-indigo-600 w-4 h-4" />
+              <span className="text-sm text-indigo-900 font-semibold">Manual Entry</span>
+            </label>
           </div>
-
-          {/* Address & Settings */}
-          <CollapsibleSection title="Address & Location Details" icon={<FaMapMarkerAlt />} defaultOpen badge={formData.city}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100/50">
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="addressMode" value="auto" checked={addressMode === 'auto'} onChange={() => handleAddressModeChange('auto')} className="text-indigo-600 w-4 h-4" />
-                  <span className="text-sm text-indigo-900 font-semibold">Auto-detect Location</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="addressMode" value="manual" checked={addressMode === 'manual'} onChange={() => handleAddressModeChange('manual')} className="text-indigo-600 w-4 h-4" />
-                  <span className="text-sm text-indigo-900 font-semibold">Manual Entry</span>
-                </label>
-              </div>
-              {isGeocoding && <span className="text-xs font-bold text-indigo-600 bg-white px-3 py-1.5 rounded-full shadow-sm flex items-center gap-2"><FaSpinner className="animate-spin" /> Detecting...</span>}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2 space-y-1.5">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><FaRoad className="text-gray-400" /> Address Line 1</label>
-                <input name="address_line1" value={formData.address_line1} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="Street, building, etc." />
-              </div>
-              <div className="md:col-span-2 space-y-1.5">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><FaRoad className="text-gray-400" /> Address Line 2</label>
-                <input name="address_line2" value={formData.address_line2} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="Suite, apartment, etc." />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><FaCity className="text-gray-400" /> City</label>
-                <input name="city" value={formData.city} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="City" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><FaGlobe className="text-gray-400" /> State</label>
-                <input name="state" value={formData.state} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="State" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><FaEnvelope className="text-gray-400" /> Postal Code</label>
-                <input name="postal_code" value={formData.postal_code} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="Postal Code" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><FaGlobe className="text-gray-400" /> Country</label>
-                <input name="country" value={formData.country} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="Country" />
-              </div>
-              
-              <div className="md:col-span-2 pt-4 mt-2 border-t border-gray-100">
-                <div className="flex items-center justify-between mb-3">
-                   <p className="text-sm font-bold text-gray-800 flex items-center gap-2"><FaCrosshairs className="text-indigo-500" /> GPS Coordinates</p>
-                   {addressMode === 'manual' && (
-                     <button type="button" onClick={handleManualGeocode} disabled={isGeocoding} className="text-xs font-semibold bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                       {isGeocoding ? <FaSpinner className="animate-spin" /> : <FaMapPin />} Get from Address
-                     </button>
-                   )}
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Latitude</label>
-                    <input name="latitude" value={formData.latitude} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} font-mono text-xs ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="Latitude" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Longitude</label>
-                    <input name="longitude" value={formData.longitude} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} font-mono text-xs ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="Longitude" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CollapsibleSection>
+          {isGeocoding && <span className="text-xs font-bold text-indigo-600 bg-white px-3 py-1.5 rounded-full shadow-sm flex items-center gap-2"><FaSpinner className="animate-spin" /> Detecting...</span>}
         </div>
 
-        {/* Sidebar Column */}
-        <div className="space-y-6">
-          
-          {/* Preferences */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-             <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-3">
-              <div className="p-2 bg-emerald-50 text-emerald-500 rounded-lg"><FaGlobe /></div>
-              <h3 className="text-md font-bold text-gray-800">Preferences</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2 space-y-1.5">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><FaRoad className="text-gray-400" /> Address Line 1</label>
+            <input name="address_line1" value={formData.address_line1} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="Street, building, etc." />
+          </div>
+          <div className="md:col-span-2 space-y-1.5">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><FaRoad className="text-gray-400" /> Address Line 2</label>
+            <input name="address_line2" value={formData.address_line2} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="Suite, apartment, etc." />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><FaCity className="text-gray-400" /> City</label>
+            <input name="city" value={formData.city} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="City" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><FaGlobe className="text-gray-400" /> State</label>
+            <input name="state" value={formData.state} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="State" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><FaEnvelope className="text-gray-400" /> Postal Code</label>
+            <input name="postal_code" value={formData.postal_code} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="Postal Code" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><FaGlobe className="text-gray-400" /> Country</label>
+            <input name="country" value={formData.country} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="Country" />
+          </div>
+          <div className="md:col-span-2 pt-4 mt-2 border-t border-gray-100">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-bold text-gray-800 flex items-center gap-2"><FaCrosshairs className="text-indigo-500" /> GPS Coordinates</p>
+              {addressMode === 'manual' && (
+                <button type="button" onClick={handleManualGeocode} disabled={isGeocoding} className="text-xs font-semibold bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                  {isGeocoding ? <FaSpinner className="animate-spin" /> : <FaMapPin />} Get from Address
+                </button>
+              )}
             </div>
-            <div className="p-5 space-y-4">
-               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-gray-700">Transaction Currency</label>
-                <SelectField isLoading={loadingCurrencies} options={currencyOptions} value={currencyOptions.find(o => o.value === formData.transaction_currency) || null} onChange={handleCurrencyChange} placeholder="Select currency" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Latitude</label>
+                <input name="latitude" value={formData.latitude} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} font-mono text-xs ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="Latitude" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-gray-700">Max Distance (meters)</label>
-                <input name="max_distance" value={formData.max_distance} onChange={handleChange} className={inputClass} placeholder="e.g., 50" />
-                <p className="text-xs text-gray-400 mt-1">Allowed radius for GPS attendance.</p>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Longitude</label>
+                <input name="longitude" value={formData.longitude} onChange={handleChange} disabled={addressMode === 'auto' && !isAddressAutoDetected} className={`${inputClass} font-mono text-xs ${(addressMode === 'auto' && !isAddressAutoDetected) ? disabledClass : ''}`} placeholder="Longitude" />
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
 
-          {/* Attendance Methods */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-             <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-50 text-purple-500 rounded-lg"><FaUserCheck /></div>
-                <h3 className="text-md font-bold text-gray-800">Attendance Config</h3>
-              </div>
-              <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-lg">{enabledMethods.length} Active</span>
-            </div>
-            <div className="p-0">
-               {loadingMethods ? (
-                  <div className="p-8 flex justify-center"><FaSpinner className="animate-spin text-purple-500 text-2xl" /></div>
-               ) : (
-                  <div className="flex flex-col">
-                    {availableMethods.map((tab) => {
-                      const isActive = activeMethod === tab.value;
-                      const isEnabled = enabledMethods.includes(tab.value);
-                      return (
-                        <div key={tab.value} className="border-b border-gray-100 last:border-0">
-                          <MethodTabButton tab={tab} active={isActive} enabled={isEnabled} disabled={!tab.isAvailable} onClick={() => setActiveMethod(isActive ? null : tab.value)} onExpand={() => setActiveMethod(tab.value)} onToggle={() => toggleMethod(tab.value)} />
-                          <AnimatePresence initial={false}>
-                            {isActive && (
-                              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-                                <div className="bg-gray-50/50 p-4 border-t border-gray-100">
-                                  {renderMethodBody(tab)}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
+  const renderAttendance = () => (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-purple-50 text-purple-500 rounded-lg"><FaUserCheck /></div>
+          <h3 className="text-base font-bold text-gray-800">Attendance Config</h3>
+        </div>
+        <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-lg">{enabledMethods.length} Active</span>
+      </div>
+      <div className="p-5 border-b border-gray-100">
+        <div className="max-w-sm space-y-1.5">
+          <label className="text-sm font-semibold text-gray-700">Max Distance (meters)</label>
+          <input name="max_distance" value={formData.max_distance} onChange={handleChange} className={inputClass} placeholder="e.g., 50" />
+          <p className="text-xs text-gray-400 mt-1">Allowed radius for GPS attendance.</p>
+        </div>
+      </div>
+      <div className="p-0">
+        {loadingMethods ? (
+          <div className="p-8 flex justify-center"><FaSpinner className="animate-spin text-purple-500 text-2xl" /></div>
+        ) : (
+          <div className="flex flex-col">
+            {availableMethods.map((tab) => {
+              const isActive = activeMethod === tab.value;
+              const isEnabled = enabledMethods.includes(tab.value);
+              return (
+                <div key={tab.value} className="border-b border-gray-100 last:border-0">
+                  <MethodTabButton tab={tab} active={isActive} enabled={isEnabled} disabled={!tab.isAvailable} onClick={() => setActiveMethod(isActive ? null : tab.value)} onExpand={() => setActiveMethod(tab.value)} onToggle={() => toggleMethod(tab.value)} />
+                  <AnimatePresence initial={false}>
+                    {isActive && (
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                        <div className="bg-gray-50/50 p-4 border-t border-gray-100">
+                          {renderMethodBody(tab)}
                         </div>
-                      );
-                    })}
-                  </div>
-               )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="mx-auto max-w-[1600px] space-y-5 relative pb-20">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden"
+      >
+        <div className="flex flex-col gap-4 px-5 pt-4 pb-4 border-b border-gray-100">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-12 w-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center overflow-hidden">
+                {formData.logo_url ? (
+                  <img src={formData.logo_url} alt={formData.name || 'Company logo'} className="h-full w-full object-contain bg-white" />
+                ) : (
+                  <FaBuilding className="text-indigo-500" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <div className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-indigo-700 border-indigo-200">
+                  <FaBuilding size={11} /> Company Details
+                </div>
+                <h1 className="text-base font-bold text-slate-900 truncate leading-snug mt-1">
+                  {formData.name || company.name || 'Company'}
+                </h1>
+                <p className="text-xs text-slate-400 mt-0.5 leading-relaxed truncate">
+                  {formData.legal_name || company.legal_name || 'No legal name provided'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <RefreshButton
+                loading={isRefreshingCompany}
+                onClick={handleRefreshCompany}
+                className="hidden sm:inline-flex"
+              >
+                Refresh
+              </RefreshButton>
+              
             </div>
           </div>
 
+          <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-500 min-w-0">
+              <p className="flex items-center gap-1.5 min-w-0">
+                <FaMapMarkerAlt size={10} className="shrink-0 text-indigo-400" />
+                <span className="truncate">{fullAddress || 'Address not provided'}</span>
+              </p>
+              <p className="flex items-center gap-1.5">
+                <FaGlobe size={10} className="shrink-0 text-emerald-400" />
+                <span className="font-semibold uppercase">{formData.transaction_currency || 'inr'}</span>
+              </p>
+              <p className="flex items-center gap-1.5">
+                <FaUserCheck size={10} className="shrink-0 text-purple-400" />
+                <span>{enabledMethods.length} attendance methods</span>
+              </p>
+            </div>
+            <RefreshButton
+              loading={isRefreshingCompany}
+              onClick={handleRefreshCompany}
+              className="sm:hidden w-full"
+            >
+              Refresh
+            </RefreshButton>
+          </div>
         </div>
+
+        <div className="flex items-center gap-1 px-4 overflow-x-auto scrollbar-none">
+          {COMPANY_TABS.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={[
+                  "inline-flex items-center gap-1.5 px-3 py-3 text-[13px] font-medium",
+                  "border-b-2 whitespace-nowrap transition-colors duration-150 -mb-px",
+                  isActive ? "border-indigo-600 text-indigo-700" : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300",
+                ].join(" ")}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      </motion.div>
+
+      <div className="px-1 lg:px-0">
+        {activeTab === 'basic' && renderBasicInformation()}
+        {activeTab === 'preferences' && renderPreferences()}
+        {activeTab === 'address' && renderAddress()}
+        {activeTab === 'attendance' && renderAttendance()}
       </div>
 
       {/* Floating Save Button Overlay */}
