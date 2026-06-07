@@ -554,10 +554,15 @@ const ManageAttendanceModal = ({ employee, initialStatus, isOpen, onClose, onSav
   const [notes, setNotes] = useState(employee?.remark || '');
 
   const { configs: leaveConfigs, loading: leaveConfigsLoading } = useLeaveConfigs(leaveType === 'paid', isOpen && status === 'leave');
-  const leaveOptions = useMemo(() => leaveConfigs.map((c) => ({
-    value: c.code,
-    label: `${c.code} - ${c.name}`
-  })), [leaveConfigs]);
+  const leaveOptions = useMemo(() => {
+    const options = leaveConfigs.map((c) => ({
+      value: c.code,
+      label: `${c.code} - ${c.name}`
+    }));
+    options.push({ value: 'holiday', label: 'Holiday' });
+    options.push({ value: 'weekend', label: 'Weekend' });
+    return options;
+  }, [leaveConfigs]);
 
   useEffect(() => {
     const targetStatus = initialStatus || 'present';
