@@ -1609,5 +1609,5 @@ const SalaryManagement = () => {
         </ManagementHub>
     );
 };
-
+export { EditSalaryModal, ReviseSalaryModal, DeleteConfirmModal, SalaryDetailModal };
 export default SalaryManagement;

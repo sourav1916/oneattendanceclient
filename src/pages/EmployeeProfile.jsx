@@ -13,7 +13,7 @@ import {
   FaComment, FaCog, FaMapPin, FaServer, FaInfoCircle,
   FaSpinner, FaSignInAlt, FaSignOutAlt, FaHourglassHalf,
   FaChevronLeft, FaFilePdf, FaPlus, FaSave,
-  FaDownload,
+  FaDownload,FaEdit,FaTrash,
 } from "react-icons/fa";
 import apiCall from "../utils/api";
 import { toast } from "react-toastify";
@@ -31,6 +31,7 @@ import CategoryPermissionSelector from "../components/common/CategoryPermissionS
 import SelectField from "../components/SelectField";
 import CompanyLedger from "./CompanyLedger";
 import SkeletonComponent from "../components/SkeletonComponent";
+import { EditSalaryModal, ReviseSalaryModal, DeleteConfirmModal } from "../pages/SalaryManagement";
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
@@ -1684,7 +1685,7 @@ function useAttendanceConfig(onView, onViewLogs, width, subType = "attendance") 
 
 // ─── SALARY CONFIG (updated for new API structure) ────────────────────────────
 
-function useSalaryConfig(onView, width) {
+function useSalaryConfig(onView, onEdit, onRevise, onDelete, width) {
   const columns = [
     {
       key: "salary_id",
@@ -1751,6 +1752,15 @@ function useSalaryConfig(onView, width) {
     const sid = s.salary_id || s.id;
     const earnings = (s.components || []).filter((c) => c.type === "earning");
     const deductions = (s.components || []).filter((c) => c.type === "deduction");
+
+    const actions = [
+      { label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(s), className: "text-blue-600 hover:bg-blue-50" },
+      s.payroll_used
+        ? { label: "Revise Salary", icon: <FaExchangeAlt size={12} />, onClick: () => onRevise(s), className: "text-purple-600 hover:bg-purple-50" }
+        : { label: "Edit Salary", icon: <FaEdit size={12} />, onClick: () => onEdit(s), className: "text-indigo-600 hover:bg-indigo-50" },
+      { label: "Delete", icon: <FaTrash size={12} />, onClick: () => onDelete(s), className: "text-red-600 hover:bg-red-50" },
+    ];
+
     return (
       <ManagementCard
         key={sid || index}
@@ -1760,7 +1770,7 @@ function useSalaryConfig(onView, width) {
         activeId={activeId}
         onToggle={onToggle}
         menuId={`sal-${sid || index}`}
-        actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(s), className: "text-blue-600 hover:bg-blue-50" }]}
+        actions={actions}
         hoverable
         title={`Salary #${sid || ""}`}
         subtitle={`${fmtDate(s.effective_from)} → ${s.effective_to ? fmtDate(s.effective_to) : "Ongoing"}`}
@@ -1815,6 +1825,7 @@ function useSalaryConfig(onView, width) {
       </ManagementCard>
     );
   };
+
   return { columns, cardRenderer, rowKey: (row, idx) => row.salary_id || row.id || `sal-${idx}` };
 }
 
@@ -2036,7 +2047,7 @@ function useShiftConfig(onView, width) {
         </div>
       ),
     },
-    
+
   ].filter(Boolean);
 
   const cardRenderer = (s, index, activeId, onToggle) => {
@@ -2415,6 +2426,15 @@ function TabContent({ tabKey, tabLabel, tabIcon, employeeId, refreshKey = 0 }) {
   const [payrollEmailOverride, setPayrollEmailOverride] = useState("");
   const [downloadingPayrollPdf, setDownloadingPayrollPdf] = useState(false);
   const [emailingPayrollPdf, setEmailingPayrollPdf] = useState(false);
+
+  const [showEditSalaryModal, setShowEditSalaryModal] = useState(false);
+  const [showReviseSalaryModal, setShowReviseSalaryModal] = useState(false);
+  const [showDeleteSalaryModal, setShowDeleteSalaryModal] = useState(false);
+  const [salaryToEdit, setSalaryToEdit] = useState(null);
+  const [salaryToRevise, setSalaryToRevise] = useState(null);
+  const [salaryToDelete, setSalaryToDelete] = useState(null);
+  const [deletingSalary, setDeletingSalary] = useState(false);
+
   const [subType, setSubType] = useState("attendance");
   const monthOptions = useMemo(() => Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: new Date(2026, i, 1).toLocaleString('en-US', { month: 'long' }) })), []);
   const yearOptions = useMemo(() => Array.from({ length: 6 }, (_, i) => ({ value: new Date().getFullYear() - 2 + i, label: String(new Date().getFullYear() - 2 + i) })), []);
@@ -2430,7 +2450,9 @@ function TabContent({ tabKey, tabLabel, tabIcon, employeeId, refreshKey = 0 }) {
   const ACCENT_MAP = { basic: "slate", permissions: "indigo", attendance: "blue", salary: "green", payroll: "emerald", leaves: "amber", shifts: "violet" };
   const accent = ACCENT_MAP[normalizedTabKey] || "indigo";
 
-  // ── FIXED: data extraction handles all three new API structures ──────────────
+
+
+  // ── fetchData FIRST ──────────────────────────────────────────────────────────
   const fetchData = useCallback(async (page, limit) => {
     if (fetchRef.current) return;
     fetchRef.current = true;
@@ -2451,21 +2473,13 @@ function TabContent({ tabKey, tabLabel, tabIcon, employeeId, refreshKey = 0 }) {
       );
       if (!res.ok || !json.success) throw new Error(json.message || "API error");
 
-      // Step 1: get raw data from response
       let rawData = json.data?.[normalizedTabKey] ?? json.data?.[tabKey] ?? json.data ?? [];
 
-      // Step 2: Payroll — response is [{payroll: {...}}, ...], unwrap the nested payroll key
       if (normalizedTabKey === "payroll" && Array.isArray(rawData)) {
         rawData = rawData.map((item) => item?.payroll ?? item).filter(Boolean);
       }
 
-      // Step 3: Salary — response is {salary: [...]}, unwrap the salary array
-      if (
-        normalizedTabKey === "salary" &&
-        rawData &&
-        !Array.isArray(rawData) &&
-        Array.isArray(rawData.salary)
-      ) {
+      if (normalizedTabKey === "salary" && rawData && !Array.isArray(rawData) && Array.isArray(rawData.salary)) {
         rawData = rawData.salary;
       }
 
@@ -2493,6 +2507,27 @@ function TabContent({ tabKey, tabLabel, tabIcon, employeeId, refreshKey = 0 }) {
       fetchRef.current = false;
     }
   }, [employeeId, isAttendance, subType, normalizedTabKey, tabKey, updatePagination]);
+
+  // ── handleDeleteSalary AFTER (fetchData now exists) ──────────────────────────
+  const handleDeleteSalary = useCallback(async () => {
+    if (!salaryToDelete) return;
+    setDeletingSalary(true);
+    try {
+      const companyStr = localStorage.getItem("company");
+      const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
+      const response = await apiCall("/salary/delete-salary", "DELETE", { salary_id: salaryToDelete.salary_id }, companyId);
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || "Failed to delete salary");
+      toast.success("Salary deleted successfully");
+      setShowDeleteSalaryModal(false);
+      setSalaryToDelete(null);
+      fetchData(pagination.page, pagination.limit);
+    } catch (error) {
+      toast.error(error.message || "Failed to delete salary");
+    } finally {
+      setDeletingSalary(false);
+    }
+  }, [salaryToDelete, fetchData, pagination.page, pagination.limit]);
 
   useEffect(() => {
     const page = normalizedTabKey === "permissions" ? 1 : pagination.page;
@@ -2762,7 +2797,16 @@ function TabContent({ tabKey, tabLabel, tabIcon, employeeId, refreshKey = 0 }) {
 
   const permConfig = usePermissionsConfig(onView, effectiveWidth);
   const attConfig = useAttendanceConfig(onView, onViewLogs, effectiveWidth, subType);
-  const salConfig = useSalaryConfig(onView, effectiveWidth);
+  // Replace the existing salConfig line:
+  const salConfig = useSalaryConfig(
+    onView,
+    (s) => { setSalaryToEdit(s); setShowEditSalaryModal(true); },
+    (s) => { setSalaryToRevise(s); setShowReviseSalaryModal(true); },
+    (s) => { setSalaryToDelete(s); setShowDeleteSalaryModal(true); },
+    effectiveWidth
+  );
+
+
   const payConfig = usePayrollConfig(onView, openPayrollDownloadModal, openPayrollEmailModal, effectiveWidth);
   const leaveConfig = useLeaveConfig(onView, effectiveWidth);
   const shiftConfig = useShiftConfig(onView, effectiveWidth);
@@ -2771,9 +2815,20 @@ function TabContent({ tabKey, tabLabel, tabIcon, employeeId, refreshKey = 0 }) {
   const { columns, cardRenderer, rowKey } = CONFIG_MAP[normalizedTabKey] || permConfig;
   const hasToolbarActions = normalizedTabKey === "shifts" || normalizedTabKey === "leaves" || normalizedTabKey === "salary" || normalizedTabKey === "payroll";
 
+  // Update getActions to include salary actions:
   const getActions = (row) => {
     const base = [{ label: "View Details", icon: <FaEye size={13} />, onClick: () => setSelectedItem(row), className: "text-blue-600 hover:text-blue-700 hover:bg-blue-50" }];
-    if (normalizedTabKey === "attendance") base.push({ label: "View History", icon: <FaHistory size={13} />, onClick: () => setSelectedLogItem(row), className: "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" });
+    if (normalizedTabKey === "attendance") {
+      base.push({ label: "View History", icon: <FaHistory size={13} />, onClick: () => setSelectedLogItem(row), className: "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" });
+    }
+    if (normalizedTabKey === "salary") {
+      if (row.payroll_used) {
+        base.push({ label: "Revise Salary", icon: <FaExchangeAlt size={13} />, onClick: () => { setSalaryToRevise(row); setShowReviseSalaryModal(true); }, className: "text-purple-600 hover:text-purple-700 hover:bg-purple-50" });
+      } else {
+        base.push({ label: "Edit Salary", icon: <FaEdit size={13} />, onClick: () => { setSalaryToEdit(row); setShowEditSalaryModal(true); }, className: "text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50" });
+      }
+      base.push({ label: "Delete", icon: <FaTrash size={13} />, onClick: () => { setSalaryToDelete(row); setShowDeleteSalaryModal(true); }, className: "text-red-600 hover:text-red-700 hover:bg-red-50" });
+    }
     if (normalizedTabKey === "payroll") {
       base.push(
         { label: "Download PDF", icon: <FaDownload size={13} />, onClick: () => openPayrollDownloadModal(row), className: "text-blue-600 hover:text-blue-700 hover:bg-blue-50" },
@@ -3200,6 +3255,42 @@ function TabContent({ tabKey, tabLabel, tabIcon, employeeId, refreshKey = 0 }) {
       </AnimatePresence>
       <AnimatePresence>
         {selectedLogItem && <AttendanceLogsModal id={selectedLogItem.id} type={subType} onClose={() => setSelectedLogItem(null)} />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showEditSalaryModal && salaryToEdit && normalizedTabKey === "salary" && (
+          <EditSalaryModal
+            isOpen={showEditSalaryModal}
+            onClose={() => { setShowEditSalaryModal(false); setSalaryToEdit(null); }}
+            onSuccess={() => { setShowEditSalaryModal(false); setSalaryToEdit(null); fetchData(pagination.page, pagination.limit); }}
+            salary={salaryToEdit}
+            companyCurrency="INR"
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showReviseSalaryModal && salaryToRevise && normalizedTabKey === "salary" && (
+          <ReviseSalaryModal
+            isOpen={showReviseSalaryModal}
+            onClose={() => { setShowReviseSalaryModal(false); setSalaryToRevise(null); }}
+            onSuccess={() => { setShowReviseSalaryModal(false); setSalaryToRevise(null); fetchData(1, pagination.limit); }}
+            salary={salaryToRevise}
+            companyCurrency="INR"
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showDeleteSalaryModal && salaryToDelete && normalizedTabKey === "salary" && (
+          <DeleteConfirmModal
+            isOpen={showDeleteSalaryModal}
+            onClose={() => { setShowDeleteSalaryModal(false); setSalaryToDelete(null); }}
+            onConfirm={handleDeleteSalary}
+            salary={salaryToDelete}
+            processingId={deletingSalary ? salaryToDelete?.salary_id : null}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
