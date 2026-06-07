@@ -166,7 +166,7 @@ const InviteCard = ({ invite, index, onView, onAccept, onReject }) => {
           label: 'View Details',
           icon: <FaEye size={12} />,
           onClick: () => onView(invite),
-          className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
+          className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
         },
         ...(isPending
           ? [
@@ -857,7 +857,7 @@ export default function MyInvites() {
                       label: 'View Details',
                       icon: <FaEye size={12} />,
                       onClick: () => openModal(invite, 'view'),
-                      className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
+                      className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
                     },
                     ...(invite.status?.toLowerCase() === 'pending' && !isExpired(invite.expires_at)
                       ? [
@@ -865,7 +865,7 @@ export default function MyInvites() {
                           label: 'Accept Invite',
                           icon: <FaCheck size={12} />,
                           onClick: () => openModal(invite, 'accept'),
-                          className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
+                          className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
                         },
                         {
                           label: 'Reject Invite',

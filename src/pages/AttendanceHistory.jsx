@@ -59,8 +59,10 @@ const fetchMyAttendanceAPI = async ({ companyId, page = 1, limit = ITEMS_PER_PAG
 
 const Placeholder = () => <span className="text-red-500 font-bold">---</span>;
 
-const fmt = (str) =>
-  str ? str.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "—";
+const fmt = (str) => {
+  if (!str || typeof str !== 'string') return "—";
+  return str.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+};
 
 
 const formatHours = (h) => {
@@ -256,13 +258,13 @@ const RecordTable = ({ records, onViewDetails, activeActionMenu, onToggleActionM
                           label: 'View Details',
                           icon: <FaEye size={12} />,
                           onClick: () => onViewDetails(record),
-                          className: 'text-blue-600 hover:bg-blue-50'
+                          className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
                         },
                         {
                           label: 'Logs',
                           icon: <FaHistory size={12} />,
                           onClick: () => onLogs(record),
-                          className: 'text-slate-600 hover:bg-slate-50'
+                          className: 'text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50'
                         }
                       ]}
                     />

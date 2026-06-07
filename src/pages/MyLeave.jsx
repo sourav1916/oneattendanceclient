@@ -242,7 +242,7 @@ const LeaveCard = ({ leave, onViewDetails, onEdit, onCancel }) => {
                 label: 'View Details',
                 icon: <FaEye size={12} />,
                 onClick: () => onViewDetails(leave),
-                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
+                className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
               },
               ...(leave.status === 'pending'
                 ? [
@@ -250,7 +250,7 @@ const LeaveCard = ({ leave, onViewDetails, onEdit, onCancel }) => {
                     label: 'Edit',
                     icon: <FaEdit size={12} />,
                     onClick: () => onEdit(leave),
-                    className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
+                    className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
                   }
                 ]
                 : []),
@@ -1137,7 +1137,7 @@ const MyLeave = () => {
                       label: 'View Details',
                       icon: <FaEye size={12} />,
                       onClick: () => setViewLeave(leave),
-                      className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
+                      className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
                     },
                     ...(leave.status === 'pending'
                       ? [
@@ -1145,7 +1145,7 @@ const MyLeave = () => {
                           label: 'Edit',
                           icon: <FaEdit size={12} />,
                           onClick: () => setEditLeave(leave),
-                          className: 'text-purple-600 hover:text-purple-700 hover:bg-purple-50',
+                          className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
                         }
                       ]
                       : []),

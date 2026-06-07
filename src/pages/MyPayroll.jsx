@@ -715,12 +715,15 @@ const MyPayroll = () => {
                                                                 {
                                                                     label: 'View Details',
                                                                     icon: <FaEye />,
-                                                                    onClick: () => openViewModal(item)
+                                                                    onClick: () => openViewModal(item),
+                                                                    className: "text-green-600 hover:text-green-700 hover:bg-green-50",
                                                                 },
                                                                 {
                                                                     label: 'Download PDF',
                                                                     icon: <FaDownload />,
-                                                                    onClick: () => handleDownloadPdf(item)
+                                                                    onClick: () => handleDownloadPdf(item),
+                                                                    className: "text-blue-600 hover:text-blue-700 hover:bg-blue-50",
+                                                                    
                                                                 }
                                                             ]}
                                                         />

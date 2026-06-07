@@ -832,14 +832,14 @@ const EmployeeBankAccountManagement = () => {
             rowKey={(row) => row.bank_id}
             onRowClick={(row) => setViewModal({ open: true, account: row })}
             getActions={(row) => [
-              { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setViewModal({ open: true, account: row }), className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50' },
+              { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setViewModal({ open: true, account: row }), className: 'text-green-600 hover:text-green-700 hover:bg-green-50' },
               { label: 'Edit Account', icon: <FaEdit size={13} />, onClick: () => openModal('edit', row), disabled: updateAccess.disabled, title: updateAccess.disabled ? updateMessage : '', className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
               { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => openModal('delete', row), disabled: deleteAccess.disabled, title: deleteAccess.disabled ? deleteMessage : '', className: 'text-red-600 hover:text-red-700 hover:bg-red-50' },
             ]}
             accent="violet"
           />
         ) : (
-          <ManagementGrid>
+          <ManagementGrid viewMode="card">
             {paginatedData.map((account) => (
               <MobileBankCard
                 key={account.bank_id}
@@ -847,8 +847,8 @@ const EmployeeBankAccountManagement = () => {
                 onEdit={(r) => openModal('edit', r)}
                 onDelete={(r) => openModal('delete', r)}
                 onView={(r) => setViewModal({ open: true, account: r })}
-                editDisabled={editDisabled}
-                deleteDisabled={deleteDisabled}
+                editDisabled={updateAccess.disabled}    // ✅ fixed
+                deleteDisabled={deleteAccess.disabled}  // ✅ fixed
                 editMessage={updateMessage}
                 deleteMessage={deleteMessage}
               />

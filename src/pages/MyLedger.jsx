@@ -322,7 +322,7 @@ const NarrowLedgerTable = ({ rows, onView, tiny = false }) => (
                       label: 'View Details',
                       icon: <FaEye size={13} />,
                       onClick: () => onView(tx),
-                      className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50',
+                      className: 'text-green-700 hover:text-green-700 hover:bg-green-50',
                     },
                   ]}
                 />
@@ -841,7 +841,7 @@ const MyLedger = () => {
                   label: 'View Details',
                   icon: <FaEye size={13} />,
                   onClick: () => setViewModal({ open: true, transaction: row }),
-                  className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50',
+                  className: 'text-green-700 hover:text-green-700 hover:bg-green-50',
                 },
               ];
             }}
