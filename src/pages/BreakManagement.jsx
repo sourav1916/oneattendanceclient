@@ -661,7 +661,7 @@ const BreakManagementPage = () => {
           placeholder="Date or range"
           tabOptions={['date', 'range']}
           showDateStepper
-          buttonClassName="h-full min-h-[42px] max-w-[200px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
+          buttonClassName="h-full min-h-[42px] w-full bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10"
         />
       </div>
 

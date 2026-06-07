@@ -1021,11 +1021,10 @@ function ViewPackageModal({ isOpen, onClose, package: pkg, onEdit, onDelete, onT
                   onClick={onToggleStatus}
                   disabled={updateAccess?.disabled}
                   title={updateAccess?.disabled ? getAccessMessage?.(updateAccess) : ""}
-                  className={`inline-flex items-center gap-2 px-5 py-2 rounded-xl font-bold text-[13px] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${
-                    pkg.is_active 
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-orange-100 hover:from-amber-600 hover:to-orange-700' 
-                      : 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-emerald-100 hover:from-emerald-600 hover:to-green-700'
-                  }`}
+                  className={`inline-flex items-center gap-2 px-5 py-2 rounded-xl font-bold text-[13px] transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${pkg.is_active
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-orange-100 hover:from-amber-600 hover:to-orange-700'
+                    : 'bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-emerald-100 hover:from-emerald-600 hover:to-green-700'
+                    }`}
                 >
                   {pkg.is_active ? <FaToggleOff size={12} /> : <FaToggleOn size={12} />}
                   {pkg.is_active ? "Deactivate" : "Activate"}
@@ -1433,7 +1432,7 @@ export default function InvitePackageManagement() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-end">
+            <div className="flex items-center flex-wrap gap-3 justify-end">
               <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
                 <FaBox className="h-4 w-4 text-indigo-500" />
                 <span className="font-medium text-gray-700">{pagination.total}</span>
@@ -1449,7 +1448,7 @@ export default function InvitePackageManagement() {
                 onClick={() => !createAccess.disabled && setIsCreateModalOpen(true)}
                 disabled={createAccess.disabled}
                 title={createAccess.disabled ? getAccessMessage(createAccess) : ""}
-                className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all duration-200 bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2 font-bold text-white shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <FaPlus className="h-4 w-4" />
                 Create
@@ -1811,10 +1810,10 @@ export default function InvitePackageManagement() {
         {/* ── Modals ── */}
         <AnimatePresence>
           {modalType === "view" && selectedPackage && (
-            <ViewPackageModal 
-              isOpen={true} 
-              onClose={closeModal} 
-              package={selectedPackage} 
+            <ViewPackageModal
+              isOpen={true}
+              onClose={closeModal}
+              package={selectedPackage}
               onEdit={() => { closeModal(); handleEditClick(selectedPackage); }}
               onDelete={() => { closeModal(); openModal(selectedPackage, "delete"); }}
               onToggleStatus={() => { closeModal(); openToggleModal(selectedPackage, !selectedPackage.is_active); }}

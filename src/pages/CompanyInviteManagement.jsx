@@ -402,7 +402,7 @@ export default function CompanyInvites() {
               </div>
             </div>
 
-            <div className="flex flex-row sm:items-center gap-3 justify-end">
+            <div className="flex flex-row sm:items-center gap-3 justify-end flex-wrap">
               <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm">
                 <FaUserCheck className="h-4 w-4 text-blue-500" />
                 <span className="font-medium text-gray-700">{invites.length}</span>
@@ -419,7 +419,7 @@ export default function CompanyInvites() {
                 onClick={() => !createInviteAccess.disabled && setOpenCreateInviteModal(true)}
                 disabled={createInviteAccess.disabled}
                 title={createInviteAccess.disabled ? getAccessMessage(createInviteAccess) : ""}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2.5 font-bold text-white shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2 font-bold text-white shadow-lg transition-all duration-300 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <FaPlus size={14} />
                 <span className="text-sm">Create</span>
@@ -767,7 +767,7 @@ export default function CompanyInvites() {
                       {processingId === `resend-${selectedInvite?.id ?? selectedInvite?.invite_id}` ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaEnvelope className="h-4 w-4" />}
                       {processingId === `resend-${selectedInvite?.id ?? selectedInvite?.invite_id}` ? 'Resending...' : 'Resend Invite'}
                     </motion.button>
-                    
+
                     {!isExpired(selectedInvite?.expires_at) && (
                       <>
                         <motion.button
@@ -980,7 +980,7 @@ export default function CompanyInvites() {
                               {selectedInvite.weekends.map((weekend, idx) => (
                                 <div key={idx} className="text-center px-3 py-2 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-slate-100 shadow-sm min-w-[120px]">
                                   <span className="text-sm text-light-500 capitalize">{formatWeekendDay(weekend)}</span>
-                                  
+
                                 </div>
                               ))}
                             </div>

@@ -1263,7 +1263,7 @@ export default function UnmarkedAttendance() {
             <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:flex-none">
 
               {/* STATUS */}
-              <div className="relative w-full sm:flex-1 lg:w-[220px] lg:flex-none">
+              <div className="relative w-full text-center sm:flex-1 lg:w-[220px] lg:flex-none">
                 <FaFilter
                   className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-slate-400"
                   size={12}
