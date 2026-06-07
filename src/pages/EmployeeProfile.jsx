@@ -187,6 +187,10 @@ function computeWorkStats(dayData) {
   };
 }
 
+function formatDay(day) {
+  return parseFloat(day).toString();
+}
+
 function getDayStatus(dayData) {
   if (!dayData) return null;
   const s = dayData.day_status;
@@ -1863,9 +1867,9 @@ function usePayrollConfig(onView, onDownloadPdf, onSendEmail, width) {
         const att = p.attendance || {};
         return att.present_days != null ? (
           <div className="flex flex-col">
-            <span className="text-xs font-semibold text-gray-700">{att.present_days} / {att.working_days} days</span>
+            <span className="text-xs font-semibold text-gray-700">{formatDay(att.present_days)} / {formatDay(att.working_days)} days</span>
             {Number(att.absent_days) > 0 && (
-              <span className="text-[10px] text-rose-500 font-bold">{att.absent_days} absent</span>
+              <span className="text-[10px] text-rose-500 font-bold">{formatDay(att.absent_days)} absent</span>
             )}
           </div>
         ) : "—";
