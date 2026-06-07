@@ -14,10 +14,10 @@ import { loadLayerScript } from '../utils/loadLayer';
 
 // ─── Constants ───────────────────────────────────────────────
 const DURATION_OPTIONS = [
-  { key: 'monthly_price',     label: 'Monthly',     suffix: '/mo',      billedLabel: 'billed monthly',           discount: 0  },
-  { key: 'quarterly_price',   label: 'Quarterly',   suffix: '/qtr',     billedLabel: 'billed quarterly',         discount: 10 },
-  { key: 'half_yearly_price', label: 'Half-yearly', suffix: '/6 mo',    billedLabel: 'billed every 6 months',    discount: 15 },
-  { key: 'yearly_price',      label: 'Yearly',      suffix: '/yr',      billedLabel: 'billed yearly',            discount: 20 },
+  { key: 'monthly_price',     label: 'Monthly',     suffix: '/mo',      billedLabel: 'billed monthly',           months: 1  },
+  { key: 'quarterly_price',   label: 'Quarterly',   suffix: '/qtr',     billedLabel: 'billed quarterly',         months: 3  },
+  { key: 'half_yearly_price', label: 'Half-yearly', suffix: '/6 mo',    billedLabel: 'billed every 6 months',    months: 6  },
+  { key: 'yearly_price',      label: 'Yearly',      suffix: '/yr',      billedLabel: 'billed yearly',            months: 12 },
 ];
 
 const PERIOD_MAP = {
@@ -202,8 +202,13 @@ const SubscriptionDetailsCard = ({ details, detailsLoading, detailsError }) => {
 };
 
 /** Duration tab button */
-const DurButton = ({ duration, isSelected, price, employees, onClick }) => {
+const DurButton = ({ duration, isSelected, price, monthlyPrice, employees, onClick }) => {
   const priceNum = price != null ? parseFloat(price) : null;
+  const basePrice = monthlyPrice != null ? parseFloat(monthlyPrice) * duration.months : null;
+  let discount = 0;
+  if (basePrice > 0 && priceNum != null && basePrice > priceNum) {
+    discount = Math.round(((basePrice - priceNum) / basePrice) * 100);
+  }
 
   return (
     <motion.div
@@ -215,9 +220,9 @@ const DurButton = ({ duration, isSelected, price, employees, onClick }) => {
           : 'bg-white border border-gray-200 hover:border-gray-300'
       }`}
     >
-      {duration.discount > 0 && (
+      {discount > 0 && (
         <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-semibold bg-green-500 text-white px-2 py-0.5 rounded-full whitespace-nowrap">
-          Save {duration.discount}%
+          Save {discount}%
         </span>
       )}
       <p className={`text-[12px] font-semibold mb-1 ${isSelected ? 'text-blue-600' : 'text-gray-500'}`}>
@@ -345,6 +350,14 @@ const SubscriptionPage = () => {
   const selectedPackagePrice = currentPackage ? parseFloat(currentPackage[selectedDur.key]) : null;
   const currentPrice = Number.isFinite(selectedPackagePrice) ? selectedPackagePrice : null;
 
+  const currentMonthlyPrice = currentPackage ? parseFloat(currentPackage.monthly_price) : null;
+  const basePrice = currentMonthlyPrice != null ? currentMonthlyPrice * selectedDur.months : null;
+  
+  let calculatedDiscountPct = 0;
+  if (basePrice > 0 && currentPrice != null && basePrice > currentPrice) {
+    calculatedDiscountPct = Math.round(((basePrice - currentPrice) / basePrice) * 100);
+  }
+
   const pricePerUser = currentPrice != null && employees > 0
     ? currentPrice / employees
     : null;
@@ -437,6 +450,7 @@ const SubscriptionPage = () => {
 
         {/* ── Main content ── */}
         {!loading && !error && (
+          <>
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -453,6 +467,7 @@ const SubscriptionPage = () => {
                     duration={dur}
                     isSelected={selectedDur.key === dur.key}
                     price={currentPackage ? currentPackage[dur.key] : null}
+                    monthlyPrice={currentPackage ? currentPackage.monthly_price : null}
                     employees={employees}
                     onClick={() => setSelectedDur(dur)}
                   />
@@ -498,14 +513,18 @@ const SubscriptionPage = () => {
                       key={pkg.id}
                       type="button"
                       onClick={() => setEmployees(Number(pkg.max_employee_count))}
-                      className={`truncate rounded-md px-1.5 py-1 text-center transition-colors  text-end ${
+                      className={`rounded-md px-1.5 py-1.5 transition-all ${
                         currentPackage?.id === pkg.id
-                          ? 'bg-blue-50 font-semibold text-blue-700'
-                          : 'hover:bg-gray-50'
+                          ? 'bg-blue-50 font-bold text-blue-700 shadow-sm'
+                          : 'hover:bg-gray-50 text-gray-500 font-medium'
                       }`}
                       title={`${pkg.min_employee_count}-${pkg.max_employee_count} employees`}
                     >
-                      {pkg.min_employee_count}-{pkg.max_employee_count}
+                      <div className="flex items-center justify-between gap-1">
+                        <span>{pkg.min_employee_count}</span>
+                        <span className="opacity-40">-</span>
+                        <span>{pkg.max_employee_count}</span>
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -536,7 +555,7 @@ const SubscriptionPage = () => {
                 {[
                   {
                     label: 'Base price',
-                    value: currentPrice != null ? fmt(currentPrice) : '—',
+                    value: currentPrice != null ? fmt(basePrice != null && basePrice > currentPrice ? basePrice : currentPrice) : '—',
                     valueClass: 'text-gray-800 font-medium',
                   },
                   {
@@ -544,13 +563,13 @@ const SubscriptionPage = () => {
                     value: pricePerUser ? `${fmt(pricePerUser)}${selectedDur.suffix}` : '—',
                     valueClass: 'text-gray-600',
                   },
-                  ...(selectedDur.discount > 0 && currentPrice != null ? [{
+                  ...(basePrice != null && basePrice > currentPrice && currentPrice != null ? [{
                     label: (
                       <span className="flex items-center gap-1 text-green-600">
-                        <FaRocket className="text-[10px]" /> You save
+                        <FaRocket className="text-[10px]" /> You save ({calculatedDiscountPct}%)
                       </span>
                     ),
-                    value: fmt(currentPrice * selectedDur.discount / 100),
+                    value: `-${fmt(basePrice - currentPrice)}`,
                     valueClass: 'text-green-600 font-medium',
                   }] : []),
                 ].map((row, i) => (
@@ -616,6 +635,37 @@ const SubscriptionPage = () => {
               </div>
             </div>
           </motion.div>
+
+          {/* Enterprise / Custom Plan Contact Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="mt-6 bg-gradient-to-r from-slate-900 to-slate-800 rounded-xl p-6 md:p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden"
+          >
+            {/* Background accent */}
+            <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-500 rounded-full blur-3xl opacity-20 pointer-events-none"></div>
+            
+            <div className="relative z-10 text-center md:text-left">
+              <h3 className="text-xl font-bold flex items-center justify-center md:justify-start gap-2.5">
+                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/10 text-blue-400">
+                  <FaBuilding size={16} />
+                </span>
+                Enterprise & Custom Plans
+              </h3>
+              <p className="text-slate-300 text-[14px] mt-2 max-w-xl leading-relaxed">
+                Need a custom offer or want to manage more employees? Contact our sales team for a tailored solution designed for your business scale.
+              </p>
+            </div>
+            <button
+              onClick={() => window.location.href = 'mailto:support@oneattendance.com'}
+              className="relative z-10 shrink-0 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 px-8 rounded-xl transition-all shadow-lg hover:shadow-blue-500/25 active:scale-95 whitespace-nowrap flex items-center gap-2"
+            >
+              Contact Sales
+              <FaArrowRight size={12} />
+            </button>
+          </motion.div>
+          </>
         )}
       </div>
     </div>
