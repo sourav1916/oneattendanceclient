@@ -97,7 +97,6 @@ async function runDedupedRequest(key, requestFn) {
 
 // ─── CALENDAR HELPERS (new API structure) ─────────────────────────────────────
 
-/** Parse "HH:MM AM/PM" → total minutes since midnight */
 function parseTime(timeStr) {
   if (!timeStr) return null;
   const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
@@ -118,7 +117,6 @@ function minutesToTimeStr(mins) {
   return `${displayH}:${String(m).padStart(2, "0")} ${period}`;
 }
 
-/** Format total minutes → "Xh Ym" */
 function formatMinutes(mins) {
   if (mins == null || mins < 0) return "0h 0m";
   const h = Math.floor(mins / 60);
@@ -126,11 +124,6 @@ function formatMinutes(mins) {
   return `${h}h ${m}m`;
 }
 
-/**
- * Compute worked/break time from new API structure.
- * activities: [[punch_in_obj, punch_out_obj], ...]
- * breaks:     [[break_start_obj, break_end_obj], ...]
- */
 function computeWorkStats(dayData) {
   if (!dayData) return null;
   const activities = dayData.activities || [];
@@ -176,7 +169,6 @@ function computeWorkStats(dayData) {
   };
 }
 
-/** Determine display status, handling holiday/leave overlays and empty string */
 function getDayStatus(dayData) {
   if (!dayData) return null;
   const s = dayData.day_status;
@@ -259,7 +251,6 @@ const CalendarCell = ({ cell, onClick }) => {
         ${isToday ? "ring-2 ring-indigo-400 ring-inset z-10" : ""}
       `}
     >
-      {/* Day number */}
       <div className="flex items-start justify-between mb-1.5">
         <span className={`
           flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold
@@ -274,7 +265,6 @@ const CalendarCell = ({ cell, onClick }) => {
         )}
       </div>
 
-      {/* Status pill */}
       {status && (
         <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${styles.pill}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${styles.dot}`} />
@@ -282,7 +272,6 @@ const CalendarCell = ({ cell, onClick }) => {
         </span>
       )}
 
-      {/* Worked time */}
       {workStats && workStats.workedMinutes > 0 && (
         <div className="mt-1.5">
           <p className="text-[10px] font-bold text-gray-700 flex items-center gap-1">
@@ -298,21 +287,18 @@ const CalendarCell = ({ cell, onClick }) => {
         </div>
       )}
 
-      {/* Leave label */}
       {data?.is_leave && (
         <p className="mt-1 text-[9px] font-bold text-violet-700 truncate">
           {data.is_leave.code} • {data.is_leave.type?.replace("_", " ")}
         </p>
       )}
 
-      {/* Holiday name */}
       {data?.is_holiday && status === "holiday" && (
         <p className="mt-1 text-[9px] text-amber-700 font-medium line-clamp-2">
           {data.is_holiday.name}
         </p>
       )}
 
-      {/* Pending badge */}
       {data?.is_approved === false && status === "present" && (
         <p className="mt-1 text-[8px] font-bold text-orange-500 uppercase tracking-wider">Pending</p>
       )}
@@ -355,7 +341,6 @@ const CalendarEmployeeInfo = ({ employee, shift, statistics }) => {
       <div className="absolute -left-8 -bottom-8 w-36 h-36 bg-violet-400/20 rounded-full blur-2xl pointer-events-none" />
 
       <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
-        {/* Avatar + name */}
         <div className="flex items-center gap-4">
           <ProfileAvatar
             record={employee}
@@ -381,7 +366,6 @@ const CalendarEmployeeInfo = ({ employee, shift, statistics }) => {
           </div>
         </div>
 
-        {/* Shift & stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 border-t md:border-t-0 md:border-l border-white/20 pt-4 md:pt-0 md:pl-6">
           <div>
             <p className="text-[9px] font-bold uppercase tracking-widest text-indigo-200 flex items-center gap-1 mb-0.5">
@@ -412,7 +396,6 @@ const CalendarEmployeeInfo = ({ employee, shift, statistics }) => {
         </div>
       </div>
 
-      {/* Progress bar */}
       {statistics && (
         <div className="relative z-10 mt-4">
           <div className="flex justify-between text-[9px] font-bold text-indigo-200 uppercase tracking-widest mb-1">
@@ -472,7 +455,6 @@ const CalendarDayDetailsModal = ({ cell, onClose, shift }) => {
         initial={{ scale: 0.95, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 16 }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="p-5 border-b border-gray-100 flex items-start justify-between">
           <div>
             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-0.5">{formattedDate}</p>
@@ -496,9 +478,7 @@ const CalendarDayDetailsModal = ({ cell, onClose, shift }) => {
           </button>
         </div>
 
-        {/* Body */}
         <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
-          {/* Work summary */}
           {workStats && workStats.grossMinutes > 0 && (
             <div className="space-y-2">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Work Summary</p>
@@ -536,7 +516,6 @@ const CalendarDayDetailsModal = ({ cell, onClose, shift }) => {
             </div>
           )}
 
-          {/* Activity sessions */}
           {activities.length > 0 && (
             <div>
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Sessions</p>
@@ -563,7 +542,6 @@ const CalendarDayDetailsModal = ({ cell, onClose, shift }) => {
             </div>
           )}
 
-          {/* Break sessions */}
           {breaks.length > 0 && (
             <div>
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
@@ -586,7 +564,6 @@ const CalendarDayDetailsModal = ({ cell, onClose, shift }) => {
             </div>
           )}
 
-          {/* Leave info */}
           {data?.is_leave && (
             <div className="p-4 bg-violet-50 rounded-xl border border-violet-100 flex flex-col items-center text-center">
               <div className="w-12 h-12 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center mb-3">
@@ -599,7 +576,6 @@ const CalendarDayDetailsModal = ({ cell, onClose, shift }) => {
             </div>
           )}
 
-          {/* Fallback empty state */}
           {!workStats?.grossMinutes && !data?.is_leave && !data?.is_holiday &&
             (status === "absent" || status === "upcoming" || status === "not_joined") && (
               <div className="py-10 flex flex-col items-center text-center text-gray-300">
@@ -669,7 +645,6 @@ function EmployeeAttendanceCalendar({ employee, fallbackId, refreshKey = 0 }) {
     setCurrentDate((d) => new Date(d.getFullYear(), d.getMonth() + dir, 1));
   };
 
-  // Build 42-cell grid
   const calendarGrid = useMemo(() => {
     const firstDay = new Date(year, month - 1, 1).getDay();
     const daysInMonth = new Date(year, month, 0).getDate();
@@ -703,18 +678,14 @@ function EmployeeAttendanceCalendar({ employee, fallbackId, refreshKey = 0 }) {
     return grid;
   }, [data, month, year]);
 
-  // Derived from new API structure
   const meta = data?.meta || {};
   const shift = data?.shift || null;
   const statistics = data?.statistics || null;
 
   return (
     <div className="max-w-screen-2xl mx-auto pb-8">
-
-      {/* Employee banner with shift info from new API */}
       <CalendarEmployeeInfo employee={employee} shift={shift} statistics={statistics} />
 
-      {/* Header row: month nav + legend */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-3">
           <button
@@ -751,7 +722,6 @@ function EmployeeAttendanceCalendar({ employee, fallbackId, refreshKey = 0 }) {
         </div>
       </div>
 
-      {/* Stats row — from data.meta */}
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 mb-4">
         <CalendarSummaryCard label="Total" value={meta.total_days || 0} icon={FaCalendarAlt} type="upcoming" />
         <CalendarSummaryCard label="Present" value={meta.present || 0} icon={FaCheckCircle} type="present" />
@@ -762,9 +732,7 @@ function EmployeeAttendanceCalendar({ employee, fallbackId, refreshKey = 0 }) {
         <CalendarSummaryCard label="Half Day" value={meta.half_day || 0} icon={FaHourglassHalf} type="half_day" />
       </div>
 
-      {/* Calendar grid */}
       <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/40 border border-gray-100 overflow-hidden relative">
-        {/* Loading overlay */}
         {loading && (
           <div className="absolute inset-0 z-20 bg-white/70 backdrop-blur-sm flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
@@ -774,7 +742,6 @@ function EmployeeAttendanceCalendar({ employee, fallbackId, refreshKey = 0 }) {
           </div>
         )}
 
-        {/* Days-of-week header */}
         <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50/50">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
             <div key={day} className="py-3 text-center">
@@ -784,7 +751,6 @@ function EmployeeAttendanceCalendar({ employee, fallbackId, refreshKey = 0 }) {
           ))}
         </div>
 
-        {/* Grid */}
         <div className="grid grid-cols-7 bg-gray-100/50 gap-px">
           {error ? (
             <div className="col-span-7 py-24 bg-white flex flex-col items-center gap-4 text-rose-400">
@@ -805,7 +771,6 @@ function EmployeeAttendanceCalendar({ employee, fallbackId, refreshKey = 0 }) {
         </div>
       </div>
 
-      {/* Day detail modal */}
       <AnimatePresence>
         {selectedCell && (
           <CalendarDayDetailsModal
@@ -843,16 +808,8 @@ function ProfileHub({
           transition={{ duration: 0.3 }}
           className="mb-6 rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden"
         >
-          {/* ── Top row: title + summary ── */}
           <div className="flex flex-col items-start justify-between gap-4 px-5 pt-4 pb-4 border-b border-gray-100">
-            {/* Left: avatar + text */}
             <div className="flex items-center gap-3 min-w-0">
-              {/* small inline avatar */}
-              {summary && (
-                <div className="shrink-0 flex-col hidden sm:block">
-                  {/* summary contains the big avatar — we show a compact version here */}
-                </div>
-              )}
               <div className="min-w-0">
                 {eyebrow && (
                   <div className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] from-blue-600 to-indigo-600 text-blue-700 border-blue-200">
@@ -870,7 +827,6 @@ function ProfileHub({
               </div>
             </div>
 
-            {/* Right: summary (avatar + meta) */}
             {(summary || actions) && (
               <div className="w-full flex items-center justify-between gap-3">
                 {summary}
@@ -879,7 +835,6 @@ function ProfileHub({
             )}
           </div>
 
-          {/* ── Tab bar ── */}
           {tabs?.length > 0 && (
             <div className="flex items-center gap-1 px-4 overflow-x-auto scrollbar-none">
               {tabs.map((tab) => {
@@ -896,7 +851,7 @@ function ProfileHub({
                     className={[
                       "inline-flex items-center gap-1.5 px-3 py-3 text-[13px] font-medium",
                       "border-b-2 whitespace-nowrap transition-colors duration-150",
-                      "-mb-px",   /* sits flush on the border-b of the container */
+                      "-mb-px",
                       isActive
                         ? "border-current"
                         : isDisabled
@@ -942,6 +897,13 @@ const STATUS_COLORS = {
   break_end: "bg-teal-100 text-teal-800",
   earning: "bg-emerald-100 text-emerald-800",
   deduction: "bg-rose-100 text-rose-800",
+  half_day: "bg-orange-100 text-orange-800",
+  paid_leave: "bg-violet-100 text-violet-800",
+  unpaid_leave: "bg-red-100 text-red-800",
+  monthly: "bg-blue-100 text-blue-700",
+  part_time: "bg-purple-100 text-purple-700",
+  full_time: "bg-green-100 text-green-700",
+  supervisor: "bg-indigo-100 text-indigo-700",
 };
 
 function Pill({ value, className = "" }) {
@@ -1161,29 +1123,70 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel, subType = "atten
         </div>
       );
     }
+
+    // ── SALARY DETAIL ─────────────────────────────────────────────────────────
     if (tabKey === "salary") {
+      const earnings = (item.components || []).filter((c) => c.type === "earning");
+      const deductions = (item.components || []).filter((c) => c.type === "deduction");
       return (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-2">
-            <Field label="ID" value={item.id ?? item.salary_id} />
-            <Field label="Base Amount" value={`${item.currency?.toUpperCase() || "INR"} ${Number(item.base_amount || 0).toLocaleString()}`} highlight />
-            <Field label="Effective From" value={fmtDate(item.effective_from)} />
-            <Field label="Effective To" value={fmtDate(item.effective_to)} />
+        <div className="space-y-5">
+          {/* Header snapshot */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: "Base Amount", value: `₹${Number(item.base_amount || 0).toLocaleString()}`, color: "blue" },
+              { label: "CTC", value: item.ctc != null ? `₹${Number(item.ctc).toLocaleString()}` : "—", color: "indigo" },
+              { label: "Net Salary", value: item.net_salary != null ? `₹${Number(item.net_salary).toLocaleString()}` : "—", color: "emerald" },
+              { label: "Total Deductions", value: item.total_deductions != null ? `₹${Number(item.total_deductions).toLocaleString()}` : "—", color: "rose" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className={`p-3 rounded-xl bg-${color}-50 border border-${color}-100 text-center`}>
+                <p className={`text-[10px] font-bold text-${color}-500 uppercase tracking-widest mb-1`}>{label}</p>
+                <p className={`text-base font-black text-${color}-700`}>{value}</p>
+              </div>
+            ))}
           </div>
-          {item.components && item.components.length > 0 && (
-            <div className="border-t border-gray-100 pt-3">
-              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Components ({item.components.length})</h4>
+
+          {/* Dates */}
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Effective From" value={fmtDate(item.effective_from)} />
+            <Field label="Effective To" value={item.effective_to ? fmtDate(item.effective_to) : "Ongoing"} />
+          </div>
+
+          {/* Earnings */}
+          {earnings.length > 0 && (
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <FaArrowUp className="text-emerald-500" /> Earnings ({earnings.length})
+              </p>
               <div className="space-y-2">
-                {item.components.map((c, idx) => (
-                  <div key={c.component_id || idx} className="bg-gray-50 rounded-lg p-2 text-xs">
-                    <div className="flex justify-between mb-1 items-center">
-                      <span className="font-semibold text-gray-700">{c.name}</span>
-                      <Pill value={c.type} />
+                {earnings.map((c) => (
+                  <div key={c.id} className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">{c.code}</span>
+                      <span className="text-sm font-semibold text-gray-800">{c.name}</span>
+                      <span className="text-[10px] text-gray-400">{c.calc_type === "percentage" ? `${Number(c.calc_value)}%` : "Fixed"}</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-gray-500 mt-1">
-                      <div>Type: <span className="capitalize text-gray-700">{c.calc_type}</span></div>
-                      <div>Value: <span className="text-gray-700 font-medium">{Number(c.calc_value).toString()}{c.calc_type === "percentage" ? "%" : ""}</span></div>
+                    <span className="text-sm font-black text-emerald-700">₹{Number(c.amount || 0).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Deductions */}
+          {deductions.length > 0 && (
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <FaArrowDown className="text-rose-500" /> Deductions ({deductions.length})
+              </p>
+              <div className="space-y-2">
+                {deductions.map((c) => (
+                  <div key={c.id} className="flex items-center justify-between p-3 bg-rose-50 rounded-xl border border-rose-100">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold">{c.code}</span>
+                      <span className="text-sm font-semibold text-gray-800">{c.name}</span>
+                      <span className="text-[10px] text-gray-400">{c.calc_type === "percentage" ? `${Number(c.calc_value)}%` : "Fixed"}</span>
                     </div>
+                    <span className="text-sm font-black text-rose-700">₹{Number(c.amount || 0).toLocaleString()}</span>
                   </div>
                 ))}
               </div>
@@ -1192,18 +1195,302 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel, subType = "atten
         </div>
       );
     }
+
+    // ── PAYROLL DETAIL ────────────────────────────────────────────────────────
     if (tabKey === "payroll") {
+      const att = item.attendance || {};
+      const work = item.work || {};
+      const snapshot = item.snapshot || {};
+      const earnings = item.components_breakdown?.earnings || [];
+      const deductions = item.components_breakdown?.deductions || [];
+      const adjustments = item.adjustments || [];
+
       return (
-        <div className="space-y-2">
-          <Field label="ID" value={item.id} />
-          <Field label="Payroll Period" value={fmtMonthYear(item.payroll_period || item.period || item.month)} highlight />
-          <Field label="Total Earnings" value={item.total_earnings || item.gross_amount || item.gross} />
-          <Field label="Total Deductions" value={item.total_deductions || item.deductions} />
-          <Field label="Net Salary" value={item.net_salary || item.net_pay || item.net} />
-          <Field label="Status" value={<Pill value={item.status} />} />
+        <div className="space-y-5">
+          {/* Period */}
+          <div className="flex items-center gap-3 p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+            <FaCalendarAlt className="text-indigo-500" size={16} />
+            <div>
+              <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Payroll Period</p>
+              <p className="text-base font-black text-indigo-800">
+                {item.month && item.year
+                  ? new Date(item.year, item.month - 1, 1).toLocaleDateString("en-IN", { month: "long", year: "numeric" })
+                  : fmtMonthYear(item.payroll_period || item.period || item.month)}
+              </p>
+            </div>
+          </div>
+
+          {/* Financial summary */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-center">
+              <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Total Earnings</p>
+              <p className="text-base font-black text-emerald-700">₹{Number(item.total_earnings || 0).toLocaleString()}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-center">
+              <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest mb-1">Total Deductions</p>
+              <p className="text-base font-black text-rose-700">₹{Number(item.total_deductions || 0).toLocaleString()}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-indigo-50 border border-indigo-100 text-center">
+              <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Net Salary</p>
+              <p className="text-base font-black text-indigo-700">₹{Number(item.net_salary || 0).toLocaleString()}</p>
+            </div>
+          </div>
+
+          {/* Attendance summary */}
+          {Object.keys(att).length > 0 && (
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <FaCalendarAlt className="text-blue-400" /> Attendance
+              </p>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {[
+                  { label: "Working Days", value: att.working_days ?? "—", color: "slate" },
+                  { label: "Present", value: att.present_days ?? "—", color: "emerald" },
+                  { label: "Absent", value: att.absent_days ?? "—", color: "rose" },
+                  { label: "Paid Leave", value: att.paid_leave_days ?? "—", color: "violet" },
+                  { label: "Unpaid Leave", value: att.unpaid_leave_days ?? "—", color: "orange" },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className={`p-2.5 rounded-xl bg-${color}-50 border border-${color}-100 text-center`}>
+                    <p className={`text-[9px] font-bold text-${color}-500 uppercase tracking-widest mb-0.5`}>{label}</p>
+                    <p className={`text-sm font-black text-${color}-700`}>{value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Work stats */}
+          {Object.keys(work).length > 0 && (
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <FaClock className="text-blue-400" /> Work Stats
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-100 text-center">
+                  <p className="text-[9px] font-bold text-blue-500 uppercase tracking-widest mb-0.5">Worked</p>
+                  <p className="text-sm font-black text-blue-700">{formatMinutes(work.worked_minutes)}</p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-100 text-center">
+                  <p className="text-[9px] font-bold text-purple-500 uppercase tracking-widest mb-0.5">Overtime</p>
+                  <p className="text-sm font-black text-purple-700">{formatMinutes(work.overtime_minutes)}</p>
+                </div>
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-100 text-center">
+                  <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest mb-0.5">Deduction</p>
+                  <p className="text-sm font-black text-rose-700">{formatMinutes(work.deduction_minutes)}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Earnings breakdown */}
+          {earnings.length > 0 && (
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <FaArrowUp className="text-emerald-500" /> Earnings Breakdown
+              </p>
+              <div className="space-y-1.5">
+                {earnings.map((e, i) => (
+                  <div key={i} className="flex items-center justify-between p-2.5 bg-emerald-50 rounded-lg border border-emerald-100">
+                    <span className="text-sm font-semibold text-gray-700">{e.name}</span>
+                    <span className="text-sm font-black text-emerald-700">₹{Number(e.amount || 0).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Deductions breakdown */}
+          {deductions.length > 0 && (
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <FaArrowDown className="text-rose-500" /> Deductions Breakdown
+              </p>
+              <div className="space-y-1.5">
+                {deductions.map((d, i) => (
+                  <div key={i} className="flex items-center justify-between p-2.5 bg-rose-50 rounded-lg border border-rose-100">
+                    <span className="text-sm font-semibold text-gray-700">{d.name}</span>
+                    <span className="text-sm font-black text-rose-700">₹{Number(d.amount || 0).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Snapshot */}
+          {Object.keys(snapshot).length > 0 && (
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Employee Snapshot</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Designation" value={fmt(snapshot.designation)} />
+                <Field label="Employment Type" value={<Pill value={snapshot.employment_type} />} />
+                <Field label="Salary Type" value={<Pill value={snapshot.salary_type} />} />
+                <Field label="Base Amount" value={`₹${Number(snapshot.base_amount || 0).toLocaleString()}`} highlight />
+              </div>
+            </div>
+          )}
+
+          {/* Adjustments */}
+          {adjustments.length > 0 && (
+            <div>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Adjustments</p>
+              <div className="space-y-1.5">
+                {adjustments.map((a, i) => (
+                  <div key={i} className="flex items-center justify-between p-2.5 bg-amber-50 rounded-lg border border-amber-100">
+                    <span className="text-sm font-semibold text-gray-700">{a.name || a.label || "Adjustment"}</span>
+                    <span className="text-sm font-black text-amber-700">₹{Number(a.amount || 0).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       );
     }
+
+    // ── SHIFTS DETAIL ─────────────────────────────────────────────────────────
+    if (tabKey === "shifts") {
+      const formatMins = (m) => {
+        if (m === null || m === undefined) return "0m";
+        const hours = Math.floor(m / 60);
+        const mins = m % 60;
+        return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+      };
+
+      const parseShiftTime = (t) => {
+        if (!t) return "—";
+        return new Date(t.replace(" ", "T")).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      };
+
+      const dayStatus = item.day_status;
+      const statusStyle = CALENDAR_STATUS_STYLES[dayStatus] || CALENDAR_STATUS_STYLES.upcoming;
+
+      return (
+        <div className="space-y-5">
+          {/* Date + Status header */}
+          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Shift Date</p>
+              <p className="text-lg font-black text-slate-800">{fmtDate(item.shift_date)}</p>
+            </div>
+            {dayStatus && (
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border ${statusStyle.pill}`}>
+                <span className={`w-2 h-2 rounded-full ${statusStyle.dot}`} />
+                {statusStyle.label || fmt(dayStatus)}
+              </span>
+            )}
+          </div>
+
+          {/* Timing */}
+          <div className="border-b border-gray-100 pb-4">
+            <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+              <FaExchangeAlt className="text-violet-500" /> Shift Timing
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-center">
+                <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest mb-1">Start</p>
+                <p className="text-sm font-black text-emerald-700">{parseShiftTime(item.start_time)}</p>
+              </div>
+              <div className="p-3 bg-rose-50 rounded-xl border border-rose-100 text-center">
+                <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest mb-1">End</p>
+                <p className="text-sm font-black text-rose-700">{parseShiftTime(item.end_time)}</p>
+              </div>
+              <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 text-center">
+                <p className="text-[9px] font-bold text-blue-500 uppercase tracking-widest mb-1">Expected</p>
+                <p className="text-sm font-black text-blue-700">{formatMins(item.expected_work_minutes)}</p>
+              </div>
+              <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100 text-center">
+                <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Worked</p>
+                <p className="text-sm font-black text-indigo-700">{formatMins(item.worked_minutes)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Break & Deductible */}
+          <div className="border-b border-gray-100 pb-4">
+            <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
+              <FaHourglassHalf className="text-amber-500" /> Breaks & Deductions
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-100 text-center">
+                <p className="text-[9px] font-bold text-amber-500 uppercase tracking-widest mb-0.5">Allowed Break</p>
+                <p className="text-sm font-black text-amber-700">{formatMins(item.allowed_break_minutes)}</p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-orange-50 border border-orange-100 text-center">
+                <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest mb-0.5">Extra Break</p>
+                <p className="text-sm font-black text-orange-700">{formatMins(item.extra_break_minutes)}</p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-100 text-center">
+                <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest mb-0.5">Deductible</p>
+                <p className="text-sm font-black text-rose-700">{formatMins(item.deductible_minutes)}</p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-100 text-center">
+                <p className="text-[9px] font-bold text-purple-500 uppercase tracking-widest mb-0.5">Overtime</p>
+                <p className="text-sm font-black text-purple-700">{formatMins(item.overtime_minutes)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Productivity Breakdown */}
+          <div className="border-b border-gray-100 pb-4">
+            <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
+              <FaUserCheck className="text-emerald-500" /> Productivity
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Late</p>
+                <p className={`text-sm font-black ${item.late_minutes > 0 ? "text-rose-600" : "text-slate-400"}`}>{formatMins(item.late_minutes)}</p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Early Leave</p>
+                <p className={`text-sm font-black ${item.early_leave_minutes > 0 ? "text-amber-600" : "text-slate-400"}`}>{formatMins(item.early_leave_minutes)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Flags */}
+          <div className="border-b border-gray-100 pb-4">
+            <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
+              <FaBriefcase className="text-indigo-500" /> Status Flags
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              <div className={`flex items-center gap-2 rounded-xl border p-3 ${item.overtime_minutes > 0 ? "border-emerald-200 bg-emerald-50" : "border-slate-100 bg-slate-50 opacity-60"}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.overtime_minutes > 0 ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-400"}`}><FaClock size={14} /></div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Overtime</p>
+                  <p className={`text-xs font-bold ${item.overtime_minutes > 0 ? "text-emerald-700" : "text-slate-500"}`}>{item.overtime_minutes > 0 ? `${item.overtime_minutes} mins` : "None"}</p>
+                </div>
+              </div>
+              <div className={`flex items-center gap-2 rounded-xl border p-3 ${item.is_deductible ? "border-rose-200 bg-rose-50" : "border-slate-100 bg-slate-50 opacity-60"}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.is_deductible ? "bg-rose-500 text-white" : "bg-slate-200 text-slate-400"}`}><FaExclamationCircle size={14} /></div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Deductible</p>
+                  <p className={`text-xs font-bold ${item.is_deductible ? "text-rose-700" : "text-slate-500"}`}>{item.is_deductible ? "Yes" : "No"}</p>
+                </div>
+              </div>
+              {dayStatus === "half_day" && (
+                <div className="flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 p-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-orange-500 text-white"><FaHourglassEnd size={14} /></div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Half Day</p>
+                    <p className="text-xs font-bold text-orange-700">{fmt(item.half_day_type) || "Yes"}</p>
+                  </div>
+                </div>
+              )}
+              {dayStatus === "leave" && (
+                <div className="flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 p-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-violet-500 text-white"><FaUmbrellaBeach size={14} /></div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Leave Type</p>
+                    <p className="text-xs font-bold text-violet-700">{item.leave_type_value || fmt(item.leave_type) || "Leave"}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     if (tabKey === "leaves") {
       return (
         <div className="space-y-2">
@@ -1218,52 +1505,6 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel, subType = "atten
         </div>
       );
     }
-    if (tabKey === "shifts") {
-      const formatMins = (m) => {
-        if (m === null || m === undefined) return "0m";
-        const hours = Math.floor(m / 60);
-        const mins = m % 60;
-        return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-      };
-      return (
-        <div className="space-y-6">
-          <div className="border-b border-gray-100 pb-4">
-            <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2"><FaExchangeAlt className="text-violet-500" /> Shift Details</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div><label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Date</label><p className="font-bold text-gray-800 text-sm">{fmtDate(item.shift_date)}</p></div>
-              <div><label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Start Time</label><p className="font-medium text-gray-800 text-sm">{item.start_time ? new Date(item.start_time.replace(" ", "T")).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}</p></div>
-              <div><label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">End Time</label><p className="font-medium text-gray-800 text-sm">{item.end_time ? new Date(item.end_time.replace(" ", "T")).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}</p></div>
-            </div>
-          </div>
-          <div className="border-b border-gray-100 pb-4">
-            <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900"><FaUserCheck className="text-emerald-500" /> Productivity Breakdown</h3>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <div><label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Worked Time</label><p className="mt-0.5 text-sm font-bold text-emerald-600">{formatMins(item.worked_minutes)}</p></div>
-              <div><label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Break Time</label><p className="mt-0.5 text-sm font-semibold text-slate-800">{formatMins(item.break_minutes)}</p></div>
-              <div><label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Late</label><p className="mt-0.5 text-sm font-semibold text-rose-600">{formatMins(item.late_minutes)}</p></div>
-              <div><label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Early Leave</label><p className="mt-0.5 text-sm font-semibold text-amber-600">{formatMins(item.early_leave_minutes)}</p></div>
-            </div>
-          </div>
-          <div className="border-b border-gray-100 pb-4">
-            <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900"><FaBriefcase className="text-indigo-500" /> Productivity Flags</h3>
-            <div className="flex flex-wrap gap-3">
-              <div className={`flex items-center gap-2 rounded-xl border p-3 ${item.overtime_minutes > 0 ? "border-emerald-200 bg-emerald-50" : "border-slate-100 bg-slate-50 opacity-60"}`}>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.overtime_minutes > 0 ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-400"}`}><FaClock size={14} /></div>
-                <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Overtime</p><p className={`text-xs font-bold ${item.overtime_minutes > 0 ? "text-emerald-700" : "text-slate-500"}`}>{item.overtime_minutes > 0 ? `${item.overtime_minutes} mins` : "None"}</p></div>
-              </div>
-              <div className={`flex items-center gap-2 rounded-xl border p-3 ${item.is_half_day ? "border-orange-200 bg-orange-50" : "border-slate-100 bg-slate-50 opacity-60"}`}>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.is_half_day ? "bg-orange-500 text-white" : "bg-slate-200 text-slate-400"}`}><FaHourglassEnd size={14} /></div>
-                <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Half Day</p><p className={`text-xs font-bold ${item.is_half_day ? "text-orange-700" : "text-slate-500"}`}>{item.is_half_day ? "Yes" : "No"}</p></div>
-              </div>
-              <div className={`flex items-center gap-2 rounded-xl border p-3 ${item.is_deductible ? "border-rose-200 bg-rose-50" : "border-slate-100 bg-slate-50 opacity-60"}`}>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.is_deductible ? "bg-rose-500 text-white" : "bg-slate-200 text-slate-400"}`}><FaExclamationCircle size={14} /></div>
-                <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Deductible</p><p className={`text-xs font-bold ${item.is_deductible ? "text-rose-700" : "text-slate-500"}`}>{item.is_deductible ? "Yes" : "No"}</p></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
     return Object.entries(item).map(([k, v]) => (
       <Field key={k} label={fmt(k)} value={typeof v === "object" ? JSON.stringify(v) : String(v ?? "—")} />
     ));
@@ -1275,7 +1516,7 @@ function DetailModal({ isOpen, onClose, item, tabKey, tabLabel, subType = "atten
       onClose={onClose}
       title={`${tabLabel} Details`}
       subtitle="Record information and detailed logs"
-      size={(tabKey === "attendance" || tabKey === "shifts") ? "4xl" : "md"}
+      size={(tabKey === "attendance" || tabKey === "shifts" || tabKey === "payroll") ? "4xl" : "md"}
       footer={
         <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all">
           Close
@@ -1304,8 +1545,6 @@ function ProfileHeaderSummary({ data }) {
   const { employee: e, user: u } = data;
   return (
     <div className="flex items-center gap-3">
-
-      {/* Avatar */}
       <ProfileAvatar
         record={u}
         name={u.name}
@@ -1315,30 +1554,24 @@ function ProfileHeaderSummary({ data }) {
         {getInitials(u.name)}
       </ProfileAvatar>
 
-      {/* Meta column */}
       <div className="text-right hidden sm:block">
-        {/* Status badges */}
         <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
           <Pill value={e.status} />
           <Pill value={e.employment_type} />
           <Pill value={e.salary_type} />
         </div>
-        {/* Code */}
         <p className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600 mb-1">
           <FaIdCard size={10} className="shrink-0" />
           {e.code || e.employee_code || "—"}
         </p>
-        {/* Designation */}
         <p className="flex items-center gap-1.5 text-xs text-slate-600 mb-0.5">
           <FaBriefcase size={10} className="shrink-0 text-emerald-500" />
           {fmt(e.designation)}
         </p>
-        {/* Email */}
         <p className="flex items-center gap-1.5 text-xs text-slate-400">
           <FaEnvelope size={10} className="shrink-0 text-blue-400" />
           <span className="truncate max-w-[180px]">{u.email || "—"}</span>
         </p>
-        {/* Phone */}
         <p className="flex items-center gap-1.5 text-xs text-slate-400">
           <FaPhone size={10} className="shrink-0 text-emerald-400" />
           {u.phone || "—"}
@@ -1427,14 +1660,61 @@ function useAttendanceConfig(onView, onViewLogs, width, subType = "attendance") 
   return { columns, cardRenderer, rowKey: "id" };
 }
 
+// ─── SALARY CONFIG (updated for new API structure) ────────────────────────────
+
 function useSalaryConfig(onView, width) {
   const columns = [
-    { key: "salary_id", label: "Salary ID", render: (s) => <span className="inline-flex whitespace-nowrap rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 font-mono">#{s.salary_id || s.id || "—"}</span> },
-    { key: "base_amount", label: "Base Amount", render: (s) => <span className="font-semibold text-gray-800 text-sm">{s.currency?.toUpperCase() || "INR"} {Number(s.base_amount || 0).toLocaleString()}</span> },
-    width > 600 && { key: "effective_from", label: "Effective From", render: (s) => <span className="text-sm text-gray-600">{fmtDate(s.effective_from)}</span> },
-    width > 1000 && { key: "effective_to", label: "Effective To", render: (s) => <span className="text-sm text-gray-600">{fmtDate(s.effective_to)}</span> },
+    {
+      key: "salary_id",
+      label: "Salary ID",
+      render: (s) => (
+        <span className="inline-flex whitespace-nowrap rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 font-mono">
+          #{s.salary_id || s.id || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "base_amount",
+      label: "Base / Net",
+      render: (s) => (
+        <div className="flex flex-col">
+          <span className="font-semibold text-gray-800 text-sm">
+            ₹{Number(s.base_amount || 0).toLocaleString()}
+          </span>
+          {s.net_salary != null && (
+            <span className="text-[10px] text-emerald-600 font-bold">
+              Net ₹{Number(s.net_salary).toLocaleString()}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    width > 580 && {
+      key: "ctc",
+      label: "CTC",
+      render: (s) => (
+        <span className="text-sm font-semibold text-indigo-600">
+          {s.ctc != null ? `₹${Number(s.ctc).toLocaleString()}` : "—"}
+        </span>
+      ),
+    },
+    width > 700 && {
+      key: "effective_from",
+      label: "Effective From",
+      render: (s) => <span className="text-sm text-gray-600">{fmtDate(s.effective_from)}</span>,
+    },
+    width > 950 && {
+      key: "effective_to",
+      label: "Effective To",
+      render: (s) => (
+        <span className="text-sm text-gray-600">
+          {s.effective_to ? fmtDate(s.effective_to) : <span className="italic text-gray-400 text-xs">Ongoing</span>}
+        </span>
+      ),
+    },
     width > 800 && {
-      key: "status", label: "Status",
+      key: "status",
+      label: "Status",
       render: (s) => {
         const active = !s.effective_to || new Date(s.effective_to) > new Date();
         return active
@@ -1447,47 +1727,361 @@ function useSalaryConfig(onView, width) {
   const cardRenderer = (s, index, activeId, onToggle) => {
     const active = !s.effective_to || new Date(s.effective_to) > new Date();
     const sid = s.salary_id || s.id;
+    const earnings = (s.components || []).filter((c) => c.type === "earning");
+    const deductions = (s.components || []).filter((c) => c.type === "deduction");
     return (
-      <ManagementCard key={sid || index} accent="green" delay={index * 0.04} onClick={() => onView(s)} activeId={activeId} onToggle={onToggle} menuId={`sal-${sid || index}`}
+      <ManagementCard
+        key={sid || index}
+        accent="green"
+        delay={index * 0.04}
+        onClick={() => onView(s)}
+        activeId={activeId}
+        onToggle={onToggle}
+        menuId={`sal-${sid || index}`}
         actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(s), className: "text-blue-600 hover:bg-blue-50" }]}
-        hoverable title={`Salary Record #${sid || ""}`} subtitle={`Effective: ${fmtDate(s.effective_from)} → ${fmtDate(s.effective_to)}`} eyebrow="Salary Record"
-        badge={active ? <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><FaCheckCircle size={10} />Active</span> : <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"><FaTimesCircle size={10} />Expired</span>}
-        footer={<div className="flex w-full items-center justify-between text-xs text-gray-400"><span>{s.currency?.toUpperCase() || "INR"}</span><span>{fmtDate(s.effective_from)}</span></div>}
+        hoverable
+        title={`Salary #${sid || ""}`}
+        subtitle={`${fmtDate(s.effective_from)} → ${s.effective_to ? fmtDate(s.effective_to) : "Ongoing"}`}
+        eyebrow="Salary Record"
+        badge={
+          active
+            ? <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><FaCheckCircle size={10} />Active</span>
+            : <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"><FaTimesCircle size={10} />Expired</span>
+        }
+        footer={
+          <div className="flex w-full items-center justify-between text-xs text-gray-400">
+            <span>CTC: {s.ctc != null ? `₹${Number(s.ctc).toLocaleString()}` : "—"}</span>
+            <span>Net: {s.net_salary != null ? `₹${Number(s.net_salary).toLocaleString()}` : "—"}</span>
+          </div>
+        }
       >
-        <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-center">
-          <p className="text-sm font-bold text-blue-700">{s.currency?.toUpperCase() || "INR"} {Number(s.base_amount || 0).toLocaleString()}</p>
-          <p className="text-xs text-blue-500 mt-0.5">Base Amount</p>
+        {/* Base + financial row */}
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          <div className="rounded-lg border border-blue-100 bg-blue-50 p-2 text-center">
+            <p className="text-[9px] font-bold text-blue-500 uppercase mb-0.5">Base</p>
+            <p className="text-xs font-black text-blue-700">₹{Number(s.base_amount || 0).toLocaleString()}</p>
+          </div>
+          <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-2 text-center">
+            <p className="text-[9px] font-bold text-emerald-500 uppercase mb-0.5">Net</p>
+            <p className="text-xs font-black text-emerald-700">{s.net_salary != null ? `₹${Number(s.net_salary).toLocaleString()}` : "—"}</p>
+          </div>
+          <div className="rounded-lg border border-rose-100 bg-rose-50 p-2 text-center">
+            <p className="text-[9px] font-bold text-rose-500 uppercase mb-0.5">Deductions</p>
+            <p className="text-xs font-black text-rose-700">{s.total_deductions != null ? `₹${Number(s.total_deductions).toLocaleString()}` : "—"}</p>
+          </div>
         </div>
+        {/* Components preview */}
+        {s.components && s.components.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {earnings.slice(0, 2).map((c) => (
+              <span key={c.id} className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.5 rounded-full font-bold">
+                {c.code} +₹{Number(c.amount || 0).toLocaleString()}
+              </span>
+            ))}
+            {deductions.slice(0, 2).map((c) => (
+              <span key={c.id} className="text-[9px] bg-rose-50 text-rose-700 border border-rose-100 px-1.5 py-0.5 rounded-full font-bold">
+                {c.code} -₹{Number(c.amount || 0).toLocaleString()}
+              </span>
+            ))}
+            {s.components.length > 4 && (
+              <span className="text-[9px] bg-gray-50 text-gray-500 border border-gray-100 px-1.5 py-0.5 rounded-full font-bold">
+                +{s.components.length - 4} more
+              </span>
+            )}
+          </div>
+        )}
       </ManagementCard>
     );
   };
   return { columns, cardRenderer, rowKey: (row, idx) => row.salary_id || row.id || `sal-${idx}` };
 }
 
+// ─── PAYROLL CONFIG (updated for new API structure) ───────────────────────────
+
 function usePayrollConfig(onView, width) {
   const columns = [
-    { key: "payroll_period", label: "Payroll Period", render: (p) => <span className="font-medium text-gray-800 text-sm">{fmtMonthYear(p.payroll_period || p.period || p.month)}</span> },
-    width > 480 && { key: "total_earnings", label: "Total Earnings", render: (p) => <span className="text-sm text-gray-700">{p.total_earnings || p.gross_amount || p.gross || "—"}</span> },
-    width > 800 && { key: "total_deductions", label: "Total Deductions", render: (p) => <span className="text-sm text-rose-600">{p.total_deductions || p.deductions || "—"}</span> },
-    { key: "net_salary", label: "Net Salary", render: (p) => <span className="inline-flex whitespace-nowrap rounded-lg bg-green-50 px-3 py-1 text-xs font-bold text-green-700">{p.net_salary || p.net_pay || p.net || "—"}</span> },
-    width > 1000 && { key: "status", label: "Status", render: (p) => <Pill value={p.status} /> },
+    {
+      key: "payroll_period",
+      label: "Period",
+      render: (p) => (
+        <span className="font-semibold text-gray-800 text-sm">
+          {p.month && p.year
+            ? new Date(p.year, p.month - 1, 1).toLocaleDateString("en-IN", { month: "short", year: "numeric" })
+            : fmtMonthYear(p.payroll_period || p.period || p.month)}
+        </span>
+      ),
+    },
+    {
+      key: "total_earnings",
+      label: "Earnings",
+      render: (p) => (
+        <span className="text-sm font-semibold text-emerald-700">
+          {p.total_earnings != null ? `₹${Number(p.total_earnings).toLocaleString()}` : "—"}
+        </span>
+      ),
+    },
+    width > 600 && {
+      key: "total_deductions",
+      label: "Deductions",
+      render: (p) => (
+        <span className="text-sm font-semibold text-rose-600">
+          {p.total_deductions != null ? `₹${Number(p.total_deductions).toLocaleString()}` : "—"}
+        </span>
+      ),
+    },
+    {
+      key: "net_salary",
+      label: "Net Salary",
+      render: (p) => (
+        <span className="inline-flex whitespace-nowrap rounded-lg bg-green-50 px-3 py-1 text-xs font-bold text-green-700">
+          {p.net_salary != null ? `₹${Number(p.net_salary).toLocaleString()}` : "—"}
+        </span>
+      ),
+    },
+    width > 800 && {
+      key: "attendance",
+      label: "Present / Working",
+      render: (p) => {
+        const att = p.attendance || {};
+        return att.present_days != null ? (
+          <div className="flex flex-col">
+            <span className="text-xs font-semibold text-gray-700">{att.present_days} / {att.working_days} days</span>
+            {Number(att.absent_days) > 0 && (
+              <span className="text-[10px] text-rose-500 font-bold">{att.absent_days} absent</span>
+            )}
+          </div>
+        ) : "—";
+      },
+    },
+    width > 1000 && {
+      key: "work",
+      label: "Worked",
+      render: (p) => {
+        const work = p.work || {};
+        return work.worked_minutes != null
+          ? <span className="text-xs text-blue-600 font-semibold">{formatMinutes(work.worked_minutes)}</span>
+          : "—";
+      },
+    },
   ].filter(Boolean);
 
-  const cardRenderer = (p, index, activeId, onToggle) => (
-    <ManagementCard key={p.id || index} accent="emerald" delay={index * 0.04} onClick={() => onView(p)} activeId={activeId} onToggle={onToggle} menuId={`pay-${p.id || index}`}
-      actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(p), className: "text-blue-600 hover:bg-blue-50" }]}
-      hoverable title={fmtMonthYear(p.payroll_period || p.period || p.month) || "Payroll"} subtitle={`Earnings: ${p.total_earnings || p.gross_amount || p.gross || "—"} · Deductions: ${p.total_deductions || p.deductions || "—"}`} eyebrow="Payroll Record" badge={<Pill value={p.status} />}
-    >
-      <div className="grid grid-cols-3 gap-2 text-center mt-1">
-        {[["Earnings", p.total_earnings || p.gross_amount || p.gross, "blue"], ["Deductions", p.total_deductions || p.deductions, "red"], ["Net", p.net_salary || p.net_pay || p.net, "green"]].map(([lbl, val, clr]) => (
-          <div key={lbl} className={`rounded-xl border border-${clr}-100 bg-${clr}-50 p-2`}>
-            <p className={`text-xs font-bold text-${clr}-700`}>{val || "—"}</p>
-            <p className={`text-[11px] text-${clr}-500`}>{lbl}</p>
+  const cardRenderer = (p, index, activeId, onToggle) => {
+    const att = p.attendance || {};
+    const work = p.work || {};
+    const earnings = p.components_breakdown?.earnings || [];
+    const deductions = p.components_breakdown?.deductions || [];
+    const periodLabel = p.month && p.year
+      ? new Date(p.year, p.month - 1, 1).toLocaleDateString("en-IN", { month: "long", year: "numeric" })
+      : fmtMonthYear(p.payroll_period || p.period || p.month);
+
+    return (
+      <ManagementCard
+        key={p.id || index}
+        accent="emerald"
+        delay={index * 0.04}
+        onClick={() => onView(p)}
+        activeId={activeId}
+        onToggle={onToggle}
+        menuId={`pay-${p.id || index}`}
+        actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(p), className: "text-blue-600 hover:bg-blue-50" }]}
+        hoverable
+        title={periodLabel || "Payroll"}
+        subtitle={`${att.present_days ?? "—"} present of ${att.working_days ?? "—"} working days`}
+        eyebrow="Payroll Record"
+        badge={
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+            <FaCheckCircle size={9} /> ID #{p.id}
+          </span>
+        }
+        footer={
+          <div className="flex w-full items-center justify-between text-xs text-gray-400">
+            <span>Worked: {work.worked_minutes != null ? formatMinutes(work.worked_minutes) : "—"}</span>
+            {Number(work.overtime_minutes) > 0 && <span className="text-purple-500 font-bold">OT: {formatMinutes(work.overtime_minutes)}</span>}
           </div>
-        ))}
-      </div>
-    </ManagementCard>
-  );
+        }
+      >
+        {/* Financial summary */}
+        <div className="grid grid-cols-3 gap-2 mb-2">
+          <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-2 text-center">
+            <p className="text-[9px] font-bold text-emerald-500 uppercase mb-0.5">Earnings</p>
+            <p className="text-xs font-black text-emerald-700">
+              {p.total_earnings != null ? `₹${Number(p.total_earnings).toLocaleString()}` : "—"}
+            </p>
+          </div>
+          <div className="rounded-lg border border-rose-100 bg-rose-50 p-2 text-center">
+            <p className="text-[9px] font-bold text-rose-500 uppercase mb-0.5">Deductions</p>
+            <p className="text-xs font-black text-rose-700">
+              {p.total_deductions != null ? `₹${Number(p.total_deductions).toLocaleString()}` : "—"}
+            </p>
+          </div>
+          <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-2 text-center">
+            <p className="text-[9px] font-bold text-indigo-500 uppercase mb-0.5">Net</p>
+            <p className="text-xs font-black text-indigo-700">
+              {p.net_salary != null ? `₹${Number(p.net_salary).toLocaleString()}` : "—"}
+            </p>
+          </div>
+        </div>
+
+        {/* Earnings component preview */}
+        {earnings.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {earnings.slice(0, 3).map((e, i) => (
+              <span key={i} className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.5 rounded-full font-bold">
+                {e.name}: ₹{Number(e.amount || 0).toLocaleString()}
+              </span>
+            ))}
+            {earnings.length > 3 && (
+              <span className="text-[9px] bg-gray-50 text-gray-500 border border-gray-100 px-1.5 py-0.5 rounded-full font-bold">
+                +{earnings.length - 3} more
+              </span>
+            )}
+          </div>
+        )}
+      </ManagementCard>
+    );
+  };
+  return { columns, cardRenderer, rowKey: "id" };
+}
+
+// ─── SHIFTS CONFIG (updated for new API structure) ────────────────────────────
+
+function useShiftConfig(onView, width) {
+  const parseShiftTime = (t) => {
+    if (!t) return null;
+    return new Date(t.replace(" ", "T")).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const columns = [
+    {
+      key: "shift_date",
+      label: "Date",
+      render: (s) => <span className="font-medium text-gray-800 text-sm">{fmtDate(s.shift_date)}</span>,
+    },
+    {
+      key: "day_status",
+      label: "Status",
+      render: (s) => {
+        const style = CALENDAR_STATUS_STYLES[s.day_status] || CALENDAR_STATUS_STYLES.upcoming;
+        return (
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${style.pill}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+            {style.label || fmt(s.day_status)}
+          </span>
+        );
+      },
+    },
+    {
+      key: "start_time",
+      label: "Timing",
+      render: (s) => (
+        <div className="flex flex-col">
+          <span className="text-sm text-gray-700 font-medium">
+            {parseShiftTime(s.start_time) || "—"} → {parseShiftTime(s.end_time) || "—"}
+          </span>
+          {s.day_status === "leave" && s.leave_type_value && (
+            <span className="text-[10px] font-bold text-violet-600">{s.leave_type_value}</span>
+          )}
+          {s.day_status === "half_day" && s.half_day_type && (
+            <span className="text-[10px] font-bold text-orange-600">{fmt(s.half_day_type)}</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "worked_minutes",
+      label: "Worked",
+      render: (s) => (
+        <div className="flex flex-col">
+          <span className="text-sm text-emerald-600 font-semibold">{s.worked_minutes} <span className="text-[10px] text-gray-400 uppercase">mins</span></span>
+          <span className="text-[10px] text-gray-400">of {s.expected_work_minutes}m</span>
+        </div>
+      ),
+    },
+    width > 700 && {
+      key: "late_early",
+      label: "Late / Early",
+      render: (s) => (
+        <div className="flex gap-1.5 flex-wrap">
+          {s.late_minutes > 0 && <span className="text-[10px] bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded font-bold">Late {s.late_minutes}m</span>}
+          {s.early_leave_minutes > 0 && <span className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded font-bold">Early {s.early_leave_minutes}m</span>}
+          {s.late_minutes === 0 && s.early_leave_minutes === 0 && <span className="text-[10px] text-gray-300">—</span>}
+        </div>
+      ),
+    },
+    width > 900 && {
+      key: "flags",
+      label: "Flags",
+      render: (s) => (
+        <div className="flex gap-1 flex-wrap">
+          {s.is_overtime && <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold">OT {s.overtime_minutes}m</span>}
+          {s.is_deductible && <span className="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold">Deductible</span>}
+          {s.extra_break_minutes > 0 && <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">+{s.extra_break_minutes}m break</span>}
+          {!s.is_overtime && !s.is_deductible && s.extra_break_minutes === 0 && <span className="text-[10px] text-gray-300">—</span>}
+        </div>
+      ),
+    },
+  ].filter(Boolean);
+
+  const cardRenderer = (s, index, activeId, onToggle) => {
+    const statusStyle = CALENDAR_STATUS_STYLES[s.day_status] || CALENDAR_STATUS_STYLES.upcoming;
+    return (
+      <ManagementCard
+        key={s.id || index}
+        accent="violet"
+        delay={index * 0.04}
+        onClick={() => onView(s)}
+        activeId={activeId}
+        onToggle={onToggle}
+        menuId={`sh-${s.id || index}`}
+        actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(s), className: "text-blue-600 hover:bg-blue-50" }]}
+        hoverable
+        title={fmtDate(s.shift_date)}
+        subtitle={`${parseShiftTime(s.start_time) || "—"} → ${parseShiftTime(s.end_time) || "—"}`}
+        eyebrow="Shift Record"
+        badge={
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusStyle.pill}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`} />
+            {statusStyle.label || fmt(s.day_status)}
+          </span>
+        }
+        footer={
+          <div className="flex w-full items-center justify-between text-xs text-gray-400">
+            <span>Expected: {s.expected_work_minutes}m</span>
+            <span>Allowed break: {s.allowed_break_minutes}m</span>
+          </div>
+        }
+      >
+        <div className="grid grid-cols-2 gap-2 mt-1">
+          <div className="rounded-lg bg-emerald-50 border border-emerald-100 p-2 text-center">
+            <p className="text-[9px] font-bold text-emerald-500 uppercase mb-0.5">Worked</p>
+            <p className="text-xs font-black text-emerald-700">{s.worked_minutes}m</p>
+          </div>
+          <div className={`rounded-lg border p-2 text-center ${s.deductible_minutes > 0 ? "bg-rose-50 border-rose-100" : "bg-slate-50 border-slate-100"}`}>
+            <p className={`text-[9px] font-bold uppercase mb-0.5 ${s.deductible_minutes > 0 ? "text-rose-500" : "text-slate-400"}`}>Deductible</p>
+            <p className={`text-xs font-black ${s.deductible_minutes > 0 ? "text-rose-700" : "text-slate-400"}`}>{s.deductible_minutes}m</p>
+          </div>
+        </div>
+        {(s.late_minutes > 0 || s.early_leave_minutes > 0 || s.is_overtime || s.extra_break_minutes > 0) && (
+          <div className="flex gap-1.5 flex-wrap mt-2">
+            {s.late_minutes > 0 && <span className="text-[9px] text-rose-500 font-bold bg-rose-50 px-1.5 py-0.5 rounded-full border border-rose-100">Late {s.late_minutes}m</span>}
+            {s.early_leave_minutes > 0 && <span className="text-[9px] text-amber-500 font-bold bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-100">Early {s.early_leave_minutes}m</span>}
+            {s.is_overtime && <span className="text-[9px] text-purple-600 font-bold bg-purple-50 px-1.5 py-0.5 rounded-full border border-purple-100">OT {s.overtime_minutes}m</span>}
+            {s.extra_break_minutes > 0 && <span className="text-[9px] text-orange-500 font-bold bg-orange-50 px-1.5 py-0.5 rounded-full border border-orange-100">+{s.extra_break_minutes}m break</span>}
+          </div>
+        )}
+        {s.day_status === "leave" && s.leave_type_value && (
+          <p className="mt-2 text-[10px] font-bold text-violet-600 flex items-center gap-1">
+            <FaUmbrellaBeach size={9} /> {s.leave_type_value} • {fmt(s.leave_type)}
+          </p>
+        )}
+        {s.day_status === "half_day" && s.half_day_type && (
+          <p className="mt-2 text-[10px] font-bold text-orange-600 flex items-center gap-1">
+            <FaHourglassEnd size={9} /> {fmt(s.half_day_type)}
+          </p>
+        )}
+      </ManagementCard>
+    );
+  };
   return { columns, cardRenderer, rowKey: "id" };
 }
 
@@ -1507,45 +2101,6 @@ function useLeaveConfig(onView, width) {
       footer={<div className="flex w-full items-center justify-between text-xs text-gray-400"><span>{formatDays(l.total_days || l.days)} day(s)</span><span>{Array.isArray(l.attachments) ? `${l.attachments.length} attachment(s)` : "No attachments"}</span></div>}
     >
       {l.reason && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{l.reason}</p>}
-    </ManagementCard>
-  );
-  return { columns, cardRenderer, rowKey: "id" };
-}
-
-function useShiftConfig(onView, width) {
-  const columns = [
-    { key: "shift_date", label: "Date", render: (s) => <span className="font-medium text-gray-800 text-sm">{fmtDate(s.shift_date)}</span> },
-    {
-      key: "start_time", label: "Timing",
-      render: (s) => <span className="text-sm text-gray-700 font-medium">{s.start_time ? new Date(s.start_time.replace(" ", "T")).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—"}{" → "}{s.end_time ? new Date(s.end_time.replace(" ", "T")).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—"}</span>,
-    },
-    { key: "worked_minutes", label: "Worked", render: (s) => <span className="text-sm text-emerald-600 font-semibold">{s.worked_minutes} <span className="text-[10px] text-gray-400 uppercase">mins</span></span> },
-    width > 700 && {
-      key: "late_early", label: "Late/Early",
-      render: (s) => <div className="flex gap-2">{s.late_minutes > 0 && <span className="text-[10px] bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded font-bold">Late: {s.late_minutes}m</span>}{s.early_leave_minutes > 0 && <span className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded font-bold">Early: {s.early_leave_minutes}m</span>}</div>,
-    },
-    {
-      key: "status", label: "Status",
-      render: (s) => <div className="flex gap-1">{s.is_half_day && <span className="text-[10px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-bold">Half Day</span>}{s.is_deductible && <span className="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold">Deductible</span>}{!s.is_half_day && !s.is_deductible && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">Full Day</span>}</div>,
-    },
-  ].filter(Boolean);
-
-  const cardRenderer = (s, index, activeId, onToggle) => (
-    <ManagementCard key={s.id || index} accent="violet" delay={index * 0.04} onClick={() => onView(s)} activeId={activeId} onToggle={onToggle} menuId={`sh-${s.id || index}`}
-      actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(s), className: "text-blue-600 hover:bg-blue-50" }]}
-      hoverable title={fmtDate(s.shift_date)} subtitle={`${s.worked_minutes} mins worked`} eyebrow="Shift Record"
-      badge={<div className="flex gap-1">{s.is_half_day && <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 rounded-full font-bold">HD</span>}{s.is_deductible && <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 rounded-full font-bold">D</span>}</div>}
-    >
-      <div className="mt-2 space-y-1">
-        <div className="flex justify-between text-xs"><span className="text-gray-400">Start:</span><span className="text-gray-700 font-medium">{s.start_time ? new Date(s.start_time.replace(" ", "T")).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—"}</span></div>
-        <div className="flex justify-between text-xs"><span className="text-gray-400">End:</span><span className="text-gray-700 font-medium">{s.end_time ? new Date(s.end_time.replace(" ", "T")).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—"}</span></div>
-        {(s.late_minutes > 0 || s.early_leave_minutes > 0) && (
-          <div className="flex gap-2 mt-2">
-            {s.late_minutes > 0 && <span className="text-[9px] text-rose-500 font-bold">Late: {s.late_minutes}m</span>}
-            {s.early_leave_minutes > 0 && <span className="text-[9px] text-amber-500 font-bold">Early: {s.early_leave_minutes}m</span>}
-          </div>
-        )}
-      </div>
     </ManagementCard>
   );
   return { columns, cardRenderer, rowKey: "id" };
@@ -1620,14 +2175,8 @@ function CreateSalaryModal({ isOpen, onClose, employeeId, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!employeeId) {
-      toast.warning('Employee details are not available.');
-      return;
-    }
-    if (!formData.base_amount || !formData.effective_from) {
-      toast.warning('Base amount and effective from are required.');
-      return;
-    }
+    if (!employeeId) { toast.warning('Employee details are not available.'); return; }
+    if (!formData.base_amount || !formData.effective_from) { toast.warning('Base amount and effective from are required.'); return; }
 
     setSubmitting(true);
     try {
@@ -1824,7 +2373,7 @@ function CreateSalaryModal({ isOpen, onClose, employeeId, onSuccess }) {
 
 // ─── GENERIC TAB CONTENT ──────────────────────────────────────────────────────
 
-function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
+function TabContent({ tabKey, tabLabel, tabIcon, employeeId, refreshKey = 0 }) {
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -1858,6 +2407,7 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
   const ACCENT_MAP = { basic: "slate", permissions: "indigo", attendance: "blue", salary: "green", payroll: "emerald", leaves: "amber", shifts: "violet" };
   const accent = ACCENT_MAP[normalizedTabKey] || "indigo";
 
+  // ── FIXED: data extraction handles all three new API structures ──────────────
   const fetchData = useCallback(async (page, limit) => {
     if (fetchRef.current) return;
     fetchRef.current = true;
@@ -1868,21 +2418,53 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
         async () => {
           const companyStr = localStorage.getItem("company");
           const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
-          const response = await apiCall(`/employees/${employeeId}?include=${normalizedTabKey}${isAttendance ? `&sub-tab=${subType}` : ""}&page=${page}&limit=${limit}`, "GET", null, companyId);
+          const response = await apiCall(
+            `/employees/${employeeId}?include=${normalizedTabKey}${isAttendance ? `&sub-tab=${subType}` : ""}&page=${page}&limit=${limit}`,
+            "GET", null, companyId
+          );
           const data = await response.json();
           return { res: response, json: data };
         }
       );
       if (!res.ok || !json.success) throw new Error(json.message || "API error");
-      const rawData = json.data?.[normalizedTabKey] ?? json.data?.[tabKey] ?? json.data ?? [];
+
+      // Step 1: get raw data from response
+      let rawData = json.data?.[normalizedTabKey] ?? json.data?.[tabKey] ?? json.data ?? [];
+
+      // Step 2: Payroll — response is [{payroll: {...}}, ...], unwrap the nested payroll key
+      if (normalizedTabKey === "payroll" && Array.isArray(rawData)) {
+        rawData = rawData.map((item) => item?.payroll ?? item).filter(Boolean);
+      }
+
+      // Step 3: Salary — response is {salary: [...]}, unwrap the salary array
+      if (
+        normalizedTabKey === "salary" &&
+        rawData &&
+        !Array.isArray(rawData) &&
+        Array.isArray(rawData.salary)
+      ) {
+        rawData = rawData.salary;
+      }
+
       const dataArr = Array.isArray(rawData) ? rawData : rawData && typeof rawData === "object" ? [rawData] : [];
       const meta = json.meta?.[normalizedTabKey] ?? json.meta?.[tabKey] ?? json.meta ?? {};
+
       if (mountedRef.current) {
         setRows(Array.isArray(dataArr) ? dataArr : []);
-        updatePagination({ page: Number(meta.page ?? page), limit: Number(meta.limit ?? limit), total: Number(meta.total ?? dataArr.length), total_pages: Number(meta.total_pages ?? 1), is_last_page: meta.is_last_page ?? true });
+        updatePagination({
+          page: Number(meta.page ?? page),
+          limit: Number(meta.limit ?? limit),
+          total: Number(meta.total ?? dataArr.length),
+          total_pages: Number(meta.total_pages ?? 1),
+          is_last_page: meta.is_last_page ?? true,
+        });
       }
     } catch {
-      if (mountedRef.current) { setRows([]); setWarn(true); updatePagination({ page, limit, total: 0, total_pages: 1, is_last_page: true }); }
+      if (mountedRef.current) {
+        setRows([]);
+        setWarn(true);
+        updatePagination({ page, limit, total: 0, total_pages: 1, is_last_page: true });
+      }
     } finally {
       if (mountedRef.current) setLoading(false);
       fetchRef.current = false;
@@ -1910,7 +2492,6 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
 
   const handleDownloadShiftPdf = useCallback(async () => {
     if (!employeeId) return;
-
     setDownloadingShiftPdf(true);
     try {
       const companyStr = localStorage.getItem("company");
@@ -1918,23 +2499,16 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
       const now = new Date();
       const month = now.getMonth() + 1;
       const year = now.getFullYear();
-
       const response = await apiCall(`/shifts/download?employee_id=${employeeId}&month=${month}&year=${year}`, "GET", null, companyId);
       const contentType = response.headers.get("content-type") || "";
-
       if (contentType.includes("application/pdf") || contentType.includes("application/octet-stream")) {
         const blob = await response.blob();
         const blobUrl = window.URL.createObjectURL(blob);
         window.open(blobUrl, "_blank", "noopener,noreferrer");
         return;
       }
-
       const result = await response.json();
-      if (result?.success && result?.url) {
-        window.open(result.url, "_blank", "noopener,noreferrer");
-        return;
-      }
-
+      if (result?.success && result?.url) { window.open(result.url, "_blank", "noopener,noreferrer"); return; }
       throw new Error(result?.message || "Failed to download shift PDF");
     } catch (error) {
       toast.error(error?.message || "Failed to download shift PDF");
@@ -1950,15 +2524,12 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
       const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
       const response = await apiCall("/leave/company", "GET", null, companyId);
       const result = await response.json();
-
       if (!response.ok || !result.success) throw new Error(result.message || "Failed to load leave types");
-
       const options = (result.data || []).map((item) => ({
         value: String(item.leave_config_id || item.id),
         label: `${item.name || item.leave_type || "Leave"}${item.code ? ` (${item.code})` : ""}`,
         ...item,
       }));
-
       setLeaveTypeOptions(options);
     } catch (error) {
       toast.error(error.message || "Failed to load leave types");
@@ -1969,41 +2540,18 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
   }, []);
 
   const handleCreateLeaveClick = useCallback(() => {
-    if (!employeeId) {
-      toast.warning("Employee details are not available.");
-      return;
-    }
-
-    setLeaveCreateForm({
-      employee_id: String(employeeId),
-      leave_config_id: "",
-      start_date: "",
-      end_date: "",
-      remarks: "",
-    });
+    if (!employeeId) { toast.warning("Employee details are not available."); return; }
+    setLeaveCreateForm({ employee_id: String(employeeId), leave_config_id: "", start_date: "", end_date: "", remarks: "" });
     setShowCreateLeaveModal(true);
     fetchLeaveTypes();
   }, [employeeId, fetchLeaveTypes]);
 
   const handleCreateLeaveSubmit = useCallback(async (e) => {
     e.preventDefault();
-
-    if (!leaveCreateForm.employee_id) {
-      toast.warning("Employee details are not available.");
-      return;
-    }
-    if (!leaveCreateForm.leave_config_id) {
-      toast.warning("Please select a leave type.");
-      return;
-    }
-    if (!leaveCreateForm.start_date || !leaveCreateForm.end_date) {
-      toast.warning("Please select a leave date range.");
-      return;
-    }
-    if (leaveCreateForm.end_date < leaveCreateForm.start_date) {
-      toast.warning("End date cannot be before start date.");
-      return;
-    }
+    if (!leaveCreateForm.employee_id) { toast.warning("Employee details are not available."); return; }
+    if (!leaveCreateForm.leave_config_id) { toast.warning("Please select a leave type."); return; }
+    if (!leaveCreateForm.start_date || !leaveCreateForm.end_date) { toast.warning("Please select a leave date range."); return; }
+    if (leaveCreateForm.end_date < leaveCreateForm.start_date) { toast.warning("End date cannot be before start date."); return; }
 
     setCreatingLeave(true);
     try {
@@ -2018,12 +2566,9 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
         attachments: [],
         remarks: leaveCreateForm.remarks || "",
       };
-
       const response = await apiCall("/leave/management/create/", "POST", payload, companyId);
       const result = await response.json();
-
       if (!response.ok || !result.success) throw new Error(result.message || "Failed to create leave");
-
       toast.success("Leave created successfully");
       setShowCreateLeaveModal(false);
       fetchData(pagination.page, pagination.limit);
@@ -2035,10 +2580,7 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
   }, [fetchData, leaveCreateForm, pagination.limit, pagination.page]);
 
   const handleCreatePayrollClick = useCallback(() => {
-    if (!employeeId) {
-      toast.warning("Employee details are not available.");
-      return;
-    }
+    if (!employeeId) { toast.warning("Employee details are not available."); return; }
     setPayrollMonth(new Date().getMonth() + 1);
     setPayrollYear(new Date().getFullYear());
     setSendPayrollPdf(true);
@@ -2047,11 +2589,7 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
 
   const handleCreatePayrollSubmit = useCallback(async (e) => {
     e.preventDefault();
-    if (!employeeId) {
-      toast.warning("Employee details are not available.");
-      return;
-    }
-
+    if (!employeeId) { toast.warning("Employee details are not available."); return; }
     try {
       const companyStr = localStorage.getItem("company");
       const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
@@ -2061,11 +2599,9 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
         employee_id: [Number(employeeId)],
         send_pdf: Boolean(sendPayrollPdf),
       };
-
       const response = await apiCall("/payroll/generate-payroll", "POST", payload, companyId);
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.message || "Failed to generate payroll");
-
       toast.success("Payroll generated successfully");
       setShowCreatePayrollModal(false);
       fetchData(pagination.page, pagination.limit);
@@ -2078,6 +2614,7 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
     setShowCreateSalaryModal(false);
     fetchData(pagination.page, pagination.limit);
   }, [fetchData, pagination.limit, pagination.page]);
+
   const permConfig = usePermissionsConfig(onView, effectiveWidth);
   const attConfig = useAttendanceConfig(onView, onViewLogs, effectiveWidth, subType);
   const salConfig = useSalaryConfig(onView, effectiveWidth);
@@ -2123,11 +2660,7 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
               </button>
             )}
             {normalizedTabKey === "leaves" && (
-              <button
-                type="button"
-                onClick={handleCreateLeaveClick}
-                className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 shadow-sm transition-all hover:bg-amber-100"
-              >
+              <button type="button" onClick={handleCreateLeaveClick} className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700 shadow-sm transition-all hover:bg-amber-100">
                 <FaPlus size={10} /> Create
               </button>
             )}
@@ -2221,7 +2754,6 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
                   menuPortalTarget={document.body}
                 />
               </div>
-
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Date Range</label>
                 <AdvancedDateFilter
@@ -2240,7 +2772,6 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
                   buttonClassName="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm shadow-sm transition hover:border-amber-400 focus:outline-none focus:ring-4 focus:ring-amber-500/10 font-medium"
                 />
               </div>
-
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Remarks</label>
                 <textarea
@@ -2276,26 +2807,13 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Month</label>
-                  <SelectField
-                    value={monthOptions.find((option) => option.value === payrollMonth) || null}
-                    onChange={(option) => setPayrollMonth(Number(option?.value || 1))}
-                    options={monthOptions}
-                    placeholder="Select month"
-                    menuPortalTarget={document.body}
-                  />
+                  <SelectField value={monthOptions.find((option) => option.value === payrollMonth) || null} onChange={(option) => setPayrollMonth(Number(option?.value || 1))} options={monthOptions} placeholder="Select month" menuPortalTarget={document.body} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Year</label>
-                  <SelectField
-                    value={yearOptions.find((option) => option.value === payrollYear) || null}
-                    onChange={(option) => setPayrollYear(Number(option?.value || new Date().getFullYear()))}
-                    options={yearOptions}
-                    placeholder="Select year"
-                    menuPortalTarget={document.body}
-                  />
+                  <SelectField value={yearOptions.find((option) => option.value === payrollYear) || null} onChange={(option) => setPayrollYear(Number(option?.value || new Date().getFullYear()))} options={yearOptions} placeholder="Select year" menuPortalTarget={document.body} />
                 </div>
               </div>
-
               <div className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50 p-4">
                 <div>
                   <p className="text-sm font-semibold text-emerald-800">Send payslip PDF</p>
@@ -2328,7 +2846,16 @@ function TabContent({ tabKey, tabLabel,tabIcon, employeeId, refreshKey = 0 }) {
       </AnimatePresence>
 
       <AnimatePresence>
-        {selectedItem && <DetailModal isOpen={!!selectedItem} onClose={() => setSelectedItem(null)} item={selectedItem} tabKey={tabKey} tabLabel={tabLabel} subType={subType} />}
+        {selectedItem && (
+          <DetailModal
+            isOpen={!!selectedItem}
+            onClose={() => setSelectedItem(null)}
+            item={selectedItem}
+            tabKey={tabKey}
+            tabLabel={tabLabel}
+            subType={subType}
+          />
+        )}
       </AnimatePresence>
       <AnimatePresence>
         {selectedLogItem && <AttendanceLogsModal id={selectedLogItem.id} type={subType} onClose={() => setSelectedLogItem(null)} />}
@@ -2379,7 +2906,15 @@ export default function EmployeeProfilePage() {
         setProfile({
           employee: { ...raw, code: raw.employee_code || raw.code },
           user: { ...raw, name: raw.user_name || raw.name },
-          company: { ...raw, name: raw.company_name || (raw.company?.name ?? "—"), legal_name: raw.legal_name || (raw.company?.legal_name ?? "—"), logo_url: raw.logo_url || raw.company?.logo_url, city: raw.city || raw.company?.city, state: raw.state || raw.company?.state, country: raw.country || raw.company?.country },
+          company: {
+            ...raw,
+            name: raw.company_name || (raw.company?.name ?? "—"),
+            legal_name: raw.legal_name || (raw.company?.legal_name ?? "—"),
+            logo_url: raw.logo_url || raw.company?.logo_url,
+            city: raw.city || raw.company?.city,
+            state: raw.state || raw.company?.state,
+            country: raw.country || raw.company?.country,
+          },
         });
       }
     } catch (err) {
@@ -2446,7 +2981,13 @@ export default function EmployeeProfilePage() {
                   ) : activeTab === "ledger" ? (
                     <CompanyLedger employeeId={profile.employee?.id ?? employeeId} />
                   ) : (
-                    <TabContent tabKey={activeTab} tabLabel={TABS.find((tab) => tab.key === activeTab)?.label || "Profile"} tabIcon={TABS.find((tab) => tab.key === activeTab)?.icon || ""} employeeId={profile.employee?.id ?? employeeId} refreshKey={refreshKey} />
+                    <TabContent
+                      tabKey={activeTab}
+                      tabLabel={TABS.find((tab) => tab.key === activeTab)?.label || "Profile"}
+                      tabIcon={TABS.find((tab) => tab.key === activeTab)?.icon || ""}
+                      employeeId={profile.employee?.id ?? employeeId}
+                      refreshKey={refreshKey}
+                    />
                   )}
                 </div>
               </ProfileHub>
