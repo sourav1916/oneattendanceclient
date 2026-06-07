@@ -320,7 +320,7 @@ export default function PayrollAdjustment() {
             label: 'View Details',
             icon: <FaEye size={13} />,
             onClick: () => setDetailAdjustment(adj),
-            className: 'text-slate-700 hover:text-blue-600 hover:bg-blue-50'
+            className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
         },
         {
             label: 'Edit',
@@ -328,7 +328,7 @@ export default function PayrollAdjustment() {
             onClick: () => openEditModal(adj),
             disabled: updateAccess.disabled,
             title: updateAccess.disabled ? getAccessMessage(updateAccess) : 'Edit adjustment',
-            className: 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50'
+            className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
         },
         {
             label: 'Delete',

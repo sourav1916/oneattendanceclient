@@ -5,7 +5,7 @@ import {
   FaEye, FaSpinner,
   FaChevronDown, FaCog, FaUniversity, FaStar,
   FaMoneyBillWave, FaChartBar,
-  FaBuilding, FaShieldAlt, FaExclamationTriangle, FaQrcode
+  FaBuilding, FaShieldAlt, FaExclamationTriangle, FaQrcode, FaEllipsisV
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import apiCall from '../utils/api';
@@ -112,9 +112,11 @@ const ActionMenu = ({
     <div className="relative" ref={ref}>
       <button
         onClick={(e) => { e.stopPropagation(); setOpen((p) => !p); }}
-        className="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all"
+        className="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200
+                       bg-white text-gray-500 transition-all hover:border-blue-300
+                       hover:text-blue-600 hover:shadow-sm active:scale-95"
       >
-        <FaCog size={14} />
+        <FaEllipsisV size={14} />
       </button>
       <AnimatePresence>
         {open && (
@@ -122,10 +124,10 @@ const ActionMenu = ({
             initial={{ opacity: 0, scale: 0.95, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -4 }}
-            className="absolute right-0 top-full z-[100] mt-1 w-44 rounded-xl border border-slate-100 bg-white shadow-xl overflow-hidden"
+            className="absolute right-0 top-full z-[100] mt-1 w-44 p-1.5  rounded-xl border border-slate-100 bg-white shadow-xl overflow-hidden"
           >
             {[
-              { label: 'View Details', icon: <FaEye size={13} />, onClick: () => { onView(account); setOpen(false); }, disabled: false, className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50' },
+              { label: 'View Details', icon: <FaEye size={13} />, onClick: () => { onView(account); setOpen(false); }, disabled: false, className: 'text-green-600 hover:text-green-700 hover:bg-green-50' },
               { label: 'Edit Account', icon: <FaEdit size={13} />, onClick: () => { onEdit(account); setOpen(false); }, disabled: editDisabled, title: editDisabled ? editMessage : '', className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
               { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => { onDelete(account); setOpen(false); }, disabled: deleteDisabled, title: deleteDisabled ? deleteMessage : '', className: 'text-red-600 hover:text-red-700 hover:bg-red-50' },
             ].map((item) => (
@@ -839,7 +841,7 @@ const BankAccountManagement = () => {
             rowKey={(row) => row.bank_id}
             onRowClick={(row) => setViewModal({ open: true, account: row })}
             getActions={(row) => [
-              { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setViewModal({ open: true, account: row }), className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50' },
+              { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setViewModal({ open: true, account: row }), className: 'text-green-600 hover:text-green-700 hover:bg-green-50' },
               { label: 'Edit Account', icon: <FaEdit size={13} />, onClick: () => openModal('edit', row), disabled: updateAccess.disabled, title: updateAccess.disabled ? updateMessage : '', className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
               { label: 'Delete', icon: <FaTrash size={13} />, onClick: () => openModal('delete', row), disabled: deleteAccess.disabled, title: deleteAccess.disabled ? deleteMessage : '', className: 'text-red-600 hover:text-red-700 hover:bg-red-50' },
             ]}

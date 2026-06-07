@@ -427,13 +427,13 @@ const PackageCard = ({ pkg, index, onView, onEdit, onDelete, activeId, onToggle 
             label: 'View Details',
             icon: <FaEye size={13} />,
             onClick: () => onView(pkg),
-            className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
+            className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
         },
         {
             label: 'Edit',
             icon: <FaEdit size={13} />,
             onClick: () => onEdit(pkg),
-            className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
+            className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
         },
         {
             label: 'Delete',

@@ -1631,6 +1631,14 @@ export default function InvitePackageManagement() {
                                 label: 'View Details',
                                 icon: <FaEye size={14} />,
                                 onClick: () => openModal(pkg, "view"),
+                                className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                              },
+                              {
+                                label: 'Edit',
+                                icon: <FaEdit size={14} />,
+                                onClick: () => handleEditClick(pkg),
+                                disabled: updateAccess.disabled,
+                                title: updateAccess.disabled ? getAccessMessage(updateAccess) : "",
                                 className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                               },
                               {
@@ -1641,14 +1649,7 @@ export default function InvitePackageManagement() {
                                 title: updateAccess.disabled ? getAccessMessage(updateAccess) : "",
                                 className: pkg.is_active ? 'text-amber-600 hover:text-amber-700' : 'text-green-600 hover:text-green-700'
                               },
-                              {
-                                label: 'Edit',
-                                icon: <FaEdit size={14} />,
-                                onClick: () => handleEditClick(pkg),
-                                disabled: updateAccess.disabled,
-                                title: updateAccess.disabled ? getAccessMessage(updateAccess) : "",
-                                className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
-                              },
+                              
                               {
                                 label: 'Delete',
                                 icon: <FaTrash size={14} />,

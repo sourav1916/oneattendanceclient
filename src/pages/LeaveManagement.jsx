@@ -581,7 +581,7 @@ const LeaveManagement = () => {
     const ActionMenuButtons = (leave) => {
         const isPending = leave.status === 'pending';
         return [
-            { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setDetailLeave(leave), className: 'text-slate-700 hover:text-blue-600 hover:bg-blue-50' },
+            { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setDetailLeave(leave), className: 'text-green-600 hover:text-green-700 hover:bg-green-50' },
             ...(isPending ? [
                 {
                     label: 'Approve / Edit',
@@ -598,7 +598,7 @@ const LeaveManagement = () => {
                     },
                     disabled: approveAccess.disabled,
                     title: approveAccess.disabled ? reviewMessage : '',
-                    className: 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
+                    className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                 },
                 { label: 'Reject', icon: <FaTrash size={13} />, onClick: () => { setRejectLeave(leave); setRejectRemarks(''); }, disabled: rejectAccess.disabled, title: rejectAccess.disabled ? reviewMessage : '', className: 'text-rose-600 hover:text-rose-700 hover:bg-rose-50' }
             ] : [])

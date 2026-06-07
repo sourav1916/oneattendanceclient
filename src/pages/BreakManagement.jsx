@@ -765,8 +765,8 @@ const BreakManagementPage = () => {
                         rowKey={(row) => row.attendance_id}
                         onRowClick={(row) => setDetailTarget(row)}
                         getActions={(record) => [
-                            { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setDetailTarget(record), className: 'text-blue-600 hover:bg-blue-50' },
-                            { label: 'Edit', icon: <FaEdit size={13} />, onClick: () => setEditModalTarget(record), className: 'text-emerald-600 hover:bg-emerald-50' },
+                            { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setDetailTarget(record), className: 'text-green-600 hover:text-green-700 hover:bg-green-50' },
+                            { label: 'Edit', icon: <FaEdit size={13} />, onClick: () => setEditModalTarget(record), className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
                         ]}
                         accent="amber"
                     />
@@ -860,8 +860,8 @@ const BreakManagementPage = () => {
                                             activeId={activeActionMenu}
                                             onToggle={(e, id) => setActiveActionMenu(curr => curr === id ? null : id)}
                                             actions={[
-                                                { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setDetailTarget(record), className: 'text-blue-600 hover:bg-blue-50' },
-                                                { label: 'Edit', icon: <FaEdit size={13} />, onClick: () => setEditModalTarget(record), className: 'text-emerald-600 hover:bg-emerald-50' },
+                                                { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setDetailTarget(record), className: 'text-green-600 hover:text-green-700 hover:bg-green-50' },
+                                                { label: 'Edit', icon: <FaEdit size={13} />, onClick: () => setEditModalTarget(record), className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50' },
                                             ]}
                                         />
                                     </div>

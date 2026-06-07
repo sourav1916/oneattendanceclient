@@ -1633,7 +1633,7 @@ const EmployeeManagement = () => {
         {
             label: 'View Details', icon: <FaEye size={14} />,
             onClick: () => openViewModal(emp),
-            className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
+            className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
         },
         {
             label: 'Profile', icon: <FaUserCircle size={14} />,
@@ -1647,7 +1647,7 @@ const EmployeeManagement = () => {
             onClick: () => openEditModal(emp),
             disabled: updateEmployeeAccess.disabled,
             title: updateEmployeeAccess.disabled ? getAccessMessage(updateEmployeeAccess) : '',
-            className: 'text-green-600 hover:text-green-700 hover:bg-green-50',
+            className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50',
         },
         {
             label: 'Delete', icon: <FaTrash size={14} />,

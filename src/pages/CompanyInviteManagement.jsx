@@ -597,7 +597,7 @@ export default function CompanyInvites() {
                                     label: 'View Details',
                                     icon: <FaEye size={14} />,
                                     onClick: () => openModal(invite, MODAL_TYPES.VIEW),
-                                    className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                    className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
                                   },
                                   ...(invite.status === "pending" && !isExpired(invite.expires_at) ? [
                                     {
@@ -606,7 +606,7 @@ export default function CompanyInvites() {
                                       onClick: () => handleEditClick(invite),
                                       disabled: updateInviteAccess.disabled,
                                       title: updateInviteAccess.disabled ? getAccessMessage(updateInviteAccess) : "",
-                                      className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                      className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                                     },
                                     {
                                       label: 'Cancel Invite',

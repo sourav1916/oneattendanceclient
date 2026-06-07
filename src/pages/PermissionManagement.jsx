@@ -958,7 +958,7 @@ const PermissionManagement = () => {
                                 label: 'View Details',
                                 icon: <FaEye size={12} />,
                                 onClick: () => openViewModal(pkg),
-                                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
                               },
                               {
                                 label: 'Edit',
@@ -966,7 +966,7 @@ const PermissionManagement = () => {
                                 onClick: () => openEditModal(pkg),
                                 disabled: updateAccess.disabled,
                                 title: updateAccess.disabled ? getAccessMessage(updateAccess) : '',
-                                className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                               },
                               {
                                 label: 'Delete',
@@ -1019,7 +1019,7 @@ const PermissionManagement = () => {
                                 label: 'View Details',
                                 icon: <FaEye size={12} />,
                                 onClick: () => openViewModal(pkg),
-                                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
                               },
                               {
                                 label: 'Edit',
@@ -1027,7 +1027,7 @@ const PermissionManagement = () => {
                                 onClick: () => openEditModal(pkg),
                                 disabled: updateAccess.disabled,
                                 title: updateAccess.disabled ? getAccessMessage(updateAccess) : '',
-                                className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                               },
                               {
                                 label: 'Delete',

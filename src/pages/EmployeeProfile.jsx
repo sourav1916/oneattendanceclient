@@ -2029,25 +2029,14 @@ function useShiftConfig(onView, width) {
       key: "late_early",
       label: "Late / Early",
       render: (s) => (
-        <div className="flex gap-1.5 flex-wrap">
+        <div className="flex gap-1.5 justify-center flex-wrap">
           {s.late_minutes > 0 && <span className="text-[10px] bg-rose-50 text-rose-600 px-1.5 py-0.5 rounded font-bold">Late {s.late_minutes}m</span>}
           {s.early_leave_minutes > 0 && <span className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded font-bold">Early {s.early_leave_minutes}m</span>}
           {s.late_minutes === 0 && s.early_leave_minutes === 0 && <span className="text-[10px] text-gray-300">—</span>}
         </div>
       ),
     },
-    width > 900 && {
-      key: "flags",
-      label: "Flags",
-      render: (s) => (
-        <div className="flex gap-1 flex-wrap">
-          {s.is_overtime && <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold">OT {s.overtime_minutes}m</span>}
-          {s.is_deductible && <span className="text-[10px] bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full font-bold">Deductible</span>}
-          {s.extra_break_minutes > 0 && <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">+{s.extra_break_minutes}m break</span>}
-          {!s.is_overtime && !s.is_deductible && s.extra_break_minutes === 0 && <span className="text-[10px] text-gray-300">—</span>}
-        </div>
-      ),
-    },
+    
   ].filter(Boolean);
 
   const cardRenderer = (s, index, activeId, onToggle) => {

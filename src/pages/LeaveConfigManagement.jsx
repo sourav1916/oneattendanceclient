@@ -173,7 +173,7 @@ const ActionMenu = ({
           label: 'View Details',
           icon: <FaEye size={13} />,
           onClick: () => onView(record),
-          className: 'text-gray-700 hover:text-violet-600 hover:bg-violet-50'
+          className: 'text-green-600 hover:text-green-700 hover:bg-green-50'
         },
         {
           label: 'Edit',
@@ -181,7 +181,7 @@ const ActionMenu = ({
           onClick: () => onEdit(record),
           disabled: editDisabled,
           title: editDisabled ? editMessage : '',
-          className: 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
+          className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
         },
         {
           label: 'Delete',

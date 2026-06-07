@@ -161,7 +161,7 @@ const MobileEmployeeBankCard = ({ account, onView }) => (
       </div>
       <button
         onClick={(e) => { e.stopPropagation(); onView(account); }}
-        className="p-2 rounded-xl hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-all shrink-0"
+        className="p-2 rounded-xl text-green-600 hover:text-green-700 hover:bg-green-50 transition-all shrink-0"
         title="View Details"
       >
         <FaEye size={14} />
@@ -776,7 +776,7 @@ const EmployeeBankAccountManagement = () => {
             rowKey={(row) => row.bank_id}
             onRowClick={(row) => setViewModal({ open: true, account: row })}
             getActions={(row) => [
-              { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setViewModal({ open: true, account: row }), className: 'text-gray-700 hover:text-blue-600 hover:bg-blue-50' },
+              { label: 'View Details', icon: <FaEye size={13} />, onClick: () => setViewModal({ open: true, account: row }), className: 'text-green-600 hover:text-green-700 hover:bg-green-50' },
             ]}
             accent="blue"
           />
