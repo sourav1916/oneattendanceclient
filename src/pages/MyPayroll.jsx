@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     FaMoneyBillWave, FaCalendarAlt, FaUserCircle, FaBriefcase,
-    FaChartBar, FaArrowUp, FaArrowDown, FaInfoCircle,
+    FaChartBar, FaArrowUp, FaArrowDown,
     FaSpinner, FaSearch, FaTimes, FaEye, FaDownload,
     FaRegClock, FaFileInvoiceDollar, FaExclamationTriangle,
-    FaCheckCircle, FaTimesCircle, FaHourglassHalf, FaIdCard,
+    FaIdCard,
     FaUserTag, FaWallet, FaCalendarCheck, FaUserTie, FaCog
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -74,13 +74,6 @@ const formatLabel = (str) => {
     return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 };
 
-const getStatusConfig = (status) => ({
-    draft: { label: 'Draft', className: 'bg-yellow-100 text-yellow-800 border border-yellow-200', icon: FaHourglassHalf },
-    approved: { label: 'Approved', className: 'bg-green-100 text-green-800 border border-green-200', icon: FaCheckCircle },
-    paid: { label: 'Paid', className: 'bg-blue-100 text-blue-800 border border-blue-200', icon: FaCheckCircle },
-    cancelled: { label: 'Cancelled', className: 'bg-red-100 text-red-800 border border-red-200', icon: FaTimesCircle },
-}[status] || { label: formatLabel(status), className: 'bg-gray-100 text-gray-800 border border-gray-200', icon: FaInfoCircle });
-
 // ─── Sub Components ────────────────────────────────────────────────────────────
 
 const StatCard = ({ icon: Icon, label, value, sub, gradient, delay = 0 }) => (
@@ -112,8 +105,6 @@ const AttendancePill = ({ label, value, color }) => (
 const PayrollViewModal = ({ payroll, employee, onClose }) => {
     if (!payroll) return null;
     const { payroll: p } = payroll;
-    const status = getStatusConfig(p.status);
-    const StatusIcon = status.icon;
     const netNegative = parseFloat(p.net_salary) < 0;
 
     return (
@@ -147,9 +138,6 @@ const PayrollViewModal = ({ payroll, employee, onClose }) => {
                             <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{formatLabel(employee?.salary_type)}</span>
                         </div>
                     </div>
-                    <span className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 ${status.className}`}>
-                        <StatusIcon className="text-xs" />{status.label}
-                    </span>
                 </div>
 
                 {/* Salary Breakdown */}
@@ -268,17 +256,16 @@ const MyPayroll = () => {
     //  ≥1100 : drop Hours
     //  ≥1024 : drop Attendance
     //  ≥768  : drop Deductions
-    //  ≥640  : drop Earnings + Status
+    //  ≥640  : drop Earnings
     //  <640  : Period + Net + Actions only
 
     const [visibleColumns, setVisibleColumns] = useState(() => ({
         showPeriod: true,
-        showEarnings: true,
-        showDeductions: true,
+        showEarnings: typeof window === 'undefined' ? true : window.innerWidth >= 768,
+        showDeductions: typeof window === 'undefined' ? true : window.innerWidth >= 1024,
         showNet: true,
-        showAttendance: true,
-        showHours: true,
-        showStatus: true,
+        showAttendance: typeof window === 'undefined' ? true : window.innerWidth >= 1100,
+        showHours: typeof window === 'undefined' ? true : window.innerWidth >= 1280,
     }));
 
     useEffect(() => {
@@ -287,14 +274,14 @@ const MyPayroll = () => {
             clearTimeout(t);
             t = setTimeout(() => setVisibleColumns({
                 showPeriod: true,
-                showEarnings: true,
-                showDeductions: true,
+                showEarnings: window.innerWidth >= 768,
+                showDeductions: window.innerWidth >= 1024,
                 showNet: true,
-                showAttendance: true,
-                showHours: true,
-                showStatus: true,
+                showAttendance: window.innerWidth >= 1100,
+                showHours: window.innerWidth >= 1280,
             }), 150);
         };
+        onResize();
         window.addEventListener('resize', onResize);
         return () => { clearTimeout(t); window.removeEventListener('resize', onResize); };
     }, []);
@@ -568,7 +555,6 @@ const MyPayroll = () => {
                         gradient={totalNet < 0 ? "bg-gradient-to-br from-orange-500 to-red-600" : "bg-gradient-to-br from-blue-500 to-indigo-600"} delay={0.2} />
                     <StatCard icon={FaCalendarAlt} label="Latest Payroll"
                         value={latestPayroll ? `${MONTHS[latestPayroll.month - 1]} ${latestPayroll.year}` : 'N/A'}
-                        sub={latestPayroll ? getStatusConfig(latestPayroll.status).label : ''}
                         gradient="bg-gradient-to-br from-purple-500 to-violet-600" delay={0.25} />
                 </div>
             )}
@@ -585,7 +571,7 @@ const MyPayroll = () => {
                         <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                         <input
                             type="text"
-                            placeholder="Search by month, year, or status..."
+                            placeholder="Search by month or year..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                             className="w-full pl-11 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all text-sm min-h-[42px]"
@@ -633,27 +619,24 @@ const MyPayroll = () => {
                     {/* ── TABLE VIEW ─────────────────────────────────────────────────────── */}
                     {viewMode === 'table' && (
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                            className="bg-white rounded-xl shadow-xl overflow-visible"
+                            className="max-w-full overflow-hidden rounded-xl bg-white shadow-xl"
                         >
-                            <div className="overflow-x-auto overflow-y-visible">
-                                <table className="w-full text-sm text-left text-gray-700">
+                            <div className="w-full max-w-full overflow-x-auto">
+                                <table className="min-w-[680px] w-full text-sm text-left text-gray-700">
                                     <thead className="xsm:hidden bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 uppercase text-xs">
                                         <tr>
-                                            {visibleColumns.showPeriod && <th className="px-6 py-4 whitespace-nowrap">Period</th>}
-                                            {visibleColumns.showEarnings && <th className="px-6 py-4 whitespace-nowrap">Earnings</th>}
-                                            {visibleColumns.showDeductions && <th className="px-6 py-4 whitespace-nowrap">Deductions</th>}
-                                            {visibleColumns.showNet && <th className="px-6 py-4 whitespace-nowrap">Net Salary</th>}
-                                            {visibleColumns.showAttendance && <th className="px-6 py-4 whitespace-nowrap">Attendance</th>}
-                                            {visibleColumns.showHours && <th className="px-6 py-4 whitespace-nowrap">Hours</th>}
-                                            {visibleColumns.showStatus && <th className="px-6 py-4 whitespace-nowrap">Status</th>}
-                                            <th className="px-6 py-4 text-right whitespace-nowrap"><FaCog className="w-4 h-4 ml-auto" /></th>
+                                            {visibleColumns.showPeriod && <th className="px-6 py-4">Period</th>}
+                                            {visibleColumns.showEarnings && <th className="px-6 py-4">Earnings</th>}
+                                            {visibleColumns.showDeductions && <th className="px-6 py-4">Deductions</th>}
+                                            {visibleColumns.showNet && <th className="px-6 py-4">Net Salary</th>}
+                                            {visibleColumns.showAttendance && <th className="px-6 py-4">Attendance</th>}
+                                            {visibleColumns.showHours && <th className="px-6 py-4">Hours</th>}
+                                            <th className="px-6 py-4 text-right"><FaCog className="w-4 h-4 ml-auto" /></th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100">
+                                    <tbody className="divide-y divide-gray-200">
                                         {payrollData.map((item, index) => {
                                             const p = item.payroll;
-                                            const statusCfg = getStatusConfig(p.status);
-                                            const StatusIcon = statusCfg.icon;
                                             const netNeg = parseFloat(p.net_salary) < 0;
 
                                             return (
@@ -664,40 +647,40 @@ const MyPayroll = () => {
                                                     onClick={() => openViewModal(item)}
                                                 >
                                                     {visibleColumns.showPeriod && (
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center">
+                                                        <td className="px-6 py-4">
+                                                            <div className="flex min-w-0 items-center gap-3">
+                                                                <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
                                                                     <FaCalendarAlt className="text-blue-500 text-sm" />
                                                                 </div>
-                                                                <div>
-                                                                    <p className="font-semibold text-gray-800">{MONTHS[p.month - 1]}</p>
+                                                                <div className="min-w-0">
+                                                                    <p className="font-semibold text-gray-800 truncate">{MONTHS[p.month - 1]}</p>
                                                                     <p className="text-xs text-gray-500">{p.year}</p>
                                                                 </div>
                                                             </div>
                                                         </td>
                                                     )}
                                                     {visibleColumns.showEarnings && (
-                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                        <td className="px-6 py-4">
                                                             <span className="text-green-600 font-semibold">{formatCurrency(p.total_earnings)}</span>
                                                         </td>
                                                     )}
                                                     {visibleColumns.showDeductions && (
-                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                        <td className="px-6 py-4">
                                                             <span className="text-red-500 font-semibold">{formatCurrency(p.total_deductions)}</span>
                                                         </td>
                                                     )}
                                                     {visibleColumns.showNet && (
-                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                        <td className="px-6 py-4">
                                                             <div className="flex items-center gap-1.5">
-                                                                <span className={`font-bold text-base ${netNeg ? 'text-orange-600' : 'text-blue-600'}`}>
+                                                                <span className={`font-bold text-lg ${netNeg ? 'text-orange-600' : 'text-blue-600'}`}>
                                                                     {netNeg ? '-' : ''}{formatCurrency(p.net_salary)}
                                                                 </span>
-                                                                {netNeg && <FaExclamationTriangle className="text-orange-400 text-xs" title="Deficit" />}
+                                                                {netNeg && <FaExclamationTriangle className="flex-shrink-0 text-orange-400 text-xs" title="Deficit" />}
                                                             </div>
                                                         </td>
                                                     )}
                                                     {visibleColumns.showAttendance && (
-                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                        <td className="px-6 py-4">
                                                             <div className="flex items-center gap-1 text-xs">
                                                                 <span className="bg-green-50 text-green-700 px-2 py-0.5 rounded-full whitespace-nowrap">
                                                                     ✓ {formatDays(p.attendance?.present_days || 0)}d
@@ -714,20 +697,13 @@ const MyPayroll = () => {
                                                         </td>
                                                     )}
                                                     {visibleColumns.showHours && (
-                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                        <td className="px-6 py-4">
                                                             <div className="text-xs text-gray-600 space-y-0.5">
                                                                 <p>{parseFloat(p.worked_hours || 0).toFixed(1)}h worked</p>
                                                                 {parseFloat(p.overtime_hours || 0) > 0 && (
                                                                     <p className="text-purple-600">+{parseFloat(p.overtime_hours).toFixed(1)}h OT</p>
                                                                 )}
                                                             </div>
-                                                        </td>
-                                                    )}
-                                                    {visibleColumns.showStatus && (
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 w-fit ${statusCfg.className}`}>
-                                                                <StatusIcon className="text-xs" /> {statusCfg.label}
-                                                            </span>
                                                         </td>
                                                     )}
                                                     <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
@@ -763,8 +739,6 @@ const MyPayroll = () => {
                         <ManagementGrid viewMode={viewMode}>
                             {payrollData.map((item, index) => {
                                 const p = item.payroll;
-                                const statusCfg = getStatusConfig(p.status);
-                                const StatusIcon = statusCfg.icon;
                                 const netNeg = parseFloat(p.net_salary) < 0;
 
                                 return (
@@ -780,14 +754,11 @@ const MyPayroll = () => {
                                                 <FaCalendarAlt className="text-white text-xl" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex justify-between items-start gap-2">
+                                                <div>
                                                     <div>
                                                         <h3 className="font-bold text-lg text-gray-800">{MONTHS[p.month - 1]}</h3>
                                                         <p className="text-xs text-gray-500 font-mono mt-0.5">{p.year} · #{p.id}</p>
                                                     </div>
-                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1 flex-shrink-0 ${statusCfg.className}`}>
-                                                        <StatusIcon className="text-xs" /> {statusCfg.label}
-                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
