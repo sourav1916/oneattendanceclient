@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaUsers, FaCheckCircle, FaArrowRight, FaSpinner,
@@ -64,13 +64,13 @@ const PlanCard = ({ plan, variant }) => {
     : 0;
 
   return (
-    <div className={`rounded-xl p-5 bg-white ${
+    <div className={`rounded-xl p-3 bg-white ${
       isCurrent
         ? 'border-2 border-blue-500'
         : 'border border-gray-200'
     }`}>
       {/* Header row */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between gap-2">
         <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${
           isCurrent
             ? 'bg-blue-50 text-blue-700'
@@ -83,28 +83,28 @@ const PlanCard = ({ plan, variant }) => {
         </span>
       </div>
 
-      <p className="text-sm font-semibold text-gray-800 mb-3">{plan.package_name}</p>
+      <p className="mt-2 text-sm font-semibold text-gray-800 truncate">{plan.package_name}</p>
 
       {/* Detail rows */}
-      <div className="space-y-2">
+      <div className="mt-3 grid grid-cols-2 gap-2">
         {[
-          { icon: <FaUsers className="text-[11px]" />, label: 'Employees', val: `${plan.employee_limit} limit` },
-          { icon: <FaCalendarAlt className="text-[11px]" />, label: isCurrent ? 'Started' : 'Starts', val: fmtDate(plan.starts_at) },
-          { icon: <FaCalendarCheck className="text-[11px]" />, label: 'Expires', val: fmtDate(plan.expires_at) },
-          { icon: <FaCreditCard className="text-[11px]" />, label: 'Amount paid', val: fmt(plan.amount_paid) },
+          { icon: <FaUsers className="text-[10px]" />, label: 'Employees', val: `${plan.employee_limit} limit` },
+          { icon: <FaCalendarCheck className="text-[10px]" />, label: 'Expires', val: fmtDate(plan.expires_at) },
+          { icon: <FaCreditCard className="text-[10px]" />, label: 'Paid', val: fmt(plan.amount_paid) },
+          { icon: <FaCalendarAlt className="text-[10px]" />, label: isCurrent ? 'Left' : 'Starts', val: isCurrent ? `${plan.days_remaining ?? '—'} days` : `${plan.until_start ?? '—'} days` },
         ].map(({ icon, label, val }) => (
-          <div key={label} className="flex justify-between items-center text-[12px]">
-            <span className={`flex items-center gap-1.5 ${isCurrent ? 'text-blue-400' : 'text-amber-400'}`}>
+          <div key={label} className="rounded-lg border border-gray-100 bg-gray-50 px-2.5 py-2">
+            <span className={`flex items-center gap-1.5 text-[10px] ${isCurrent ? 'text-blue-400' : 'text-amber-400'}`}>
               {icon}
               <span className="text-gray-500">{label}</span>
             </span>
-            <span className="font-medium text-gray-800">{val}</span>
+            <span className="mt-0.5 block truncate text-[12px] font-semibold text-gray-800">{val}</span>
           </div>
         ))}
       </div>
 
       {/* Progress bar */}
-      <div className="mt-4">
+      <div className="mt-3">
         <div className="flex justify-between text-[11px] text-gray-400 mb-1.5">
           <span>{isCurrent ? 'Period progress' : 'Starts in'}</span>
           <span>{isCurrent ? `${plan.days_remaining} days left` : `${plan.until_start} days`}</span>
@@ -117,7 +117,7 @@ const PlanCard = ({ plan, variant }) => {
         </div>
       </div>
 
-      <p className="text-[10px] text-gray-300 font-mono mt-3 truncate"># {plan.payment_reference}</p>
+      <p className="text-[10px] text-gray-300 font-mono mt-2 truncate"># {plan.payment_reference}</p>
     </div>
   );
 };
@@ -307,20 +307,52 @@ const SubscriptionPage = () => {
   }, []);
 
   // Derived values
-  const currentPackage = packages.find(
+  const sortedPackages = useMemo(
+    () => [...packages].sort((a, b) => (a.min_employee_count || 0) - (b.min_employee_count || 0)),
+    [packages]
+  );
+
+  const sliderStops = useMemo(() => {
+    const stops = sortedPackages
+      .flatMap((pkg, index) => [
+        index === 0 ? Number(pkg.min_employee_count) : null,
+        Number(pkg.max_employee_count),
+      ])
+      .filter((value) => Number.isFinite(value));
+    return [...new Set(stops)].sort((a, b) => a - b);
+  }, [sortedPackages]);
+
+  const snapEmployeesToPackageLimit = (value) => {
+    if (!sliderStops.length) return Number(value) || 1;
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return sliderStops[0];
+    return sliderStops.reduce((closest, stop) => {
+      const currentDistance = Math.abs(stop - numericValue);
+      const closestDistance = Math.abs(closest - numericValue);
+      if (currentDistance < closestDistance) return stop;
+      if (currentDistance === closestDistance && stop > closest) return stop;
+      return closest;
+    }, sliderStops[0]);
+  };
+
+  const sliderMin = sliderStops[0] ?? 1;
+  const sliderMax = sliderStops[sliderStops.length - 1] ?? 200;
+
+  const currentPackage = sortedPackages.find(
     (pkg) => employees >= pkg.min_employee_count && employees <= pkg.max_employee_count
   ) ?? null;
 
-  const currentPrice = currentPackage
-    ? parseFloat(currentPackage[selectedDur.key]) || null
-    : null;
+  const selectedPackagePrice = currentPackage ? parseFloat(currentPackage[selectedDur.key]) : null;
+  const currentPrice = Number.isFinite(selectedPackagePrice) ? selectedPackagePrice : null;
 
-  const pricePerUser = currentPrice && employees > 0
+  const pricePerUser = currentPrice != null && employees > 0
     ? currentPrice / employees
     : null;
 
-  const maxEmployees = packages.length ? Math.max(...packages.map(p => p.max_employee_count)) : 200;
-  const minEmployees = packages.length ? Math.min(...packages.map(p => p.min_employee_count)) : 1;
+  useEffect(() => {
+    if (!sliderStops.length) return;
+    setEmployees((current) => snapEmployeesToPackageLimit(current));
+  }, [sliderStops]);
 
   const handlePurchase = async () => {
     if (!currentPackage || purchaseLoading) return;
@@ -453,17 +485,29 @@ const SubscriptionPage = () => {
                 </div>
                 <input
                   type="range"
-                  min={minEmployees}
-                  max={maxEmployees}
+                  min={sliderMin}
+                  max={sliderMax}
                   value={employees}
                   step={1}
-                  onChange={(e) => setEmployees(parseInt(e.target.value))}
+                  onChange={(e) => setEmployees(snapEmployeesToPackageLimit(e.target.value))}
                   className="w-full h-1.5 bg-gray-200 rounded-full appearance-none cursor-pointer accent-blue-500"
                 />
-                <div className="flex justify-between text-[11px] text-gray-400 mt-1.5">
-                  <span>{minEmployees}</span>
-                  <span>{Math.floor(maxEmployees / 2)}</span>
-                  <span>{maxEmployees}+</span>
+                <div className="mt-2 grid gap-1 text-[10px] text-gray-400" style={{ gridTemplateColumns: `repeat(${Math.max(sortedPackages.length, 1)}, minmax(0, 1fr))` }}>
+                  {sortedPackages.map((pkg) => (
+                    <button
+                      key={pkg.id}
+                      type="button"
+                      onClick={() => setEmployees(Number(pkg.max_employee_count))}
+                      className={`truncate rounded-md px-1.5 py-1 text-center transition-colors  text-end ${
+                        currentPackage?.id === pkg.id
+                          ? 'bg-blue-50 font-semibold text-blue-700'
+                          : 'hover:bg-gray-50'
+                      }`}
+                      title={`${pkg.min_employee_count}-${pkg.max_employee_count} employees`}
+                    >
+                      {pkg.min_employee_count}-{pkg.max_employee_count}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -492,7 +536,7 @@ const SubscriptionPage = () => {
                 {[
                   {
                     label: 'Base price',
-                    value: currentPrice ? fmt(currentPrice) : '—',
+                    value: currentPrice != null ? fmt(currentPrice) : '—',
                     valueClass: 'text-gray-800 font-medium',
                   },
                   {
@@ -500,7 +544,7 @@ const SubscriptionPage = () => {
                     value: pricePerUser ? `${fmt(pricePerUser)}${selectedDur.suffix}` : '—',
                     valueClass: 'text-gray-600',
                   },
-                  ...(selectedDur.discount > 0 && currentPrice ? [{
+                  ...(selectedDur.discount > 0 && currentPrice != null ? [{
                     label: (
                       <span className="flex items-center gap-1 text-green-600">
                         <FaRocket className="text-[10px]" /> You save
@@ -530,7 +574,7 @@ const SubscriptionPage = () => {
               <div className="flex justify-between items-baseline bg-gray-50 rounded-xl px-4 py-4 mb-5">
                 <div>
                   <p className="text-[13px] text-gray-500 font-medium">Estimated total</p>
-                  {currentPrice && (
+                  {currentPrice != null && (
                     <p className="text-[11px] text-gray-400 mt-0.5">{selectedDur.billedLabel}</p>
                   )}
                 </div>
@@ -541,7 +585,7 @@ const SubscriptionPage = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     className="text-[28px] font-semibold text-gray-800"
                   >
-                    {currentPrice ? fmt(currentPrice) : '—'}
+                    {currentPrice != null ? fmt(currentPrice) : '—'}
                   </motion.span>
                 </AnimatePresence>
               </div>
