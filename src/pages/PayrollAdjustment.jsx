@@ -549,7 +549,7 @@ export default function PayrollAdjustment() {
                                 </div>
 
                                 {/* Adjustment Type */}
-                                <div className="flex-1 lg:flex-none min-w-0">
+                                <div className="flex-1 lg:flex-none text-center min-w-0">
                                     <SelectField
                                         options={typeOptions}
                                         value={selectedTypeOption}

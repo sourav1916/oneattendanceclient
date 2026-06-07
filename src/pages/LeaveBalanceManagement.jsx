@@ -14,7 +14,7 @@ import { ManagementButton, ManagementCard, ManagementHub, ManagementTable } from
 import usePermissionAccess from '../hooks/usePermissionAccess';
 import ManagementGrid from '../components/ManagementGrid';
 import ManagementViewSwitcher from '../components/ManagementViewSwitcher';
-import YearPicker from '../components/YearPicker';
+import SelectField from '../components/SelectField';
 import EmployeeSelect from '../components/common/EmployeeSelect';
 import ProfileAvatar from '../components/common/ProfileAvatar';
 import CurrencyIcon from "../components/common/CurrencyIcon";
@@ -910,10 +910,20 @@ const LeaveBalanceManagement = () => {
             </div>
           </div>
           <div className="flex justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <YearPicker
-                value={selectedYear}
-                onChange={setSelectedYear}
+            <div className="flex items-center gap-2 min-w-[120px]">
+              <SelectField
+                value={Array.from({ length: 11 }, (_, i) => {
+                  const y = new Date().getFullYear() - 5 + i;
+                  return { label: y.toString(), value: y };
+                }).find(opt => opt.value === selectedYear) || { label: selectedYear.toString(), value: selectedYear }}
+                onChange={(opt) => setSelectedYear(opt ? opt.value : new Date().getFullYear())}
+                options={Array.from({ length: 11 }, (_, i) => {
+                  const y = new Date().getFullYear() - 5 + i;
+                  return { label: y.toString(), value: y };
+                })}
+                isClearable={false}
+                isSearchable={false}
+                placeholder="Year"
               />
             </div>
             {/* Right Section: Controls */}
