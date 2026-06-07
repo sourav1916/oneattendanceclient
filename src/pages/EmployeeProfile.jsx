@@ -13,7 +13,7 @@ import {
   FaComment, FaCog, FaMapPin, FaServer, FaInfoCircle,
   FaSpinner, FaSignInAlt, FaSignOutAlt, FaHourglassHalf,
   FaChevronLeft, FaFilePdf, FaPlus, FaSave,
-  FaDownload,FaEdit,FaTrash,
+  FaDownload, FaEdit, FaTrash, FaUniversity
 } from "react-icons/fa";
 import apiCall from "../utils/api";
 import { toast } from "react-toastify";
@@ -32,6 +32,7 @@ import SelectField from "../components/SelectField";
 import CompanyLedger from "./CompanyLedger";
 import SkeletonComponent from "../components/SkeletonComponent";
 import { EditSalaryModal, ReviseSalaryModal, DeleteConfirmModal } from "../pages/SalaryManagement";
+import EmployeeBankAccountsTab from "../components/EmployeeBankAccountsTab";
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
@@ -42,6 +43,7 @@ const TABS = [
   { key: "shifts", label: "Shifts", icon: <FaExchangeAlt size={12} /> },
   { key: "leaves", label: "Leaves", icon: <FaUmbrellaBeach size={12} /> },
   { key: "ledger", label: "Ledger", icon: <FaChartBar size={12} /> },
+  { key: "accounts", label: "Accounts", icon: <FaUniversity size={12} /> },
 ];
 const PROFILE_TAB_IDS = new Set(TABS.map((tab) => tab.key));
 const DEFAULT_PROFILE_TAB = "attendance";
@@ -3407,6 +3409,8 @@ export default function EmployeeProfilePage() {
                     <EmployeeAttendanceCalendar employee={profile.employee} fallbackId={employeeId} refreshKey={refreshKey} />
                   ) : activeTab === "ledger" ? (
                     <CompanyLedger employeeId={profile.employee?.id ?? employeeId} />
+                  ) : activeTab === "accounts" ? (                                    // 👈 add this
+                    <EmployeeBankAccountsTab employeeId={profile.employee?.id ?? employeeId} />  // 👈 add this
                   ) : (
                     <TabContent
                       tabKey={activeTab}
