@@ -13,6 +13,7 @@ import {
   FaComment, FaCog, FaMapPin, FaServer, FaInfoCircle,
   FaSpinner, FaSignInAlt, FaSignOutAlt, FaHourglassHalf,
   FaChevronLeft, FaFilePdf, FaPlus, FaSave,
+  FaDownload,
 } from "react-icons/fa";
 import apiCall from "../utils/api";
 import { toast } from "react-toastify";
@@ -29,6 +30,7 @@ import AdvancedDateFilter from "../components/AdvancedDateFilter";
 import CategoryPermissionSelector from "../components/common/CategoryPermissionSelector";
 import SelectField from "../components/SelectField";
 import CompanyLedger from "./CompanyLedger";
+import SkeletonComponent from "../components/SkeletonComponent";
 
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 const TABS = [
@@ -94,6 +96,22 @@ async function runDedupedRequest(key, requestFn) {
   inFlightRequests.set(key, promise);
   return promise;
 }
+
+const triggerFileDownload = (url, filename) => {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.rel = "noopener noreferrer";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const downloadBlob = (blob, filename) => {
+  const downloadUrl = URL.createObjectURL(blob);
+  triggerFileDownload(downloadUrl, filename);
+  setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+};
 
 // ─── CALENDAR HELPERS (new API structure) ─────────────────────────────────────
 
@@ -1798,7 +1816,7 @@ function useSalaryConfig(onView, width) {
 
 // ─── PAYROLL CONFIG (updated for new API structure) ───────────────────────────
 
-function usePayrollConfig(onView, width) {
+function usePayrollConfig(onView, onDownloadPdf, onSendEmail, width) {
   const columns = [
     {
       key: "payroll_period",
@@ -1874,6 +1892,12 @@ function usePayrollConfig(onView, width) {
       ? new Date(p.year, p.month - 1, 1).toLocaleDateString("en-IN", { month: "long", year: "numeric" })
       : fmtMonthYear(p.payroll_period || p.period || p.month);
 
+    const actions = [
+      { label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(p), className: "text-blue-600 hover:bg-blue-50" },
+      { label: "Download PDF", icon: <FaDownload size={12} />, onClick: () => onDownloadPdf(p), className: "text-blue-600 hover:bg-blue-50" },
+      { label: "Send Email", icon: <FaEnvelope size={12} />, onClick: () => onSendEmail(p), className: "text-purple-600 hover:bg-purple-50" },
+    ];
+
     return (
       <ManagementCard
         key={p.id || index}
@@ -1883,7 +1907,7 @@ function usePayrollConfig(onView, width) {
         activeId={activeId}
         onToggle={onToggle}
         menuId={`pay-${p.id || index}`}
-        actions={[{ label: "View Details", icon: <FaEye size={12} />, onClick: () => onView(p), className: "text-blue-600 hover:bg-blue-50" }]}
+        actions={actions}
         hoverable
         title={periodLabel || "Payroll"}
         subtitle={`${att.present_days ?? "—"} present of ${att.working_days ?? "—"} working days`}
@@ -2392,6 +2416,12 @@ function TabContent({ tabKey, tabLabel, tabIcon, employeeId, refreshKey = 0 }) {
   const [payrollMonth, setPayrollMonth] = useState(new Date().getMonth() + 1);
   const [payrollYear, setPayrollYear] = useState(new Date().getFullYear());
   const [sendPayrollPdf, setSendPayrollPdf] = useState(true);
+  const [payrollDownloadItem, setPayrollDownloadItem] = useState(null);
+  const [payrollEmailItem, setPayrollEmailItem] = useState(null);
+  const [payrollPdfIsSummary, setPayrollPdfIsSummary] = useState(true);
+  const [payrollEmailOverride, setPayrollEmailOverride] = useState("");
+  const [downloadingPayrollPdf, setDownloadingPayrollPdf] = useState(false);
+  const [emailingPayrollPdf, setEmailingPayrollPdf] = useState(false);
   const [subType, setSubType] = useState("attendance");
   const monthOptions = useMemo(() => Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: new Date(2026, i, 1).toLocaleString('en-US', { month: 'long' }) })), []);
   const yearOptions = useMemo(() => Array.from({ length: 6 }, (_, i) => ({ value: new Date().getFullYear() - 2 + i, label: String(new Date().getFullYear() - 2 + i) })), []);
@@ -2489,6 +2519,128 @@ function TabContent({ tabKey, tabLabel, tabIcon, employeeId, refreshKey = 0 }) {
 
   const onView = (item) => setSelectedItem(item);
   const onViewLogs = (item) => setSelectedLogItem(item);
+
+  const getPayrollPeriodLabel = useCallback((payroll) => {
+    if (payroll?.month && payroll?.year) {
+      return new Date(payroll.year, payroll.month - 1, 1).toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+    }
+    return fmtMonthYear(payroll?.payroll_period || payroll?.period || payroll?.month);
+  }, []);
+
+  const getPayrollPdfFilename = useCallback((payroll) => {
+    const month = Number(payroll?.month);
+    const year = Number(payroll?.year);
+    const normalizedMonth = Number.isFinite(month) ? String(month).padStart(2, "0") : "month";
+    const normalizedYear = Number.isFinite(year) ? String(year) : "year";
+    return `${normalizedMonth}_${normalizedYear}_payroll.pdf`;
+  }, []);
+
+  const openPayrollDownloadModal = useCallback((payroll) => {
+    if (!payroll?.id) {
+      toast.error("Payroll entry ID not found");
+      return;
+    }
+    setPayrollDownloadItem(payroll);
+    setPayrollPdfIsSummary(true);
+    setActiveMenu(null);
+  }, []);
+
+  const openPayrollEmailModal = useCallback((payroll) => {
+    if (!payroll?.id) {
+      toast.error("Payroll entry ID not found");
+      return;
+    }
+    setPayrollEmailItem(payroll);
+    setPayrollPdfIsSummary(true);
+    setPayrollEmailOverride("");
+    setActiveMenu(null);
+  }, []);
+
+  const closePayrollDownloadModal = useCallback(() => {
+    if (!downloadingPayrollPdf) setPayrollDownloadItem(null);
+  }, [downloadingPayrollPdf]);
+
+  const closePayrollEmailModal = useCallback(() => {
+    if (!emailingPayrollPdf) setPayrollEmailItem(null);
+  }, [emailingPayrollPdf]);
+
+  const handleConfirmPayrollDownload = useCallback(async () => {
+    if (!payrollDownloadItem?.id) return;
+    const currentPayroll = payrollDownloadItem;
+    setPayrollDownloadItem(null);
+    setDownloadingPayrollPdf(true);
+    try {
+      const companyStr = localStorage.getItem("company");
+      const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
+      const response = await apiCall(
+        "/payroll/download",
+        "POST",
+        { payroll_entry_id: currentPayroll.id, type: payrollPdfIsSummary ? "summary" : "details" },
+        companyId
+      );
+
+      if (!response.ok) {
+        let errorMessage = "Failed to download payslip";
+        try {
+          const errorResult = await response.json();
+          errorMessage = errorResult?.message || errorMessage;
+        } catch {
+          // Keep fallback when the server does not return JSON.
+        }
+        throw new Error(errorMessage);
+      }
+
+      const filename = getPayrollPdfFilename(currentPayroll);
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const result = await response.json();
+        const fileUrl = result.url || result.file_url || result.data?.url || result.data?.file_url;
+        if (!result.success || !fileUrl) throw new Error(result.message || "Failed to download payslip");
+        try {
+          const fileResponse = await fetch(fileUrl);
+          if (!fileResponse.ok) throw new Error("Unable to fetch PDF file");
+          const fileBlob = await fileResponse.blob();
+          downloadBlob(fileBlob, filename);
+        } catch {
+          triggerFileDownload(fileUrl, filename);
+        }
+        toast.success(result.message || "Payslip downloaded successfully");
+      } else {
+        const blob = await response.blob();
+        downloadBlob(blob, filename);
+        toast.success("Payslip downloaded successfully");
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to download payslip");
+    } finally {
+      setDownloadingPayrollPdf(false);
+    }
+  }, [getPayrollPdfFilename, payrollDownloadItem, payrollPdfIsSummary]);
+
+  const handleConfirmPayrollEmail = useCallback(async (e) => {
+    if (e) e.preventDefault();
+    if (!payrollEmailItem?.id) return;
+    const currentPayroll = payrollEmailItem;
+    setPayrollEmailItem(null);
+    setEmailingPayrollPdf(true);
+    try {
+      const companyStr = localStorage.getItem("company");
+      const companyId = companyStr ? JSON.parse(companyStr)?.id : null;
+      const payload = { payroll_entry_id: [currentPayroll.id], type: payrollPdfIsSummary ? "summary" : "details" };
+      if (payrollEmailOverride.trim()) {
+        payload.email = payrollEmailOverride.trim();
+      }
+      const response = await apiCall("/payroll/send-email", "POST", payload, companyId);
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || "Failed to send email");
+      toast.success(result.message || "Payslip email sent successfully");
+      setPayrollEmailOverride("");
+    } catch (error) {
+      toast.error(error.message || "Failed to send email");
+    } finally {
+      setEmailingPayrollPdf(false);
+    }
+  }, [payrollEmailItem, payrollEmailOverride, payrollPdfIsSummary]);
 
   const handleDownloadShiftPdf = useCallback(async () => {
     if (!employeeId) return;
@@ -2618,7 +2770,7 @@ function TabContent({ tabKey, tabLabel, tabIcon, employeeId, refreshKey = 0 }) {
   const permConfig = usePermissionsConfig(onView, effectiveWidth);
   const attConfig = useAttendanceConfig(onView, onViewLogs, effectiveWidth, subType);
   const salConfig = useSalaryConfig(onView, effectiveWidth);
-  const payConfig = usePayrollConfig(onView, effectiveWidth);
+  const payConfig = usePayrollConfig(onView, openPayrollDownloadModal, openPayrollEmailModal, effectiveWidth);
   const leaveConfig = useLeaveConfig(onView, effectiveWidth);
   const shiftConfig = useShiftConfig(onView, effectiveWidth);
 
@@ -2629,11 +2781,43 @@ function TabContent({ tabKey, tabLabel, tabIcon, employeeId, refreshKey = 0 }) {
   const getActions = (row) => {
     const base = [{ label: "View Details", icon: <FaEye size={13} />, onClick: () => setSelectedItem(row), className: "text-blue-600 hover:text-blue-700 hover:bg-blue-50" }];
     if (normalizedTabKey === "attendance") base.push({ label: "View History", icon: <FaHistory size={13} />, onClick: () => setSelectedLogItem(row), className: "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" });
+    if (normalizedTabKey === "payroll") {
+      base.push(
+        { label: "Download PDF", icon: <FaDownload size={13} />, onClick: () => openPayrollDownloadModal(row), className: "text-blue-600 hover:text-blue-700 hover:bg-blue-50" },
+        { label: "Send Email", icon: <FaEnvelope size={13} />, onClick: () => openPayrollEmailModal(row), className: "text-purple-600 hover:text-purple-700 hover:bg-purple-50" }
+      );
+    }
     return base;
   };
 
   return (
     <div className="space-y-4">
+      <AnimatePresence>
+        {(downloadingPayrollPdf || emailingPayrollPdf) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-white/60 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center"
+          >
+            <FaSpinner className={`animate-spin text-5xl mb-4 ${downloadingPayrollPdf ? "text-emerald-600" : "text-purple-600"}`} />
+            <p className="text-gray-800 font-semibold shadow-sm px-5 py-2.5 bg-white rounded-xl border border-gray-100 flex items-center gap-2">
+              {downloadingPayrollPdf ? (
+                <>
+                  <FaFilePdf className="text-emerald-500" />
+                  Preparing PDF Payslip...
+                </>
+              ) : (
+                <>
+                  <FaEnvelope className="text-purple-500" />
+                  Sending Email...
+                </>
+              )}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {warn && <p className="text-xs text-amber-500">⚠ Could not load data from API — list may be empty.</p>}
 
       {normalizedTabKey === "attendance" && (
@@ -2846,6 +3030,170 @@ function TabContent({ tabKey, tabLabel, tabIcon, employeeId, refreshKey = 0 }) {
       </AnimatePresence>
 
       <AnimatePresence>
+        {payrollDownloadItem && normalizedTabKey === "payroll" && (
+          <Modal
+            isOpen={!!payrollDownloadItem}
+            onClose={closePayrollDownloadModal}
+            title="Download Payslip"
+            subtitle="Choose format before downloading."
+            icon={<FaDownload className="text-blue-600" />}
+            size="sm"
+            footer={
+              <>
+                <button
+                  type="button"
+                  onClick={closePayrollDownloadModal}
+                  disabled={downloadingPayrollPdf}
+                  className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmPayrollDownload}
+                  disabled={downloadingPayrollPdf}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg shadow-blue-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {downloadingPayrollPdf ? <FaSpinner className="animate-spin" size={12} /> : <FaDownload size={12} />}
+                  {downloadingPayrollPdf ? "Downloading..." : "Download PDF"}
+                </button>
+              </>
+            }
+          >
+            <div className="space-y-4 pb-2">
+              <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-4">
+                <div className="bg-white p-3 rounded-xl shadow-sm text-blue-500 mt-0.5">
+                  <FaFilePdf size={22} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-gray-800 text-base truncate">{getPayrollPeriodLabel(payrollDownloadItem)}</h4>
+                  <p className="text-sm text-gray-600 mb-1">Payroll record #{payrollDownloadItem.id}</p>
+                  <p className="text-xs text-gray-500 font-mono">
+                    Net: <span className="text-gray-700 font-medium">{payrollDownloadItem.net_salary != null ? `Rs ${Number(payrollDownloadItem.net_salary).toLocaleString()}` : "N/A"}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-xl border border-blue-100 bg-blue-50">
+                <div>
+                  <div className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <FaFilePdf className="text-blue-500" size={13} />
+                    Payslip Format
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {payrollPdfIsSummary ? "Summary - key totals only." : "Details - full breakdown with all components."}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-semibold select-none cursor-pointer transition-colors ${!payrollPdfIsSummary ? "text-gray-800" : "text-gray-400"}`} onClick={() => setPayrollPdfIsSummary(false)}>Details</span>
+                  <button
+                    type="button"
+                    onClick={() => setPayrollPdfIsSummary((value) => !value)}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${payrollPdfIsSummary ? "bg-blue-500" : "bg-gray-300"}`}
+                  >
+                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${payrollPdfIsSummary ? "translate-x-5" : "translate-x-0"}`} />
+                  </button>
+                  <span className={`text-xs font-semibold select-none cursor-pointer transition-colors ${payrollPdfIsSummary ? "text-blue-700" : "text-gray-400"}`} onClick={() => setPayrollPdfIsSummary(true)}>Summary</span>
+                </div>
+              </div>
+            </div>
+          </Modal>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {payrollEmailItem && normalizedTabKey === "payroll" && (
+          <Modal
+            isOpen={!!payrollEmailItem}
+            onClose={closePayrollEmailModal}
+            title="Send Payslip Email"
+            subtitle="Confirm and optionally provide an alternate email address."
+            icon={<FaEnvelope className="text-purple-600" />}
+            size="md"
+            footer={
+              <>
+                <button
+                  type="button"
+                  onClick={closePayrollEmailModal}
+                  disabled={emailingPayrollPdf}
+                  className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmPayrollEmail}
+                  disabled={emailingPayrollPdf}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg shadow-purple-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {emailingPayrollPdf ? <FaSpinner className="animate-spin" size={12} /> : <FaEnvelope size={12} />}
+                  {emailingPayrollPdf ? "Sending..." : "Confirm & Send"}
+                </button>
+              </>
+            }
+          >
+            <form onSubmit={handleConfirmPayrollEmail} className="space-y-5 pb-2">
+              <div className="p-4 bg-purple-50 border border-purple-100 rounded-xl flex items-start gap-4">
+                <div className="bg-white p-3 rounded-xl shadow-sm text-purple-500 mt-0.5">
+                  <FaFilePdf size={22} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-gray-800 text-base truncate">{getPayrollPeriodLabel(payrollEmailItem)}</h4>
+                  <p className="text-sm text-gray-600 mb-1">Payroll record #{payrollEmailItem.id}</p>
+                  <p className="text-xs text-gray-500 font-mono">
+                    Default Email: <span className="text-gray-700 font-medium">{payrollEmailItem.employee?.email || payrollEmailItem.email || "N/A"}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Alternate Email Address (Optional)
+                </label>
+                <div className="relative">
+                  <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="email"
+                    value={payrollEmailOverride}
+                    onChange={(event) => setPayrollEmailOverride(event.target.value)}
+                    placeholder="Leave blank to use default email"
+                    disabled={emailingPayrollPdf}
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 outline-none transition-all text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-2 ml-1">
+                  If provided, the payslip will be sent to this email instead of the employee's registered email.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-xl border border-purple-100 bg-purple-50">
+                <div>
+                  <div className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                    <FaFilePdf className="text-purple-500" size={13} />
+                    Payslip Type
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {payrollPdfIsSummary ? "Summary - key totals only." : "Details - full breakdown with all components."}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-semibold select-none cursor-pointer transition-colors ${!payrollPdfIsSummary ? "text-gray-800" : "text-gray-400"}`} onClick={() => setPayrollPdfIsSummary(false)}>Details</span>
+                  <button
+                    type="button"
+                    onClick={() => setPayrollPdfIsSummary((value) => !value)}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${payrollPdfIsSummary ? "bg-purple-500" : "bg-gray-300"}`}
+                  >
+                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${payrollPdfIsSummary ? "translate-x-5" : "translate-x-0"}`} />
+                  </button>
+                  <span className={`text-xs font-semibold select-none cursor-pointer transition-colors ${payrollPdfIsSummary ? "text-purple-700" : "text-gray-400"}`} onClick={() => setPayrollPdfIsSummary(true)}>Summary</span>
+                </div>
+              </div>
+            </form>
+          </Modal>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {selectedItem && (
           <DetailModal
             isOpen={!!selectedItem}
@@ -2939,12 +3287,7 @@ export default function EmployeeProfilePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-3 md:p-6 font-sans">
       <div className="mx-auto max-w-[1600px]">
-        {loading && (
-          <div className="flex flex-col items-center py-16 gap-2 text-slate-400">
-            <div className="w-5 h-5 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin" />
-            <span className="text-sm">Fetching employee data…</span>
-          </div>
-        )}
+        {loading && <SkeletonComponent />}
 
         {error && (
           <div className="mb-4 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2">⚠ {error}</div>
