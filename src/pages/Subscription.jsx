@@ -269,7 +269,7 @@ const DurButton = ({ duration, isSelected, price, monthlyPrice, employees, onCli
 };
 
 // ─── Main Page ────────────────────────────────────────────────
-const SubscriptionPage = () => {
+const SubscriptionPage = ({ publicView = false, defaultCompanyId = null, defaultToken = null }) => {
   const navigate = useNavigate();
 
   const [packages, setPackages] = useState([]);
@@ -280,7 +280,7 @@ const SubscriptionPage = () => {
   const [purchaseLoading, setPurchaseLoading] = useState(false);
 
   const [details, setDetails] = useState(null);
-  const [detailsLoading, setDetailsLoading] = useState(true);
+  const [detailsLoading, setDetailsLoading] = useState(!publicView);
   const [detailsError, setDetailsError] = useState(null);
 
   const hasFetched = useRef(false);
@@ -302,8 +302,16 @@ const SubscriptionPage = () => {
     (async () => {
       try {
         setDetailsLoading(true);
-        const company = JSON.parse(localStorage.getItem('company'));
-        const response = await apiCall('/subscriptions/details', 'GET', null, company?.id);
+        const company = publicView
+          ? { id: defaultCompanyId }
+          : JSON.parse(localStorage.getItem('company'));
+        const response = await apiCall(
+          '/subscriptions/details',
+          'GET',
+          null,
+          company?.id,
+          publicView ? { token: defaultToken, skipUnauthorizedRedirect: true } : {},
+        );
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const result = await response.json();
         if (result.success && result.data) setDetails(result.data);
@@ -315,7 +323,7 @@ const SubscriptionPage = () => {
         setDetailsLoading(false);
       }
     })();
-  }, []);
+  }, [publicView, defaultCompanyId, defaultToken]);
 
   // Fetch packages
   useEffect(() => {
@@ -325,7 +333,13 @@ const SubscriptionPage = () => {
     (async () => {
       try {
         setLoading(true);
-        const response = await apiCall('/subscriptions/packages', 'GET');
+        const response = await apiCall(
+          '/subscriptions/packages',
+          'GET',
+          null,
+          null,
+          publicView ? { token: defaultToken, skipUnauthorizedRedirect: true } : {},
+        );
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         const result = await response.json();
         if (result.success && Array.isArray(result.data)) setPackages(result.data);
@@ -337,7 +351,7 @@ const SubscriptionPage = () => {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [publicView, defaultToken]);
 
   // Derived values
   const sortedPackages = useMemo(
@@ -399,11 +413,14 @@ const SubscriptionPage = () => {
     if (!currentPackage || purchaseLoading) return;
     try {
       setPurchaseLoading(true);
-      const company = JSON.parse(localStorage.getItem('company') || 'null');
+      const company = publicView
+        ? { id: defaultCompanyId }
+        : JSON.parse(localStorage.getItem('company') || 'null');
       const response = await apiCall(
         '/subscriptions/purchase-subscription', 'POST',
         { package_id: currentPackage.id, package_period: PERIOD_MAP[selectedDur.key] },
         company?.id,
+        publicView ? { token: defaultToken, skipUnauthorizedRedirect: true } : {},
       );
       const result = await response.json();
       if (!result.success) throw new Error(result.message || 'Purchase failed');

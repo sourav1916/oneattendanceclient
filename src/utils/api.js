@@ -6,10 +6,11 @@ const API_BASE = "https://api-attendance.onesaas.in";
  * @param {string} method - HTTP method (GET, POST, PUT, DELETE, etc.)
  * @param {Object|null} body - Request payload
  * @param {string|number|null} companyId - Optional Company ID for the 'company' header
+ * @param {Object} requestOverrides - Optional request overrides
  * @returns {Promise<Response>} - The fetch response object
  */
-export const apiCall = async (endpoint, method = 'GET', body = null, companyId = null) => {
-  const token = localStorage.getItem('token');
+export const apiCall = async (endpoint, method = 'GET', body = null, companyId = null, requestOverrides = {}) => {
+  const token = requestOverrides.token ?? localStorage.getItem('token');
 
   const headers = {};
 
@@ -45,7 +46,7 @@ export const apiCall = async (endpoint, method = 'GET', body = null, companyId =
     const response = await fetch(url, options);
     
     // Global 401 Unauthorized handler
-    if (response.status === 401) {
+    if (response.status === 401 && !requestOverrides.skipUnauthorizedRedirect) {
       localStorage.removeItem('token');
       localStorage.removeItem('company');
       

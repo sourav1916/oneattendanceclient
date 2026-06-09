@@ -51,6 +51,7 @@ import UnmarkedAttendance from "./pages/UnmarkedAttendance";
 import BreakManagement from "./pages/BreakManagement";
 import ServerUnavailable from "./pages/ServerUnavailable";
 import Subscription from "./pages/Subscription";
+import PublicSubscription from "./pages/PublicSubscription";
 import {
   TabbedManagementHub,
 } from "./components/common";
@@ -341,6 +342,7 @@ function AppContent() {
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/data-deletion" element={<DataDeletion />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/public-subscription" element={<PublicSubscription />} />
 
         {/* Protected Routes - Only accessible after company selection */}
         <Route path="/home" element={<ProtectedRoute pageKey="home"> <MainLayout> <Home /> </MainLayout> </ProtectedRoute>} />
