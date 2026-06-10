@@ -713,11 +713,32 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
     initialInviteState,
   ]);
 
+  const getInputClass = (value, defaultClasses) => {
+    const isInvalid = !value || String(value).trim() === '';
+    return `${defaultClasses} ${isInvalid ? 'border-red-400 bg-red-50/10 ring-1 ring-red-400/50 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 bg-white focus:border-indigo-500 focus:ring-indigo-500/10'}`;
+  };
+
+  const getSelectStyles = (value) => ({
+    ...customSelectStyles,
+    control: (base, state) => ({
+      ...customSelectStyles.control(base, state),
+      borderColor: !value ? '#f87171' : state.isFocused ? '#6366f1' : '#e2e8f0',
+      backgroundColor: !value ? '#fef2f2' : '#f9fafb',
+      boxShadow: !value ? '0 0 0 1px rgba(248, 113, 113, 0.5)' : state.isFocused ? '0 0 0 4px rgba(99, 102, 241, 0.1)' : 'none',
+      '&:hover': {
+        borderColor: !value ? '#f87171' : '#cbd5e1'
+      }
+    })
+  });
+
   const canUpdateInvite =
     Boolean(selectedUser) &&
     Boolean(designation) &&
     Boolean(staffType) &&
     Boolean(employmentType) &&
+    Boolean(selectedPermissionPackage) &&
+    Boolean(shiftStart) &&
+    Boolean(shiftEnd) &&
     selectedAttendanceMethods.length > 0 &&
     Boolean(baseAmount) &&
     Boolean(effectiveFrom) &&
@@ -942,6 +963,32 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
   const formatDisplay = (value) =>
     value ? String(value).replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()) : "N/A";
 
+  const updateDisabledReason = submitDisabled
+    ? submitTitle
+    : !selectedUser
+      ? 'No staff member loaded'
+      : !designation
+        ? 'Select a designation'
+        : !selectedPermissionPackage
+          ? 'Select a permission package'
+          : !employmentType
+            ? 'Select an employment type'
+            : !staffType
+              ? 'Select a salary type'
+              : !shiftStart
+                ? 'Set shift start time'
+                : !shiftEnd
+                  ? 'Set shift end time'
+                  : selectedAttendanceMethods.length === 0
+                    ? 'Select at least one attendance method'
+                    : !effectiveFrom
+                      ? 'Select salary effective from date'
+                      : !baseAmount
+                        ? 'Enter base salary amount'
+                        : !isUpdateDirty
+                          ? 'No changes made yet'
+                          : '';
+
   return (
     <Modal
       isOpen={isOpen}
@@ -961,27 +1008,18 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
           >
             Cancel
           </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleSubmit}
-            disabled={!canUpdateInvite}
-            title={
-              submitDisabled
-                ? submitTitle
-                : !selectedUser
-                  ? "Search and verify a user first"
-                  : !designation || !staffType || !employmentType || selectedAttendanceMethods.length === 0
-                    ? "Complete all required fields"
-                    : !isUpdateDirty
-                      ? "Make a change before updating"
-                      : ""
-            }
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSubmitting ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaSave className="h-4 w-4" />}
-            Update Invite
-          </motion.button>
+          <span title={!canUpdateInvite ? updateDisabledReason : undefined} className="inline-flex">
+            <motion.button
+              whileHover={{ scale: canUpdateInvite ? 1.02 : 1 }}
+              whileTap={{ scale: canUpdateInvite ? 0.98 : 1 }}
+              onClick={handleSubmit}
+              disabled={!canUpdateInvite}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSubmitting ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaSave className="h-4 w-4" />}
+              Update Invite
+            </motion.button>
+          </span>
         </>
       }
     >
@@ -1112,7 +1150,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                               onFocus={fetchAllConstants}
                               placeholder="Select designation"
                               isClearable
-                              styles={customSelectStyles}
+                              styles={getSelectStyles(designation)}
                             />
                           </div>
 
@@ -1130,7 +1168,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                               placeholder={isLoadingPermissions ? "Loading..." : "Select permission package"}
                               isClearable
                               isLoading={isLoadingPermissions}
-                              styles={customSelectStyles}
+                              styles={getSelectStyles(selectedPermissionPackage)}
                             />
                           </div>
 
@@ -1147,7 +1185,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                               onFocus={fetchAllConstants}
                               placeholder="Select employment type"
                               isClearable
-                              styles={customSelectStyles}
+                              styles={getSelectStyles(employmentType)}
                             />
                           </div>
 
@@ -1164,7 +1202,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                               onFocus={fetchAllConstants}
                               placeholder="Select salary type"
                               isClearable
-                              styles={customSelectStyles}
+                              styles={getSelectStyles(staffType)}
                             />
                           </div>
                         </div>
@@ -1208,7 +1246,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                               value={getMonthYearValue(effectiveFrom)}
                               onChange={(value) => setEffectiveFrom(monthYearToDate(value))}
                               placeholder="Select month"
-                              buttonClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                              buttonClassName={getInputClass(effectiveFrom, "w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition")}
                             />
                           </div>
                           <div className="space-y-2">
@@ -1229,7 +1267,7 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                               value={baseAmount}
                               onChange={(e) => handleBaseAmountChange(e.target.value)}
                               placeholder="Enter amount"
-                              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                              className={getInputClass(baseAmount, "w-full rounded-xl border px-4 py-2.5 text-sm font-semibold outline-none transition")}
                             />
                           </div>
                           <div className="space-y-2">
@@ -1459,38 +1497,40 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                   </AnimatePresence>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-xl border border-slate-200 bg-white p-4">
-                    <button
-                      type="button"
-                      onClick={() => setIsShiftTimingsOpen(!isShiftTimingsOpen)}
-                      className="flex w-full items-center justify-between"
-                    >
-                      <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
-                        <FaClock className="h-4 w-4 text-indigo-500" />
-                        Shift Timings
-                      </label>
-                      {isShiftTimingsOpen ? (
-                        <FaChevronUp className="h-3 w-3 text-slate-400" />
-                      ) : (
-                        <FaChevronDown className="h-3 w-3 text-slate-400" />
-                      )}
-                    </button>
-                    <AnimatePresence>
-                      {isShiftTimingsOpen && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                          animate={{ height: "auto", opacity: 1, marginTop: 12 }}
-                          exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="grid grid-cols-2 gap-3 mt-3">
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsShiftTimingsOpen(!isShiftTimingsOpen)}
+                    className="flex w-full items-center justify-between"
+                  >
+                    <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                      <FaClock className="h-4 w-4 text-indigo-500" />
+                      Shift Timings
+                    </label>
+                    {isShiftTimingsOpen ? (
+                      <FaChevronUp className="h-3 w-3 text-slate-400" />
+                    ) : (
+                      <FaChevronDown className="h-3 w-3 text-slate-400" />
+                    )}
+                  </button>
+                  <AnimatePresence>
+                    {isShiftTimingsOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                        animate={{ height: "auto", opacity: 1, marginTop: 12 }}
+                        exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="grid grid-cols-2 gap-3 mt-3">
+                          <div className={!shiftStart ? "rounded-xl ring-2 ring-red-400 p-2" : ""}>
                             <TimeDurationPickerField
                               label="Start Time"
                               value={shiftStart}
                               onChange={setShiftStart}
                               mode="time"
                             />
+                          </div>
+                          <div className={!shiftEnd ? "rounded-xl ring-2 ring-red-400 p-2" : ""}>
                             <TimeDurationPickerField
                               label="End Time"
                               value={shiftEnd}
@@ -1498,53 +1538,53 @@ function EditStaffModal({ isOpen, onClose, onSuccess, staffData, submitDisabled 
                               mode="time"
                             />
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
 
-                  <div className="rounded-xl border border-slate-200 bg-white p-4">
-                    <button
-                      type="button"
-                      onClick={() => setIsDurationSettingsOpen(!isDurationSettingsOpen)}
-                      className="flex w-full items-center justify-between"
-                    >
-                      <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
-                        <FaClock className="h-4 w-4 text-indigo-500" />
-                        Duration Settings
-                      </label>
-                      {isDurationSettingsOpen ? (
-                        <FaChevronUp className="h-3 w-3 text-slate-400" />
-                      ) : (
-                        <FaChevronDown className="h-3 w-3 text-slate-400" />
-                      )}
-                    </button>
-                    <AnimatePresence>
-                      {isDurationSettingsOpen && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                          animate={{ height: "auto", opacity: 1, marginTop: 12 }}
-                          exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mt-3">
-                            <TimeDurationPickerField
-                              label="Break Minutes"
-                              value={breakMinutes}
-                              onChange={setBreakMinutes}
-                              mode="duration"
-                            />
-                            <TimeDurationPickerField
-                              label="Grace Minutes"
-                              value={graceMinutes}
-                              onChange={setGraceMinutes}
-                              mode="duration"
-                            />
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                <div className="rounded-xl border border-slate-200 bg-white p-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsDurationSettingsOpen(!isDurationSettingsOpen)}
+                    className="flex w-full items-center justify-between"
+                  >
+                    <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                      <FaClock className="h-4 w-4 text-indigo-500" />
+                      Duration Settings
+                    </label>
+                    {isDurationSettingsOpen ? (
+                      <FaChevronUp className="h-3 w-3 text-slate-400" />
+                    ) : (
+                      <FaChevronDown className="h-3 w-3 text-slate-400" />
+                    )}
+                  </button>
+                  <AnimatePresence>
+                    {isDurationSettingsOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                        animate={{ height: "auto", opacity: 1, marginTop: 12 }}
+                        exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mt-3">
+                          <TimeDurationPickerField
+                            label="Break Minutes"
+                            value={breakMinutes}
+                            onChange={setBreakMinutes}
+                            mode="duration"
+                          />
+                          <TimeDurationPickerField
+                            label="Grace Minutes"
+                            value={graceMinutes}
+                            onChange={setGraceMinutes}
+                            mode="duration"
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-white p-4">

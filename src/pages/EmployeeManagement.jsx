@@ -408,6 +408,43 @@ const ManualCreateEmployeeModal = ({
     const selectedCountry = countryCodes.find(c => c.dial_code === formData.country_code);
     const contactDisplay = isEmailSignup ? formData.email : `+${formData.country_code}${formData.phone}`;
 
+    const isContactValid = isEmailSignup
+        ? formData.email?.trim()?.length > 0
+        : formData.country_code && formData.phone?.trim()?.length >= 8;
+
+    const isFormValid = Boolean(
+        formData.signup_type &&
+        isContactValid &&
+        formData.name?.trim() &&
+        formData.otp?.trim() &&
+        formData.permission_package_id &&
+        formData.designation &&
+        formData.salary_type &&
+        formData.employment_type &&
+        formData.shift_start &&
+        formData.shift_end &&
+        formData.base_amount &&
+        formData.effective_from
+    );
+
+    const getInputClass = (value, defaultClasses) => {
+        const isInvalid = !value || String(value).trim() === '';
+        return `${defaultClasses} ${isInvalid ? 'border-red-400 bg-red-50/10 ring-1 ring-red-400/50 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 bg-white focus:border-indigo-500 focus:ring-indigo-500/10'}`;
+    };
+
+    const getSelectStyles = (value) => ({
+        ...customSelectStyles,
+        control: (base, state) => ({
+            ...customSelectStyles.control(base, state),
+            borderColor: !value ? '#f87171' : state.isFocused ? '#6366f1' : '#e2e8f0',
+            backgroundColor: !value ? '#fef2f2' : '#ffffff',
+            boxShadow: !value ? '0 0 0 1px rgba(248, 113, 113, 0.5)' : state.isFocused ? '0 0 0 4px rgba(99, 102, 241, 0.1)' : 'none',
+            '&:hover': {
+                borderColor: !value ? '#f87171' : '#cbd5e1'
+            }
+        })
+    });
+
     useEffect(() => {
         if (isOpen) setSelectedOnboardingPackage(null);
     }, [isOpen]);
@@ -439,23 +476,39 @@ const ManualCreateEmployeeModal = ({
             ? pkg.weekends.map(w => (typeof w === 'object' ? w.day : w)).filter(Boolean)
             : [];
 
-        setFormData(prev => ({
-            ...prev,
-            designation: designationValue || prev.designation,
-            employment_type: employmentTypeValue || prev.employment_type,
-            salary_type: salaryTypeValue || prev.salary_type,
-            permission_package_id: pkg.permission_package_id || prev.permission_package_id,
-            selectedPackage: selectedPackage || prev.selectedPackage,
-            shift_start: pkg.shift_start || prev.shift_start,
-            shift_end: pkg.shift_end || prev.shift_end,
-            break_minutes: typeof pkg.break_minutes !== 'undefined'
-                ? normalizeDuration(pkg.break_minutes, prev.break_minutes || '')
-                : prev.break_minutes,
-            grace_minutes: typeof pkg.grace_minutes !== 'undefined'
-                ? normalizeDuration(pkg.grace_minutes, prev.grace_minutes || '')
-                : prev.grace_minutes,
-            weekends: normalizedWeekends.length ? normalizedWeekends : prev.weekends,
-        }));
+        const components = pkg.salary_components || pkg.components || [];
+
+        setFormData(prev => {
+            const normalizedComponents = Array.isArray(components) ? components.map(component => ({
+                component_id: component.component_id ?? component.id,
+                calc_type: component.calc_type || 'percentage',
+                calc_value: component.calc_value === null || typeof component.calc_value === 'undefined' ? '' : String(component.calc_value),
+                effective_from: component.effective_from || prev.effective_from || '',
+                effective_to: component.effective_to || '',
+                reason: component.reason || ''
+            })).filter(c => c.component_id) : [];
+
+            return {
+                ...prev,
+                designation: designationValue || prev.designation,
+                employment_type: employmentTypeValue || prev.employment_type,
+                salary_type: salaryTypeValue || prev.salary_type,
+                permission_package_id: pkg.permission_package_id || prev.permission_package_id,
+                selectedPackage: selectedPackage || prev.selectedPackage,
+                shift_start: pkg.shift_start || prev.shift_start,
+                shift_end: pkg.shift_end || prev.shift_end,
+                break_minutes: typeof pkg.break_minutes !== 'undefined'
+                    ? normalizeDuration(pkg.break_minutes, prev.break_minutes || '')
+                    : prev.break_minutes,
+                grace_minutes: typeof pkg.grace_minutes !== 'undefined'
+                    ? normalizeDuration(pkg.grace_minutes, prev.grace_minutes || '')
+                    : prev.grace_minutes,
+                weekends: normalizedWeekends.length ? normalizedWeekends : prev.weekends,
+                base_amount: typeof pkg.base_amount !== 'undefined' ? String(pkg.base_amount || '') : prev.base_amount,
+                components: normalizedComponents.length ? normalizedComponents : prev.components,
+                component_package_id: pkg.component_package || prev.component_package_id
+            };
+        });
 
         if (normalizedWeekends.length) setIsWeekendsOpen(true);
         toast.info(`Applied details from ${pkg.name || pkg.label}`);
@@ -509,6 +562,30 @@ const ManualCreateEmployeeModal = ({
         [availableComponents, existingComponentIds]
     );
 
+    const createDisabledReason = !isContactValid
+        ? (isEmailSignup ? 'Enter a valid email address' : 'Enter a valid phone number')
+        : !formData.name?.trim()
+            ? 'Enter employee name'
+            : !formData.otp?.trim()
+                ? 'Enter the OTP received'
+                : !formData.designation
+                    ? 'Select a designation'
+                    : !formData.permission_package_id
+                        ? 'Select a permission package'
+                        : !formData.employment_type
+                            ? 'Select an employment type'
+                            : !formData.salary_type
+                                ? 'Select a salary type'
+                                : !formData.shift_start
+                                    ? 'Set shift start time'
+                                    : !formData.shift_end
+                                        ? 'Set shift end time'
+                                        : !formData.effective_from
+                                            ? 'Select salary effective from date'
+                                            : !formData.base_amount
+                                                ? 'Enter base salary amount'
+                                                : '';
+
     return (
         <Modal
             isOpen={isOpen}
@@ -530,13 +607,17 @@ const ManualCreateEmployeeModal = ({
                         {otpRequested ? 'Resend OTP' : 'Send OTP'}
                     </button>
                     {otpRequested && (
-                        <motion.button type="submit" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                            disabled={otpLoading || createLoading || constantsLoading || permissionsLoading}
-                            onClick={handleCreateEmployee}
-                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition disabled:opacity-50">
-                            {createLoading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaPlus className="h-4 w-4" />}
-                            Create Employee
-                        </motion.button>
+                        <span title={!isFormValid ? createDisabledReason : undefined} className="inline-flex">
+                            <motion.button type="submit"
+                                whileHover={{ scale: isFormValid ? 1.02 : 1 }}
+                                whileTap={{ scale: isFormValid ? 0.98 : 1 }}
+                                disabled={otpLoading || createLoading || constantsLoading || permissionsLoading || !isFormValid}
+                                onClick={handleCreateEmployee}
+                                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition disabled:cursor-not-allowed disabled:opacity-50">
+                                {createLoading ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaPlus className="h-4 w-4" />}
+                                Create Employee
+                            </motion.button>
+                        </span>
                     )}
                 </>
             }
@@ -576,7 +657,7 @@ const ManualCreateEmployeeModal = ({
                                     <input type="text" inputMode="numeric" value={formData.otp}
                                         onChange={e => setFormData(p => ({ ...p, otp: e.target.value }))}
                                         placeholder="Enter OTP"
-                                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" />
+                                        className={getInputClass(formData.otp, "w-full rounded-xl border px-4 py-3 text-sm outline-none transition")} />
                                 </div>
                             </div>
                         ) : (
@@ -590,7 +671,7 @@ const ManualCreateEmployeeModal = ({
                                                     setFormData(p => ({ ...p, signup_type: type, otp: '' }));
                                                     setOtpRequested(false);
                                                 }}
-                                                className={`rounded-xl border px-3 py-2 text-sm font-semibold capitalize transition ${formData.signup_type === type
+                                                className={`rounded-xl border px-3 py-2.5 text-sm font-semibold capitalize transition ${formData.signup_type === type
                                                     ? 'border-indigo-500 bg-indigo-600 text-white'
                                                     : 'border-slate-200 bg-white text-slate-600 hover:bg-indigo-50'}`}>
                                                 {type}
@@ -611,7 +692,7 @@ const ManualCreateEmployeeModal = ({
                                                 setOtpRequested(false);
                                             }}
                                             placeholder="employee@example.com"
-                                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" />
+                                            className={getInputClass(formData.email, "w-full rounded-xl border px-4 py-3 text-sm outline-none transition")} />
                                     ) : (
                                         <div className="flex gap-2">
                                             <button type="button"
@@ -629,7 +710,7 @@ const ManualCreateEmployeeModal = ({
                                                 }}
                                                 placeholder="9876543210"
                                                 inputMode="numeric"
-                                                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" />
+                                                className={getInputClass(formData.phone, "min-w-0 flex-1 rounded-xl border px-4 py-3 text-sm outline-none transition")} />
                                         </div>
                                     )}
                                 </div>
@@ -643,7 +724,7 @@ const ManualCreateEmployeeModal = ({
                                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><FaUser className="text-indigo-500" />Employee Name</label>
                                 <input value={formData.name} onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
                                     placeholder="Employee name"
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10" />
+                                    className={getInputClass(formData.name, "w-full rounded-xl border px-4 py-3 text-sm outline-none transition")} required/>
                             </div>
 
                             <div className="space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/30 p-4">
@@ -670,28 +751,28 @@ const ManualCreateEmployeeModal = ({
                                     <Select options={designationOptions}
                                         value={designationOptions.find(o => o.value === formData.designation) || null}
                                         onChange={(o) => setFormData(p => ({ ...p, designation: o?.value || '' }))}
-                                        placeholder="Select designation" isClearable styles={customSelectStyles} />
+                                        placeholder="Select designation" isClearable styles={getSelectStyles(formData.designation)} />
                                 </div>
                                 <div className="space-y-3">
                                     <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><FaShieldAlt className="text-indigo-500" />Permission Package</label>
                                     <Select options={permissionPackages}
                                         value={formData.selectedPackage || null}
                                         onChange={(o) => setFormData(p => ({ ...p, selectedPackage: o, permission_package_id: o?.value || null }))}
-                                        placeholder="Select permission package" isClearable styles={customSelectStyles} />
+                                        placeholder="Select permission package" isClearable styles={getSelectStyles(formData.permission_package_id)} />
                                 </div>
                                 <div className="space-y-3">
                                     <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><FaBriefcase className="text-indigo-500" />Employment Type</label>
                                     <Select options={employmentTypeOptions}
                                         value={employmentTypeOptions.find(o => o.value === formData.employment_type) || null}
                                         onChange={(o) => setFormData(p => ({ ...p, employment_type: o?.value || '' }))}
-                                        placeholder="Select employment type" isClearable styles={customSelectStyles} />
+                                        placeholder="Select employment type" isClearable styles={getSelectStyles(formData.employment_type)} />
                                 </div>
                                 <div className="space-y-3">
                                     <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><CurrencyIcon className="text-emerald-500" size={12} />Salary Type</label>
                                     <Select options={salaryTypeOptions}
                                         value={salaryTypeOptions.find(o => o.value === formData.salary_type) || null}
                                         onChange={(o) => setFormData(p => ({ ...p, salary_type: o?.value || '' }))}
-                                        placeholder="Select salary type" isClearable styles={customSelectStyles} />
+                                        placeholder="Select salary type" isClearable styles={getSelectStyles(formData.salary_type)} />
                                 </div>
                                 <div className="space-y-3">
                                     <label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><FaCalendarAlt className="text-indigo-500" />Joining Date</label>
@@ -712,10 +793,14 @@ const ManualCreateEmployeeModal = ({
                                         Shift Timings
                                     </label>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <TimeDurationPickerField label="Start Time" value={formData.shift_start}
-                                            onChange={(v) => setFormData(p => ({ ...p, shift_start: v }))} mode="time" />
-                                        <TimeDurationPickerField label="End Time" value={formData.shift_end}
-                                            onChange={(v) => setFormData(p => ({ ...p, shift_end: v }))} mode="time" />
+                                        <div className={!formData.shift_start ? "rounded-xl ring-2 ring-red-400 p-2" : ""}>
+                                            <TimeDurationPickerField label="Start Time" value={formData.shift_start}
+                                                onChange={(v) => setFormData(p => ({ ...p, shift_start: v }))} mode="time" />
+                                        </div>
+                                        <div className={!formData.shift_end ? "rounded-xl ring-2 ring-red-400 p-2" : ""}>
+                                            <TimeDurationPickerField label="End Time" value={formData.shift_end}
+                                                onChange={(v) => setFormData(p => ({ ...p, shift_end: v }))} mode="time" />
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -779,11 +864,11 @@ const ManualCreateEmployeeModal = ({
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective From *</label>
-                                        <AdvancedDateFilter tabOptions={["month"]} value={formData.effective_from ? { month: parseInt(formData.effective_from.split('-')[1]), year: parseInt(formData.effective_from.split('-')[0]) } : null} onChange={(val) => { if (val && val.month && val.year) { const firstDate = `${val.year}-${String(val.month).padStart(2, '0')}-01`; setFormData(p => ({ ...p, effective_from: firstDate })); } else { setFormData(p => ({ ...p, effective_from: '' })); } }} placeholder="Select month" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-left text-sm" />
+                                        <AdvancedDateFilter tabOptions={["month"]} value={formData.effective_from ? { month: parseInt(formData.effective_from.split('-')[1]), year: parseInt(formData.effective_from.split('-')[0]) } : null} onChange={(val) => { if (val && val.month && val.year) { const firstDate = `${val.year}-${String(val.month).padStart(2, '0')}-01`; setFormData(p => ({ ...p, effective_from: firstDate })); } else { setFormData(p => ({ ...p, effective_from: '' })); } }} placeholder="Select month" buttonClassName={getInputClass(formData.effective_from, "w-full px-4 py-2.5 border rounded-xl outline-none text-left text-sm")} required/>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Effective To</label>
-                                        <AdvancedDateFilter tabOptions={["month"]} value={formData.effective_to ? { month: parseInt(formData.effective_to.split('-')[1]), year: parseInt(formData.effective_to.split('-')[0]) } : null} onChange={(val) => { if (val && val.month && val.year) { const firstDate = `${val.year}-${String(val.month).padStart(2, '0')}-01`; setFormData(p => ({ ...p, effective_to: firstDate })); } else { setFormData(p => ({ ...p, effective_to: '' })); } }} placeholder="Optional" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-left text-sm" />
+                                        <AdvancedDateFilter tabOptions={["month"]} value={formData.effective_to ? { month: parseInt(formData.effective_to.split('-')[1]), year: parseInt(formData.effective_to.split('-')[0]) } : null} onChange={(val) => { if (val && val.month && val.year) { const firstDate = `${val.year}-${String(val.month).padStart(2, '0')}-01`; setFormData(p => ({ ...p, effective_to: firstDate })); } else { setFormData(p => ({ ...p, effective_to: '' })); } }} placeholder="Optional" buttonClassName="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none text-left text-sm" required/>
                                     </div>
                                 </div>
 
@@ -813,7 +898,7 @@ const ManualCreateEmployeeModal = ({
                                                 const val = e.target.value.replace(/[^0-9.]/g, '');
                                                 if (val === '' || /^\d*\.?\d*$/.test(val)) { setFormData(p => ({ ...p, base_amount: val })); }
                                             }}
-                                            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-sm font-semibold" />
+                                            className={getInputClass(formData.base_amount, "w-full px-4 py-3 border rounded-xl outline-none transition-all text-sm font-semibold")} required />
                                     </div>
                                 </div>
 
@@ -1370,9 +1455,11 @@ const EmployeeManagement = () => {
                 payload.effective_from = createFormData.effective_from;
                 if (createFormData.effective_to) payload.effective_to = createFormData.effective_to;
                 payload.components = createFormData.components.map(o => ({
-                    component_id: o.component_id,
+                    component_id: Number(o.component_id),
                     calc_type: o.calc_type,
                     calc_value: parseFloat(o.calc_value),
+                    ...(o.effective_from ? { effective_from: o.effective_from } : {}),
+                    effective_to: o.effective_to || null,
                     reason: o.reason || ''
                 }));
             }

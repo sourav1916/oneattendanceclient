@@ -722,19 +722,64 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
     [availableSalaryComponents, selectedSalaryComponentIds]
   );
 
+  const getInputClass = (value, defaultClasses) => {
+    const isInvalid = !value || String(value).trim() === '';
+    return `${defaultClasses} ${isInvalid ? 'border-red-400 bg-red-50/10 ring-1 ring-red-400/50 focus:border-red-500 focus:ring-red-500/20' : 'border-slate-200 bg-white focus:border-indigo-500 focus:ring-indigo-500/10'}`;
+  };
+
+  const getSelectStyles = (value) => ({
+    ...customSelectStyles,
+    control: (base, state) => ({
+      ...customSelectStyles.control(base, state),
+      borderColor: !value ? '#f87171' : state.isFocused ? '#6366f1' : '#e2e8f0',
+      backgroundColor: !value ? '#fef2f2' : '#ffffff',
+      boxShadow: !value ? '0 0 0 1px rgba(248, 113, 113, 0.5)' : state.isFocused ? '0 0 0 4px rgba(99, 102, 241, 0.1)' : 'none',
+      '&:hover': {
+        borderColor: !value ? '#f87171' : '#cbd5e1'
+      }
+    })
+  });
+
   const canCreateInvite = Boolean(
     selectedUser &&
     designation &&
     staffType &&
     employmentType &&
+    selectedPermissionPackage &&
     selectedAttendanceMethods.length > 0 &&
     baseAmount &&
     effectiveFrom &&
+    shiftStart &&
+    shiftEnd &&
     !isSubmitting &&
     !isLoadingConstants &&
     !isSearchingUser &&
     !submitDisabled
   );
+
+  const inviteDisabledReason = submitDisabled
+    ? submitTitle
+    : !selectedUser
+      ? "Search and verify a user first"
+      : !designation
+        ? "Select a designation"
+        : !selectedPermissionPackage
+          ? "Select a permission package"
+          : !employmentType
+            ? "Select an employment type"
+            : !staffType
+              ? "Select a salary type"
+              : !shiftStart
+                ? "Set shift start time"
+                : !shiftEnd
+                  ? "Set shift end time"
+                  : selectedAttendanceMethods.length === 0
+                    ? "Select at least one attendance method"
+                    : !effectiveFrom
+                      ? "Select salary effective from date"
+                      : !baseAmount
+                        ? "Enter base salary amount"
+                        : "";
 
   return (
     <Modal
@@ -755,25 +800,18 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
           >
             Cancel
           </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleSubmit}
-            disabled={!canCreateInvite}
-            title={
-              submitDisabled
-                ? submitTitle
-                : !selectedUser
-                  ? "Search and verify a user first"
-                  : !designation || !staffType || !employmentType || selectedAttendanceMethods.length === 0
-                    ? "Complete all required fields"
-                    : ""
-            }
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSubmitting ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaCheck className="h-4 w-4" />}
-            Send Invite
-          </motion.button>
+          <span title={!canCreateInvite ? inviteDisabledReason : undefined} className="inline-flex">
+            <motion.button
+              whileHover={{ scale: canCreateInvite ? 1.02 : 1 }}
+              whileTap={{ scale: canCreateInvite ? 0.98 : 1 }}
+              onClick={handleSubmit}
+              disabled={!canCreateInvite}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-indigo-200 transition hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSubmitting ? <FaSpinner className="h-4 w-4 animate-spin" /> : <FaCheck className="h-4 w-4" />}
+              Send Invite
+            </motion.button>
+          </span>
         </>
       }
     >
@@ -930,7 +968,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                             onFocus={fetchAllConstants}
                             placeholder="Select designation"
                             isClearable
-                            styles={customSelectStyles}
+                            styles={getSelectStyles(designation)}
                           />
                         </div>
 
@@ -948,7 +986,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                             placeholder={isLoadingPermissions ? "Loading..." : "Select permission package"}
                             isClearable
                             isLoading={isLoadingPermissions}
-                            styles={customSelectStyles}
+                            styles={getSelectStyles(selectedPermissionPackage)}
                           />
                         </div>
 
@@ -965,7 +1003,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                             onFocus={fetchAllConstants}
                             placeholder="Select employment type"
                             isClearable
-                            styles={customSelectStyles}
+                            styles={getSelectStyles(employmentType)}
                           />
                         </div>
 
@@ -982,7 +1020,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                             onFocus={fetchAllConstants}
                             placeholder="Select salary type"
                             isClearable
-                            styles={customSelectStyles}
+                            styles={getSelectStyles(staffType)}
                           />
                         </div>
                       </div>
@@ -1027,7 +1065,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                             value={getMonthYearValue(effectiveFrom)}
                             onChange={(value) => setEffectiveFrom(monthYearToDate(value))}
                             placeholder="Select month"
-                            buttonClassName="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                            buttonClassName={getInputClass(effectiveFrom, "w-full rounded-xl border px-4 py-2.5 text-sm outline-none transition")}
                           />
                         </div>
                         <div className="space-y-2">
@@ -1048,7 +1086,7 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                             value={baseAmount}
                             onChange={(e) => handleBaseAmountChange(e.target.value)}
                             placeholder="Enter amount"
-                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+                            className={getInputClass(baseAmount, "w-full rounded-xl border px-4 py-2.5 text-sm font-semibold outline-none transition")}
                           />
                         </div>
                       </div>
@@ -1209,8 +1247,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                                 type="button"
                                 onClick={() => toggleAttendanceMethod(method.key)}
                                 className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition ${active
-                                    ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
-                                    : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
+                                  ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
+                                  : "border-slate-200 bg-slate-50 text-slate-700 hover:border-indigo-200 hover:bg-indigo-50"
                                   }`}
                               >
                                 {active && <FaCheck className="h-3 w-3" />}
@@ -1268,73 +1306,75 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                 </AnimatePresence>
               </div>
 
-              {/* Shift / Duration / Weekends */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsShiftTimingsOpen(!isShiftTimingsOpen)}
-                    className="flex w-full items-center justify-between"
-                  >
-                    <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
-                      <FaClock className="h-4 w-4 text-indigo-500" />
-                      Shift Timings
-                    </label>
-                    {isShiftTimingsOpen ? (
-                      <FaChevronUp className="h-3 w-3 text-slate-400" />
-                    ) : (
-                      <FaChevronDown className="h-3 w-3 text-slate-400" />
-                    )}
-                  </button>
-                  <AnimatePresence>
-                    {isShiftTimingsOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                        animate={{ height: "auto", opacity: 1, marginTop: 12 }}
-                        exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="grid grid-cols-2 gap-3 mt-3">
+
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <button
+                  type="button"
+                  onClick={() => setIsShiftTimingsOpen(!isShiftTimingsOpen)}
+                  className="flex w-full items-center justify-between"
+                >
+                  <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                    <FaClock className="h-4 w-4 text-indigo-500" />
+                    Shift Timings
+                  </label>
+                  {isShiftTimingsOpen ? (
+                    <FaChevronUp className="h-3 w-3 text-slate-400" />
+                  ) : (
+                    <FaChevronDown className="h-3 w-3 text-slate-400" />
+                  )}
+                </button>
+                <AnimatePresence>
+                  {isShiftTimingsOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                      animate={{ height: "auto", opacity: 1, marginTop: 12 }}
+                      exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div className={!shiftStart ? "rounded-xl ring-2 ring-red-400 p-2" : ""}>
                           <TimeDurationPickerField label="Start Time" value={shiftStart} onChange={setShiftStart} mode="time" />
+                        </div>
+                        <div className={!shiftEnd ? "rounded-xl ring-2 ring-red-400 p-2" : ""}>
                           <TimeDurationPickerField label="End Time" value={shiftEnd} onChange={setShiftEnd} mode="time" />
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsDurationSettingsOpen(!isDurationSettingsOpen)}
-                    className="flex w-full items-center justify-between"
-                  >
-                    <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
-                      <FaClock className="h-4 w-4 text-indigo-500" />
-                      Duration Settings
-                    </label>
-                    {isDurationSettingsOpen ? (
-                      <FaChevronUp className="h-3 w-3 text-slate-400" />
-                    ) : (
-                      <FaChevronDown className="h-3 w-3 text-slate-400" />
-                    )}
-                  </button>
-                  <AnimatePresence>
-                    {isDurationSettingsOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                        animate={{ height: "auto", opacity: 1, marginTop: 12 }}
-                        exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mt-3">
-                          <TimeDurationPickerField label="Break Minutes" value={breakMinutes} onChange={setBreakMinutes} mode="duration" />
-                          <TimeDurationPickerField label="Grace Minutes" value={graceMinutes} onChange={setGraceMinutes} mode="duration" />
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <button
+                  type="button"
+                  onClick={() => setIsDurationSettingsOpen(!isDurationSettingsOpen)}
+                  className="flex w-full items-center justify-between"
+                >
+                  <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                    <FaClock className="h-4 w-4 text-indigo-500" />
+                    Duration Settings
+                  </label>
+                  {isDurationSettingsOpen ? (
+                    <FaChevronUp className="h-3 w-3 text-slate-400" />
+                  ) : (
+                    <FaChevronDown className="h-3 w-3 text-slate-400" />
+                  )}
+                </button>
+                <AnimatePresence>
+                  {isDurationSettingsOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                      animate={{ height: "auto", opacity: 1, marginTop: 12 }}
+                      exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mt-3">
+                        <TimeDurationPickerField label="Break Minutes" value={breakMinutes} onChange={setBreakMinutes} mode="duration" />
+                        <TimeDurationPickerField label="Grace Minutes" value={graceMinutes} onChange={setGraceMinutes} mode="duration" />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               <div className="rounded-xl border border-slate-200 bg-white p-4">
                 <button
@@ -1378,8 +1418,8 @@ function AddStaffModal({ isOpen, onClose, onSuccess, submitDisabled = false, sub
                                 type="button"
                                 onClick={() => toggleWeekend(day)}
                                 className={`flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isSelected
-                                    ? "bg-indigo-600 text-white shadow-md"
-                                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+                                  ? "bg-indigo-600 text-white shadow-md"
+                                  : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
                                   }`}
                               >
                                 <div
