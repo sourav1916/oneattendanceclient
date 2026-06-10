@@ -7,6 +7,7 @@ import {
     FaAngleDoubleRight,
     FaLevelDownAlt 
 } from 'react-icons/fa';
+import SelectField from './SelectField';
 
 const Pagination = ({
     currentPage,
@@ -155,19 +156,13 @@ const Pagination = ({
                 {onLimitChange && (
                     <div className="flex items-center gap-1.5">
                         <span className="text-xs text-slate-500 font-medium">Show:</span>
-                        <div className="relative">
-                            <select
-                                value={itemsPerPage}
-                                onChange={(e) => onLimitChange(Number(e.target.value))}
-                                className="appearance-none bg-white border border-slate-200 rounded-lg px-2 py-1 pr-6 text-sm font-semibold text-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer"
-                            >
-                                {availableLimits.map(limit => (
-                                    <option key={limit} value={limit}>{limit}</option>
-                                ))}
-                            </select>
-                            <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                <FaChevronLeft className="rotate-[270deg]" size={8} />
-                            </div>
+                        <div className="relative min-w-[80px]">
+                            <SelectField
+                                value={{ value: itemsPerPage, label: String(itemsPerPage) }}
+                                onChange={(selectedOption) => onLimitChange(Number(selectedOption.value))}
+                                options={availableLimits.map(limit => ({ value: limit, label: String(limit) }))}
+                                menuPlacement="auto"
+                            />
                         </div>
                     </div>
                 )}
@@ -202,19 +197,13 @@ const Pagination = ({
                 {onLimitChange && (
                     <div className="flex items-center gap-2">
                         <span className="text-sm text-slate-500 font-medium">Show:</span>
-                        <div className="relative">
-                            <select
-                                value={itemsPerPage}
-                                onChange={(e) => onLimitChange(Number(e.target.value))}
-                                className="appearance-none bg-white border border-slate-200 rounded-lg px-3 py-1.5 pr-8 text-sm font-semibold text-slate-700 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all cursor-pointer"
-                            >
-                                {availableLimits.map(limit => (
-                                    <option key={limit} value={limit}>{limit}</option>
-                                ))}
-                            </select>
-                            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                <FaChevronLeft className="rotate-[270deg]" size={10} />
-                            </div>
+                        <div className="relative min-w-[90px]">
+                            <SelectField
+                                value={{ value: itemsPerPage, label: String(itemsPerPage) }}
+                                onChange={(selectedOption) => onLimitChange(Number(selectedOption.value))}
+                                options={availableLimits.map(limit => ({ value: limit, label: String(limit) }))}
+                                menuPlacement="auto"
+                            />
                         </div>
                     </div>
                 )}
